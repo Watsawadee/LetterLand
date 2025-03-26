@@ -1,0 +1,33 @@
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# TypeScript
+/dist/
+/build/
+/tsconfig.tsbuildinfo
+
+# Prisma
+/prisma/dev.db
+/prisma/migrations/
+
+# Logs
+logs
+*.log
+*.log.*
+
+# Environment files
+.env
+.env.* 
+
+# IDEs and Editors
+.vscode/
+.idea/
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+# Misc
+*.tgz
