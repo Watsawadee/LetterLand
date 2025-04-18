@@ -31,3 +31,6 @@ Thumbs.db
 
 # Misc
 *.tgz
+
+# Assets
+/assets

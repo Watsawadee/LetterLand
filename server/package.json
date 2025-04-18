@@ -11,11 +11,14 @@
         "prisma:migrate": "prisma migrate dev"
     },
     "dependencies": {
+        "@postlight/mercury-parser": "^2.2.1",
         "@prisma/client": "^4.0.0",
-        "express": "^4.21.2"
+        "express": "^4.21.2",
+        "google-translate-api-x": "^10.7.2"
     },
     "devDependencies": {
         "@types/express": "^5.0.1",
+        "@types/postlight__mercury-parser": "^2.2.7",
         "nodemon": "^2.0.15",
         "prisma": "^4.0.0",
         "ts-node": "^10.9.2",

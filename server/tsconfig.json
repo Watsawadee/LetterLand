@@ -8,10 +8,10 @@
         "esModuleInterop": true,
         "strict": true,
         "forceConsistentCasingInFileNames": true,
-        "noEmit": true,
         "resolveJsonModule": true,
         "isolatedModules": true,
         "jsx": "react-jsx",
+        "rootDir": "./src",
         "outDir": "./dist"
     },
     "include": [
