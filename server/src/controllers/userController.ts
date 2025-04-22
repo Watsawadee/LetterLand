@@ -3,8 +3,8 @@ import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import prisma from "../configs/db";
-const JWTtoken =
-  process.env.JWT_SECRET || "bmY3eWNoY3k3OA.Y2lwczhsY3o3M3Y.a3V5bWR3cDNvNg";
+const JWTtoken = process.env.JWT_SECRET as string;
+if (!JWTtoken) throw new Error("JWT_SECRET is not defined in .env");
 export const getUserByIdController = async (req: Request, res: Response) => {
   try {
     const userId = Number(req.params.userId);
@@ -52,13 +52,11 @@ export const createUserController = async (
       },
     });
 
-    res
-      .status(201)
-      .json({
-        message: "Successfully Create Username",
-        user,
-        shouldSetupProfile: true,
-      });
+    res.status(201).json({
+      message: "Successfully Create Username",
+      user,
+      shouldSetupProfile: true,
+    });
   } catch (error) {
     console.error("Create user error:", error);
     res.status(500).json({ error: "Failed to create user" });
