@@ -1,4 +1,5 @@
 import Mercury from "@postlight/mercury-parser";
+import { PDFExtract } from "pdf.js-extract";
 
 export const extractData = async (inputData: string, type: string) => {
   try {
@@ -20,6 +21,20 @@ export const extractData = async (inputData: string, type: string) => {
           url: inputData,
         };
       }
+      case "pdf": {
+        const pdfExtract = new PDFExtract();
+        const result = await pdfExtract.extractBuffer(
+          Buffer.from(inputData, "base64")
+        );
+        const content = result.pages
+          .map((p) => p.content.map((item) => item.str).join(" "))
+          .join("\n");
+
+        return content;
+      }
+
+      default:
+        throw new Error("Unsupported material type");
     }
   } catch (err) {
     console.error("Error extracting article:", err);
