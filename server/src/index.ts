@@ -4,7 +4,6 @@ import userRoutes from "./routes/userRoutes";
 import pronunciationRoutes from "./routes/pronunciationRoutes";
 import geminiRoutes from "./routes/geminiRoutes";
 import genImageRoutes from "./routes/genImageRoutes";
-import fileUploadRoute from "./routes/fileUploadRoutes";
 import setupRoute from "./routes/setupRoutes";
 import dotenv from "dotenv";
 
@@ -18,7 +17,6 @@ app.use("/api/users", userRoutes);
 app.use("/api/pronunciations", pronunciationRoutes);
 app.use("/api/geminis", geminiRoutes);
 app.use("/api/images", genImageRoutes);
-app.use("/api", fileUploadRoute);
 app.use("/api", setupRoute);
 app.listen(3000, () => {
   console.log("Server is running on port 3000");
