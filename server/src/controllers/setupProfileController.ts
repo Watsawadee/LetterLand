@@ -3,6 +3,16 @@ import prisma from "../configs/db";
 import { EnglishLevel } from "@prisma/client";
 import { SetupProfileResponse } from "../types/setupUser";
 import { calculateCEFRLevelFromSelectedWords } from "../services/cefrScoreService";
+import fs from "fs";
+import path from "path";
+
+const oxfordDataPath = path.join(__dirname, "../../data/oxford3000.json");
+const oxfordWords = JSON.parse(fs.readFileSync(oxfordDataPath, "utf8"));
+
+const wordToLevelMap = new Map<string, EnglishLevel>();
+oxfordWords.forEach((entry: { word: string; level: string }) => {
+  wordToLevelMap.set(entry.word.toLowerCase(), entry.level as EnglishLevel);
+});
 
 export const setupProfile = async (
   req: Request,
@@ -14,8 +24,23 @@ export const setupProfile = async (
       res.status(400).json({ error: "Missing required field" } as any);
       return;
     }
+    const mappedWords = selectedWords
+      .map((word: string) => {
+        const level = wordToLevelMap.get(word.toLowerCase());
+        return level ? { word, level } : null;
+      })
+      .filter(Boolean) as { word: string; level: EnglishLevel }[];
 
-    const predictedLevel = calculateCEFRLevelFromSelectedWords(selectedWords);
+    if (mappedWords.length === 0) {
+      res
+        .status(400)
+        .json({
+          error: "No valid CEFR levels found for selected words.",
+        } as any);
+
+      return;
+    }
+    const predictedLevel = calculateCEFRLevelFromSelectedWords(mappedWords);
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },
