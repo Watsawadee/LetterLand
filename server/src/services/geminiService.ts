@@ -181,25 +181,3 @@ Return a JSON object in this exact structure:
     }
   }
 }
-
-export const getCEFRLevelFromGemini = async (
-  words: string[]
-): Promise<string> => {
-  const prompt = `
-Given this list of words a user claims to know:
-
-${words.join(", ")}
-
-Please predict the user's English CEFR level (A1, A2, B1, B2, C1, C2) based on the vocabulary complexity. Return only the level.
-`;
-
-  const response = await axios.post(GEMINI_API_URL, {
-    contents: [{ parts: [{ text: prompt }] }],
-  });
-
-  if (!response.data?.candidates?.length)
-    throw new Error("No valid response from Gemini API.");
-
-  const geminiResponse = response.data.candidates[0].content.parts[0].text;
-  return geminiResponse?.trim().toUpperCase() ?? "A1";
-};

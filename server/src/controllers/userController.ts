@@ -4,7 +4,6 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import prisma from "../configs/db";
 const JWTtoken = process.env.JWT_SECRET as string;
-if (!JWTtoken) throw new Error("JWT_SECRET is not defined in .env");
 export const getUserByIdController = async (req: Request, res: Response) => {
   try {
     const userId = Number(req.params.userId);

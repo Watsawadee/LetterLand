@@ -1,20 +1,51 @@
 import { Request, Response } from "express";
 import { extractData } from "../services/extractDataService";
+import { generateCrosswordHints } from "../services/geminiService";
 
 export const GeminiAPI = async (req: Request, res: Response) => {
-  const { inputData, type } = req.body;
+  const { type, userId, userCEFR } = req.body;
+
+  if (!type || !userId || !userCEFR) {
+    return res.status(400).json({ message: "Missing required fields" });
+  }
 
   try {
-    const data = await extractData(inputData, type);
-    console.log("Extracted data:", data);
-    // Next step is send Propmt to gemini API
+    let rawInput: string | Buffer;
+    console.log("➡️ Request Type:", type);
+    console.log("➡️ userId:", userId);
+    console.log("➡️ userCEFR:", userCEFR);
+    if (type === "pdf") {
+      if (!req.file || !req.file.buffer) {
+        return res.status(400).json({ message: "PDF file is missing" });
+      }
+      rawInput = req.file.buffer;
+    } else if (type === "link") {
+      if (!req.body.inputData) {
+        return res.status(400).json({ message: "Link is missing" });
+      }
+      rawInput = req.body.inputData;
+    } else {
+      return res.status(400).json({ message: "Unsupported type" });
+    }
+
+    const data = await extractData(rawInput, type);
+    const extractedText = typeof data === "string" ? data : data.content;
+
+    const game = await generateCrosswordHints(
+      extractedText,
+      Number(userId),
+      userCEFR
+    );
 
     res.status(200).json({
       message: "Create Gemini Prompt successfully",
-      data: data,
+      game,
     });
-  } catch (error) {
-    console.error("Gemini error:", error);
-    res.status(500).json({ message: "Failed to Create Gemini Prompt" });
+  } catch (error: any) {
+    console.error("Gemini Error Details:", error);
+    res.status(500).json({
+      message: "Failed to generate Gemini prompt",
+      error: error.message || error,
+    });
   }
 };
