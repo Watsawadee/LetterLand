@@ -60,6 +60,7 @@ model Game {
   isHintUsed     Boolean       @default(false)
   isFinished     Boolean       @default(false)
   gameCode       Int?
+  timer          Int?
   gameTemplate   GameTemplate  @relation(fields: [gameTemplateId], references: [id])
   user           User          @relation(fields: [userId], references: [id])
 }
