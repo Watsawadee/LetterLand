@@ -24,7 +24,8 @@
         "fs": "^0.0.1-security",
         "google-translate-api-x": "^10.7.2",
         "multer": "^1.4.5-lts.2",
-        "pdf.js-extract": "^0.2.1"
+        "pdf.js-extract": "^0.2.1",
+        "path": "^0.12.7"
     },
     "devDependencies": {
         "@types/cors": "^2.8.17",
