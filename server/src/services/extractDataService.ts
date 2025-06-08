@@ -1,7 +1,11 @@
 import Mercury from "@postlight/mercury-parser";
 import { PDFExtract } from "pdf.js-extract";
 
-export const extractData = async (inputData: string, type: string) => {
+export const extractData = async (
+  inputData: string | Buffer,
+  type: string,
+  file?: Buffer
+) => {
   try {
     if (!type) {
       throw new Error("Type is required");
@@ -9,7 +13,9 @@ export const extractData = async (inputData: string, type: string) => {
 
     switch (type) {
       case "link": {
-        const data = await Mercury.parse(inputData, { contentType: "text" });
+        const data = await Mercury.parse(inputData as string, {
+          contentType: "text",
+        });
         if (!data || !data.content) {
           throw new Error("No content extracted");
         }
@@ -22,15 +28,23 @@ export const extractData = async (inputData: string, type: string) => {
         };
       }
       case "pdf": {
+        if (!inputData || !(inputData instanceof Buffer)) {
+          throw new Error("PDF buffer is missing or invalid");
+        }
+
         const pdfExtract = new PDFExtract();
-        const result = await pdfExtract.extractBuffer(
-          Buffer.from(inputData, "base64")
-        );
+        const result = await pdfExtract.extractBuffer(inputData); // ✅ no base64 here
         const content = result.pages
           .map((p) => p.content.map((item) => item.str).join(" "))
           .join("\n");
 
         return content;
+      }
+      case "text": {
+        if (typeof inputData !== "string") {
+          throw new Error("Text input must be a string");
+        }
+        return inputData;
       }
 
       default:

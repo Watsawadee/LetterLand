@@ -2,9 +2,8 @@ import express from "express";
 import {
   createUserController,
   getUserByIdController,
-  loginUserController,
+  loginUserController, // Add here
 } from "../controllers/userController";
-
 const router = express.Router();
 
 router.get("/user/:userId", getUserByIdController);

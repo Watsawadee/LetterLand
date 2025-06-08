@@ -24,11 +24,46 @@ export const generateCrosswordHints = async (
   userCEFR: "A1" | "A2" | "B1" | "B2" | "C1" | "C2"
 ) => {
   try {
+    //     let prompt = `Generate a crossword puzzle based on this extracted text: "${extractedText}".
+    //     Ensure that the words and definitions used align with CEFR level: ${userCEFR} except if the named entities is the person name, album titles, band names. Please ensure that the question will not be technical.
+    //     Use vocabulary appropriate for this level and provide a suitable topic based on the extracted text.
+    //     Also include an **imagePrompt**: a creative prompt to generate a visual that matches the topic of the crossword. This prompt should be designed for AI image-generation tools
+    //     Respond **only** with the JSON object in the following format:
+    //   \`\`\`json
+    // {
+    //   "success": true,
+    //   "game": {
+    //     "id": 1,
+    //     "topic": "Space",
+    //     "questions": [
+    //       {
+    //         "question": "The planet we live on.",
+    //         "answer": "EARTH"
+    //       },
+    //       {
+    //         "question": "The bright object that provides light during the night.",
+    //         "answer": "MOON"
+    //       }
+    //     ],
+    //     "userId": ${userId},
+    //     "imagePrompt": "A detailed digital illustration of outer space featuring Earth and Moon."
+    //   }
+    // }
+    // \`\`\``;
     let prompt = `Generate a crossword puzzle based on this extracted text: "${extractedText}".  
-    Ensure that the words and definitions used align with CEFR level: ${userCEFR} except if the named entities is the person name, album titles, band names.  
-    Use vocabulary appropriate for this level and provide a suitable topic based on the extracted text.  
-    Respond **only** with the JSON object in the following format:
-  \`\`\`json
+
+Your task:
+- Choose clue–answer pairs suitable for CEFR level: ${userCEFR} (A1 to C2).
+- Use **real-world, general English vocabulary**, not academic, technical, or scientific terms — even at C2.
+- Avoid taxonomy, scientific classifications, Latin-based biology terms (e.g., "homoiothermic", "limnetic", "cnidarian", etc.).
+- Use words commonly found in general articles, spoken language, and popular media.
+- Do **not** include words that would confuse an advanced English learner unfamiliar with biology or science.
+- Clues should be clear and accessible for the target CEFR level.
+
+Also include an **imagePrompt** — a creative description for generating an image that represents the crossword’s topic. It should work for AI image generation tools.
+
+Respond only with the following strict JSON format:
+\`\`\`json
 {
   "success": true,
   "game": {
@@ -44,10 +79,12 @@ export const generateCrosswordHints = async (
         "answer": "MOON"
       }
     ],
-    "userId": ${userId}
+    "userId": ${userId},
+    "imagePrompt": "A detailed digital illustration of outer space featuring Earth and Moon."
   }
 }
-\`\`\``;
+\`\`\`
+`;
 
     const response = await axios.post(GEMINI_API_URL, {
       contents: [{ parts: [{ text: prompt }] }],
@@ -150,6 +187,11 @@ Return a JSON object in this exact structure:
   ...
     }
     Ensure each word has **one synonym per CEFR level**. Do not add any explanations or extra text.
+    Guidelines:
+- Avoid using overly academic, rare, or scientific terms (e.g., "homoiothermic", "limnetic") even at C2.
+- Favor real-world, commonly understood words instead.
+- Prefer general English over discipline-specific vocabulary.
+
     
     Words and their synonyms:
     ${Object.entries(wordSynonyms)

@@ -14,6 +14,7 @@ export const GeminiAPI = async (req: Request, res: Response) => {
     console.log("➡️ Request Type:", type);
     console.log("➡️ userId:", userId);
     console.log("➡️ userCEFR:", userCEFR);
+    console.log("📦 extractData() received type:", type);
     if (type === "pdf") {
       if (!req.file || !req.file.buffer) {
         return res.status(400).json({ message: "PDF file is missing" });
@@ -22,6 +23,11 @@ export const GeminiAPI = async (req: Request, res: Response) => {
     } else if (type === "link") {
       if (!req.body.inputData) {
         return res.status(400).json({ message: "Link is missing" });
+      }
+      rawInput = req.body.inputData;
+    } else if (type === "text") {
+      if (!req.body.inputData) {
+        return res.status(400).json({ message: "Text input is missing" });
       }
       rawInput = req.body.inputData;
     } else {

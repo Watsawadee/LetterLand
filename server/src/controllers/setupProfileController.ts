@@ -14,6 +14,18 @@ oxfordWords.forEach((entry: { word: string; level: string }) => {
   wordToLevelMap.set(entry.word.toLowerCase(), entry.level as EnglishLevel);
 });
 
+export const getWords = async (req: Request, res: Response) => {
+  try {
+    const randomWords = [...oxfordWords].sort(() => 0.5 - Math.random());
+    const selectedWords = randomWords.slice(0, 30);
+    const wordList = selectedWords.map((entry: { word: String }) => entry.word);
+    res.status(200).json({ words: wordList });
+  } catch (error) {
+    console.error("Error fetching words:", error);
+    res.status(500).json({ error: "Failed to fetch words" });
+  }
+};
+
 export const setupProfile = async (
   req: Request,
   res: Response<SetupProfileResponse>
@@ -32,18 +44,16 @@ export const setupProfile = async (
       .filter(Boolean) as { word: string; level: EnglishLevel }[];
 
     if (mappedWords.length === 0) {
-      res
-        .status(400)
-        .json({
-          error: "No valid CEFR levels found for selected words.",
-        } as any);
+      res.status(400).json({
+        error: "No valid CEFR levels found for selected words.",
+      } as any);
 
       return;
     }
     const predictedLevel = calculateCEFRLevelFromSelectedWords(mappedWords);
 
     const updatedUser = await prisma.user.update({
-      where: { id: userId },
+      where: { id: Number(userId) },
       data: {
         age: Number(age),
         englishLevel: predictedLevel as EnglishLevel,

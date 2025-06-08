@@ -25,14 +25,14 @@ export const createUserController = async (
 ): Promise<any> => {
   try {
     const { email, username, password } = req.body;
+    if (!email || !username || !password) {
+      return res.status(400).json({ error: "Please fill in all fields" });
+    }
     const normalisedEmail = email.toLowerCase();
     const existedUser = await prisma.user.findUnique({
       where: { email: normalisedEmail },
     });
 
-    if (!normalisedEmail || !username || !password) {
-      res.status(400).json({ error: "Please fill in all fields" });
-    }
     if (existedUser) {
       res
         .status(400)
@@ -51,10 +51,13 @@ export const createUserController = async (
       },
     });
 
+    const token = jwt.sign({ userId: user.id }, JWTtoken, {
+      expiresIn: "7d",
+    });
     res.status(201).json({
       message: "Successfully Create Username",
       user,
-      shouldSetupProfile: true,
+      token,
     });
   } catch (error) {
     console.error("Create user error:", error);
@@ -65,17 +68,20 @@ export const createUserController = async (
 export const loginUserController = async (
   req: Request,
   res: Response
-): Promise<any> => {
+): Promise<void> => {
   try {
     const { email, password } = req.body;
     const normalisedEmail = email.toLowerCase();
+
     if (!normalisedEmail || !password) {
       res.status(400).json({ error: "Email and Password are required !" });
+      return;
     }
 
     const user = await prisma.user.findUnique({
       where: { email: normalisedEmail },
     });
+
     if (!user) {
       res.status(401).json({ error: "Invalid Email or Password" });
       return;
@@ -83,13 +89,15 @@ export const loginUserController = async (
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      res.status(401).json("Invalid email or Password");
+      res.status(401).json({ error: "Invalid Email or Password" });
+      return;
     }
 
     const token = jwt.sign({ userId: user.id, email: user.email }, JWTtoken, {
       expiresIn: "7d",
     });
-    return res.status(200).json({
+
+    res.status(200).json({
       message: "LoggedIn Successfully",
       token,
       user: {
@@ -97,10 +105,12 @@ export const loginUserController = async (
         email: user.email,
         username: user.username,
         age: user.age,
-        EnglishLevel: user.englishLevel,
+        hasCompletedSetup: !!(user.age && user.englishLevel),
       },
     });
+    return;
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });
+    return;
   }
 };

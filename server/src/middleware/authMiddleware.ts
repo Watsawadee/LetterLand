@@ -16,7 +16,7 @@ export const authenticatedUser = (
     res.status(401).json({ error: "Unauthorised, No token" });
     return;
   }
-  const token = authHeader.split("")[1];
+  const token = authHeader.split(" ")[1];
   try {
     const decodedToken = jwt.verify(token, JWTtoken);
     req.user = decodedToken;
