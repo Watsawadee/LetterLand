@@ -54,7 +54,8 @@
     "tamagui": "1.126.8"
   },
   "tamagui": {
-    "config": "./tamagui.config.ts""expo": "^53.0.9",
+    "config": "./tamagui.config.ts",
+    "expo": "^53.0.9",
     "expo-blur": "~14.1.4",
     "expo-constants": "~17.1.6",
     "expo-font": "~13.3.1",

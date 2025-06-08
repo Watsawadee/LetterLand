@@ -22,13 +22,13 @@ export default function Layout() {
 //   return <Stack />;
 // }
 
-import { Slot } from 'expo-router';
-import { ThemeProvider } from '../contexts/themeContext';
+// import { Slot } from 'expo-router';
+// import { ThemeProvider } from '../contexts/themeContext';
 
-export default function Layout() {
-  return (
-    <ThemeProvider>
-      <Slot />
-    </ThemeProvider>
-  );
-}
+// export default function Layout() {
+//   return (
+//     <ThemeProvider>
+//       <Slot />
+//     </ThemeProvider>
+//   );
+// }
