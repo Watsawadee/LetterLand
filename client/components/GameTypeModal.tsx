@@ -1,11 +1,12 @@
 import { Card, YStack, Text } from "tamagui";
 import { Image } from "react-native";
-import GameTypeSelection from "../../assets/images/GameTypeSelection.png";
+import GameTypeSelection from "../assets/images/GameTypeSelection.png";
 
 type GameTypeCardProps = {
   question: string;
   gameType: string;
   selected?: boolean;
+  userId: string;
 };
 
 const GameTypeCard = ({ question, gameType, selected }: GameTypeCardProps) => {

@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useRouter } from "expo-router";
-import { Alert } from "react-native";
+import { Alert, ImageBackground } from "react-native";
 import { Button, Input, YStack, Card, Text } from "tamagui";
 import { useLogin } from "@/hooks/useLogins";
 import * as SecureStore from "expo-secure-store";
 import { storeToken } from "@/utils/storeToken";
+import GardenBackground from "@/components/backgroundTheme/gardenBackground";
 
 const LoginScreen = () => {
   const [email, setEmail] = useState("");
@@ -43,6 +44,14 @@ const LoginScreen = () => {
       alignItems="center"
       backgroundColor={"white"}
     >
+      <GardenBackground
+        style={{
+          position: "absolute",
+          bottom: 0,
+          width: "100%",
+          zIndex: -1,
+        }}
+      />
       <Card
         elevate
         bordered

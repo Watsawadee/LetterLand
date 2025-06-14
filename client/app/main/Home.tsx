@@ -1,5 +1,5 @@
 import { Button, Card, Text, YStack } from "tamagui";
-import UserOverviewCard from "../components/UserOverViewCard";
+import UserOverviewCard from "../../components/UserOverViewCard";
 import WordLearn from "../../assets/images/WordLearn.png";
 import Clock from "../../assets/images/Clock.png";
 import { getLoggedInUserId } from "@/utils/auth";
