@@ -1,5 +1,6 @@
-import React from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React from "react";
+import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import Slider from "@react-native-community/slider";
 
 interface FontSizeModalProps {
   visible: boolean;
@@ -9,81 +10,64 @@ interface FontSizeModalProps {
   onClose: () => void;
 }
 
-const FontSizeModal: React.FC<FontSizeModalProps> = ({
+export default function FontSizeModal({
   visible,
   tempFontSize,
   setTempFontSize,
   onConfirm,
   onClose,
-}) => {
+}: FontSizeModalProps) {
   return (
-    <Modal visible={visible} transparent animationType="slide">
-      <View style={styles.modalContainer}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Adjust Font Size</Text>
+    <Modal animationType="fade" transparent visible={visible}>
+      <View style={styles.backdrop}>
+        <View style={styles.container}>
+          <Text style={styles.title}>Adjust Font Size</Text>
+          <Slider
+            style={{ width: 200, height: 40 }}
+            minimumValue={32}
+            maximumValue={40}
+            step={1}
+            value={tempFontSize}
+            onValueChange={setTempFontSize}
+          />
+          <Text style={styles.fontSizeText}>{tempFontSize}px</Text>
 
-          <View style={styles.buttonRow}>
-            <TouchableOpacity onPress={() => setTempFontSize(tempFontSize + 2)}>
-              <Text style={styles.adjustText}>A+</Text>
+          <View style={styles.buttons}>
+            <TouchableOpacity onPress={onClose} style={styles.button}>
+              <Text style={styles.buttonText}>Cancel</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => setTempFontSize(tempFontSize > 8 ? tempFontSize - 2 : 8)}>
-              <Text style={styles.adjustText}>A-</Text>
+            <TouchableOpacity
+              onPress={onConfirm}
+              style={[styles.button, styles.confirm]}
+            >
+              <Text style={[styles.buttonText, { color: "white" }]}>OK</Text>
             </TouchableOpacity>
           </View>
-
-          <TouchableOpacity onPress={onConfirm} style={styles.adjustButton}>
-            <Text style={styles.adjustButtonText}>Adjust</Text>
-          </TouchableOpacity>
         </View>
       </View>
     </Modal>
   );
-};
-
-export default FontSizeModal;
+}
 
 const styles = StyleSheet.create({
-  modalContainer: {
+  backdrop: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: "#00000088",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  modalContent: {
-    backgroundColor: '#fff',
+  container: {
+    width: 280,
+    backgroundColor: "white",
+    borderRadius: 8,
     padding: 20,
-    borderRadius: 12,
-    alignItems: 'center',
-    width: '80%',
+    alignItems: "center",
   },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
-    marginBottom: 20,
-  },
-  adjustText: {
-    fontSize: 20,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    backgroundColor: '#eee',
-    borderRadius: 10,
-    marginHorizontal: 10,
-  },
-  adjustButton: {
-    backgroundColor: '#007bff',
-    paddingHorizontal: 30,
-    paddingVertical: 10,
-    borderRadius: 10,
-  },
-  adjustButtonText: {
-    color: '#fff',
-    fontSize: 16,
-  },
+  title: { fontSize: 18, fontWeight: "bold", marginBottom: 20 },
+  fontSizeText: { fontSize: 16, marginVertical: 10 },
+  buttons: { flexDirection: "row", justifyContent: "flex-end", width: "100%" },
+  button: { paddingHorizontal: 15, paddingVertical: 8, marginLeft: 10 },
+  buttonText: { fontSize: 16, color: "blue" },
+  confirm: { backgroundColor: "blue", borderRadius: 4 },
 });
