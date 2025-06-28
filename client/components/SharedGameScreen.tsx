@@ -1,19 +1,12 @@
-import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, StyleSheet, Modal, Text, TouchableOpacity } from "react-native";
 import GameControls from "./GameControls";
 import GameBoard from "./GameBoard";
-import QuestionListItem from "./QuestionListItem";
+import QuestionListSlider from "./QuestionListSlider";
+import WordCard from "./WordCard";
 import { useRouter } from "expo-router";
-import { QuestionAnswer } from "../data/gameData";
 import { useGameLogic } from "../hooks/useGameLogic";
-
-type Props = {
-  mode: "word" | "crossword";
-  title: string;
-  CELL_SIZE: number;
-  GRID_SIZE: number;
-  questionsAndAnswers: QuestionAnswer[];
-};
+import { GameProps } from "../types/type";
 
 export default function SharedGameScreen({
   mode,
@@ -21,86 +14,149 @@ export default function SharedGameScreen({
   CELL_SIZE,
   GRID_SIZE,
   questionsAndAnswers,
-}: Props) {
+}: GameProps) {
   const router = useRouter();
+  const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
+  const [isAllFoundModalVisible, setIsAllFoundModalVisible] = useState(false);
 
   const {
     grid,
     selectedCells,
-    currentWord,
     foundWords,
-    isCorrect,
     hintCell,
-    fontModalVisible,
-    fontSize,
-    tempFontSize,
-    confirmRestartVisible,
-    setFontModalVisible,
-    setTempFontSize,
-    setFontSize,
-    setConfirmRestartVisible,
+    fontSettings,
+    confirmRestart,
     resetGame,
-    showHint,
+    showHintForAnswer,
     layoutRef,
     panResponder,
-  } = useGameLogic({
-    GRID_SIZE,
-    CELL_SIZE,
-    questionsAndAnswers,
-    mode,
-  });
+  } = useGameLogic({ GRID_SIZE, CELL_SIZE, questionsAndAnswers, mode });
+
+  const foundWordsList = foundWords.map((fw) => fw.word);
+
+  useEffect(() => {
+    const allFound = questionsAndAnswers.every((qa) =>
+      foundWordsList.includes(qa.answer)
+    );
+
+    if (allFound) {
+      const timeout = setTimeout(() => {
+        setIsAllFoundModalVisible(true);
+      }, 100);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [foundWordsList, questionsAndAnswers]);
+
+  const [lastHintIndex, setLastHintIndex] = useState(-1);
+
+  const onShowHint = () => {
+    if (mode === "crossword_search") {
+      const currentQA = questionsAndAnswers[activeQuestionIndex];
+      if (currentQA) {
+        showHintForAnswer(currentQA.answer);
+      }
+    } else {
+      const total = questionsAndAnswers.length;
+      for (let offset = 1; offset <= total; offset++) {
+        const nextIndex = (lastHintIndex + offset) % total;
+        const nextAnswer = questionsAndAnswers[nextIndex].answer;
+        if (!foundWordsList.includes(nextAnswer)) {
+          showHintForAnswer(nextAnswer);
+          setLastHintIndex(nextIndex);
+          return;
+        }
+      }
+    }
+  };
+
+  const handleCloseModal = () => {
+    setIsAllFoundModalVisible(false);
+    resetGame();
+    setActiveQuestionIndex(0);
+    setLastHintIndex(-1);
+  };
 
   return (
     <View style={styles.container}>
-      <GameControls
-        title={title}
-        confirmRestartVisible={confirmRestartVisible}
-        fontModalVisible={fontModalVisible}
-        tempFontSize={tempFontSize}
-        setTempFontSize={setTempFontSize}
-        setFontSize={setFontSize}
-        setFontModalVisible={setFontModalVisible}
-        setConfirmRestartVisible={setConfirmRestartVisible}
-        onRetryConfirm={resetGame}
-        onShowHint={showHint}
-        onFontSizePress={() => setFontModalVisible(true)}
-        onBackHome={() => router.replace("/")}
-      />
-
-      <GameBoard
-        grid={grid}
-        CELL_SIZE={CELL_SIZE}
-        selectedCells={selectedCells}
-        foundWords={foundWords}
-        hintCell={hintCell}
-        fontSize={fontSize}
-        questionsAndAnswers={questionsAndAnswers}
-        panHandlers={panResponder.panHandlers}
-        layoutRef={layoutRef}
-        renderQuestionItem={(q: QuestionAnswer, found: boolean) => (
-          <QuestionListItem
-            key={q.answer}
-            item={q}
-            found={found}
-            showQuestion={mode === "crossword"}
+      <View style={styles.topRow}>
+        <View style={styles.leftColumn}>
+          <GameControls
+            title={title}
+            fontSettings={fontSettings}
+            confirmRestart={confirmRestart}
+            onRetryConfirm={handleCloseModal}
+            onShowHint={onShowHint}
+            onBackHome={() => router.replace("/")}
           />
-        )}
-      />
+        </View>
 
-      {currentWord !== "" ? (
-        <Text
-          style={[
-            styles.currentWord,
-            {
-              color: isCorrect === null ? "#333" : isCorrect ? "green" : "red",
-            },
-          ]}
-        >
-          {currentWord}
-        </Text>
-      ) : (
-        <Text style={styles.currentWord}> </Text>
-      )}
+        <View style={styles.rightColumn}>
+          <GameBoard
+            grid={grid}
+            CELL_SIZE={CELL_SIZE}
+            selectedCells={selectedCells}
+            foundWords={foundWords}
+            hintCell={hintCell}
+            fontSize={fontSettings.fontSize}
+            panHandlers={panResponder.panHandlers}
+            layoutRef={layoutRef}
+          />
+        </View>
+      </View>
+
+      <View style={styles.itemWrapper}>
+        {mode === "crossword_search" ? (
+          <QuestionListSlider
+            questionsAndAnswers={questionsAndAnswers}
+            foundWords={foundWordsList}
+            showQuestion
+            activeIndex={activeQuestionIndex}
+            onChangeIndex={setActiveQuestionIndex}
+          />
+        ) : (
+          <View style={styles.wordListWrapper}>
+            {[0, 1].map((row) => (
+              <View key={row} style={styles.wordRow}>
+                {questionsAndAnswers
+                  .slice(
+                    row * Math.ceil(questionsAndAnswers.length / 2),
+                    (row + 1) * Math.ceil(questionsAndAnswers.length / 2)
+                  )
+                  .map(({ answer }) => (
+                    <WordCard
+                      key={answer}
+                      word={answer}
+                      found={foundWordsList.includes(answer)}
+                    />
+                  ))}
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+
+      <Modal
+        visible={isAllFoundModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCloseModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalText}>
+              🎉 Congratulations! You found all words! 🎉
+            </Text>
+
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={handleCloseModal}
+            >
+              <Text style={styles.modalButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -108,9 +164,67 @@ export default function SharedGameScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    padding: 20,
+    justifyContent: "flex-start",
+  },
+  topRow: {
+    flexDirection: "row",
+    flex: 1,
+    marginBottom: 10,
+  },
+  leftColumn: {
+    width: 300,
+    justifyContent: "center",
+    marginRight: 30,
+  },
+  rightColumn: {
+    flex: 1,
+    marginTop: 20,
+    justifyContent: "center",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
   },
-  currentWord: { fontSize: 22, marginTop: 10 },
+  modalContent: {
+    width: "80%",
+    backgroundColor: "white",
+    padding: 25,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  modalText: {
+    fontSize: 18,
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  modalButton: {
+    backgroundColor: "#007AFF",
+    paddingVertical: 10,
+    paddingHorizontal: 25,
+    borderRadius: 6,
+  },
+  modalButtonText: {
+    color: "white",
+    fontSize: 16,
+  },
+  itemWrapper: {
+    flexDirection: "row",
+    justifyContent: "center",
+    flexWrap: "wrap",
+  },
+  wordListWrapper: {
+    backgroundColor: "#f0f0f0",
+    padding: 10,
+    borderRadius: 12,
+    alignItems: "center",
+    minWidth: "100%",
+  },
+  wordRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    flexWrap: "wrap",
+  },
 });

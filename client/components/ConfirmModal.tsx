@@ -6,19 +6,10 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from "react-native";
-
-interface ConfirmModalProps {
-  visible: boolean;
-  title?: string;
-  message: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-  confirmText?: string;
-  cancelText?: string;
-}
+import { ConfirmModalProps } from "../types/type";
 
 export default function ConfirmModal({
-  visible,
+  visible = false,
   title,
   message,
   onConfirm,
@@ -27,7 +18,12 @@ export default function ConfirmModal({
   cancelText = "Cancel",
 }: ConfirmModalProps) {
   return (
-    <Modal animationType="fade" transparent visible={visible}>
+    <Modal
+      animationType="fade"
+      transparent
+      visible={visible}
+      accessibilityLabel="Confirmation Modal"
+    >
       <View style={styles.backdrop}>
         <View style={styles.container}>
           {title && <Text style={styles.title}>{title}</Text>}
@@ -38,8 +34,13 @@ export default function ConfirmModal({
               <Text style={styles.buttonText}>{cancelText}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={onConfirm} style={[styles.button, styles.confirm]}>
-              <Text style={[styles.buttonText, { color: "white" }]}>{confirmText}</Text>
+            <TouchableOpacity
+              onPress={onConfirm}
+              style={[styles.button, styles.confirm]}
+            >
+              <Text style={[styles.buttonText, { color: "white" }]}>
+                {confirmText}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>

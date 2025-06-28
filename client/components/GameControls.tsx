@@ -1,94 +1,59 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Button } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import FontSizeModal from "./FontSizeModal";
 import ConfirmModal from "./ConfirmModal";
-
-interface GameHeaderProps {
-  title: string;
-  onRetry: () => void;
-  onShowHint: () => void;
-  onFontSizePress: () => void;
-  onBackHome: () => void;
-}
-
-function GameHeader({
-  title,
-  onRetry,
-  onShowHint,
-  onFontSizePress,
-  onBackHome,
-}: GameHeaderProps) {
-  return (
-    <View style={styles.headerContainer}>
-      <TouchableOpacity onPress={onBackHome} style={styles.button}>
-        <Text style={styles.buttonText}>Home</Text>
-      </TouchableOpacity>
-
-      <Text style={styles.title}>{title}</Text>
-
-      <View style={styles.rightButtons}>
-        <TouchableOpacity onPress={onRetry} style={styles.button}>
-          <Text style={styles.buttonText}>Retry</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={onShowHint} style={styles.button}>
-          <Text style={styles.buttonText}>Hint</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={onFontSizePress} style={styles.button}>
-          <Text style={styles.buttonText}>Font Size</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
-
-interface GameControlsProps {
-  title: string;
-  confirmRestartVisible: boolean;
-  fontModalVisible: boolean;
-  tempFontSize: number;
-  setTempFontSize: (size: number) => void;
-  setFontSize: (size: number) => void;
-  setFontModalVisible: (visible: boolean) => void;
-  setConfirmRestartVisible: (visible: boolean) => void;
-  onRetryConfirm: () => void;
-  onShowHint: () => void;
-  onFontSizePress: () => void;
-  onBackHome: () => void;
-}
+import { GameControlsProps } from "../types/type";
 
 export default function GameControls({
   title,
-  confirmRestartVisible,
-  fontModalVisible,
-  tempFontSize,
-  setTempFontSize,
-  setFontSize,
-  setFontModalVisible,
-  setConfirmRestartVisible,
-  onRetryConfirm,
+  fontSettings,
+  confirmRestart,
   onShowHint,
-  onFontSizePress,
   onBackHome,
+  onRetryConfirm,
 }: GameControlsProps) {
+  const {
+    fontModalVisible,
+    tempFontSize,
+    setTempFontSize,
+    setFontModalVisible,
+    setFontSize,
+  } = fontSettings;
+
+  const currentTime = new Date().toLocaleTimeString();
+
   return (
     <View style={styles.container}>
-      <GameHeader
-        title={title}
-        onRetry={() => setConfirmRestartVisible(true)}
-        onShowHint={onShowHint}
-        onFontSizePress={onFontSizePress}
-        onBackHome={onBackHome}
-      />
+      <View style={styles.topLeft}>
+        <TouchableOpacity onPress={onBackHome} style={styles.button}>
+          <Text style={styles.buttonText}>Home</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.centerLeft}>
+        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.time}>{currentTime}</Text>
+        <View style={styles.buttonsRow}>
+          <TouchableOpacity
+            onPress={() => setFontModalVisible(true)}
+            style={[styles.button]}
+          >
+            <Text style={styles.buttonText}>Font Size</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={onShowHint} style={[styles.button]}>
+            <Text style={styles.buttonText}>Hint</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
 
       <ConfirmModal
-        visible={confirmRestartVisible}
+        visible={confirmRestart.visible}
         message="If you exit now, your progress in this grid will be lost. Are you sure?"
         confirmText="Yes"
         cancelText="No"
         onConfirm={onRetryConfirm}
-        onCancel={() => setConfirmRestartVisible(false)}
+        onCancel={() => confirmRestart.setVisible(false)}
       />
 
       <FontSizeModal
@@ -108,34 +73,42 @@ export default function GameControls({
 const styles = StyleSheet.create({
   container: {
     width: "100%",
-    flexDirection: "column",
-    justifyContent: "flex-start",
-    alignItems: "stretch",
-    marginBottom: 10,
     paddingHorizontal: 10,
+    paddingVertical: 20,
+    justifyContent: "center",
   },
-  headerContainer: {
-    width: "100%",
-    paddingVertical: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+  topLeft: {
+    position: "absolute",
+    top: 10,
+    left: 10,
+  },
+  centerLeft: {
+    marginTop: 60,
+    alignItems: "flex-start",
   },
   title: {
     fontSize: 20,
     fontWeight: "bold",
-    flex: 1,
-    textAlign: "center",
+    marginBottom: 6,
+    width: "100%",
+  },
+  time: {
+    fontSize: 16,
+    color: "#666",
+    marginBottom: 12,
+  },
+  buttonsRow: {
+    flexDirection: "row",
+    width: 160,
+    justifyContent: "space-between",
   },
   button: {
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 6,
+    borderRadius: 4,
   },
   buttonText: {
     color: "blue",
-  },
-  rightButtons: {
-    flexDirection: "row",
-    alignItems: "center",
+    fontWeight: "600",
   },
 });

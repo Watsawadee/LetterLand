@@ -6,14 +6,9 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
+import { GameSelectionModalProps } from '../types/type';
 
-type Props = {
-  visible: boolean;
-  onClose: () => void;
-  onSelect: (type: 'word' | 'crossword') => void;
-};
-
-export default function GameSelectionModal({ visible, onClose, onSelect }: Props) {
+export default function GameSelectionModal({ visible, onClose, onSelect }: GameSelectionModalProps) {
   return (
     <Modal
       animationType="slide"

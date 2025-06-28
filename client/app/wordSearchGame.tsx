@@ -5,9 +5,9 @@ import { questionsAndAnswers } from "../data/gameData";
 export default function WordSearchGame() {
   return (
     <SharedGameScreen
-      mode="word"
+      mode="wordsearch"
       title="Find all the words!"
-      CELL_SIZE={50}
+      CELL_SIZE={60}
       GRID_SIZE={10}
       questionsAndAnswers={questionsAndAnswers}
     />

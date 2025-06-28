@@ -1,14 +1,15 @@
 import React from "react";
 import SharedGameScreen from "../components/SharedGameScreen";
 import { questionsAndAnswers } from "../data/gameData";
+import WordCard from "@/components/WordCard";
 
 export default function CrosswordSearchGame() {
   return (
     <SharedGameScreen
-      mode="crossword"
-      title="Answer the clues!"
-      CELL_SIZE={50}
-      GRID_SIZE={10}
+      mode="crossword_search"
+      title="Titlee!"
+      CELL_SIZE={55}
+      GRID_SIZE={12}
       questionsAndAnswers={questionsAndAnswers}
     />
   );
