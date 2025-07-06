@@ -30,6 +30,7 @@ export default function SharedGameScreen({
     showHintForAnswer,
     layoutRef,
     panResponder,
+    revealedAnswers,
   } = useGameLogic({ GRID_SIZE, CELL_SIZE, questionsAndAnswers, mode });
 
   const foundWordsList = foundWords.map((fw) => fw.word);
@@ -113,6 +114,7 @@ export default function SharedGameScreen({
             showQuestion
             activeIndex={activeQuestionIndex}
             onChangeIndex={setActiveQuestionIndex}
+            revealedAnswers={revealedAnswers}
           />
         ) : (
           <View style={styles.wordListWrapper}>

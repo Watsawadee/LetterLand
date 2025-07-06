@@ -1,7 +1,6 @@
 import React from "react";
 import SharedGameScreen from "../components/SharedGameScreen";
 import { questionsAndAnswers } from "../data/gameData";
-import WordCard from "@/components/WordCard";
 
 export default function CrosswordSearchGame() {
   return (

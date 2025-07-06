@@ -22,6 +22,7 @@ export function useGameLogic({
   const [gameState, setGameState] = useState<GameState>(initialGameState);
   const [hintCell, setHintCell] = useState<[number, number] | null>(null);
   const [confirmRestartVisible, setConfirmRestartVisible] = useState(false);
+  const [revealedAnswers, setRevealedAnswers] = useState<string[]>([]);
 
   const gridRef = useRef<string[][]>([]);
   const layoutRef = useRef({ x: 0, y: 0 });
@@ -37,20 +38,27 @@ export function useGameLogic({
     answerPositionsRef.current = positions;
     setGameState(initialGameState);
     setHintCell(null);
+    setRevealedAnswers([]);
   };
 
   const showHintForAnswer = (answer: string) => {
-    const pos = answerPositionsRef.current[answer];
-    if (pos?.length) {
-      setHintCell(null);
-      setTimeout(() => setHintCell(pos[0]), 10);
+    if (mode === "wordsearch") {
+      const pos = answerPositionsRef.current[answer];
+      if (pos?.length) {
+        setHintCell(null);
+        setTimeout(() => setHintCell(pos[0]), 10);
+      }
+    } else if (mode === "crossword_search") {
+      if (!revealedAnswers.includes(answer)) {
+        setRevealedAnswers((prev) => [...prev, answer]);
+      }
     }
   };
 
   const confirmRestart = {
     visible: confirmRestartVisible,
     setVisible: setConfirmRestartVisible,
-    
+
     onConfirm: () => {
       initializeGame();
       setConfirmRestartVisible(false);
@@ -80,6 +88,7 @@ export function useGameLogic({
     confirmRestart,
     resetGame: confirmRestart.onConfirm,
     showHintForAnswer,
+    revealedAnswers,
     mode,
     selectedCells: gameState.selectedCells,
     currentWord: gameState.currentWord,

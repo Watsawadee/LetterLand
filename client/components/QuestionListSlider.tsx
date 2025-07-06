@@ -8,6 +8,7 @@ export default function QuestionListSlider({
   showQuestion,
   activeIndex,
   onChangeIndex,
+  revealedAnswers = [],
 }: QuestionListSliderProps) {
   const currentQA = questionsAndAnswers[activeIndex];
   const found = foundWords.includes(currentQA.answer);
@@ -45,14 +46,22 @@ export default function QuestionListSlider({
             numberOfLines={1}
             ellipsizeMode="tail"
           >
-            {showQuestion ? currentQA.question : currentQA.answer}
+            {showQuestion ? currentQA.name : currentQA.answer}
             {found && " ✓"}
           </Text>
 
           {showQuestion && (
-            <Text style={[styles.answerText, !found && styles.hiddenAnswer]}>
-              {found ? `Answer: ${currentQA.answer}` : " "}
-            </Text>
+            <>
+              {found ? (
+                <Text style={styles.answerText}>
+                  Answer: {currentQA.answer}
+                </Text>
+              ) : revealedAnswers.includes(currentQA.answer) ? (
+                <Text style={styles.hintText}>Hint: {currentQA.hint}</Text>
+              ) : (
+                <Text style={styles.hiddenAnswer}> </Text>
+              )}
+            </>
           )}
         </View>
 
@@ -149,5 +158,12 @@ const styles = StyleSheet.create({
   },
   hiddenAnswer: {
     color: "transparent",
+  },
+  hintText: {
+    marginTop: 8,
+    fontStyle: "italic",
+    color: "#555",
+    textAlign: "center",
+    fontSize: 14,
   },
 });

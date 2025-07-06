@@ -14,8 +14,9 @@ export type GameProps = {
 
 // gameData.ts
 export interface QuestionAnswer {
-  question: string;
+  name: string;
   answer: string;
+  hint: string;
 }
 
 // GameControls.tsx
@@ -88,13 +89,6 @@ export type GameSelectionModalProps = {
   onSelect: (type: "word" | "crossword") => void;
 };
 
-// QuestionListItem.tsx
-export interface QuestionListItemProps {
-  item: QuestionAnswer;
-  found: boolean;
-  showQuestion: boolean;
-}
-
 // QuestionListSlider.tsx
 export type QuestionListSliderProps = {
   questionsAndAnswers: QuestionAnswer[];
@@ -102,6 +96,7 @@ export type QuestionListSliderProps = {
   showQuestion: boolean;
   activeIndex: number;
   onChangeIndex: (index: number) => void;
+  revealedAnswers?: string[];
 };
 
 // UseGameLogic.ts
