@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { generateGrid } from "../utils/gridGenerator";
 import { useDragGesture } from "../utils/dragGesture";
 import { useFontSizeSettings } from "./useFontSizeSettings";
@@ -23,6 +23,7 @@ export function useGameLogic({
   const [hintCell, setHintCell] = useState<[number, number] | null>(null);
   const [confirmRestartVisible, setConfirmRestartVisible] = useState(false);
   const [revealedAnswers, setRevealedAnswers] = useState<string[]>([]);
+  const [activeHintWord, setActiveHintWord] = useState<string | null>(null);
 
   const gridRef = useRef<string[][]>([]);
   const layoutRef = useRef({ x: 0, y: 0 });
@@ -30,7 +31,7 @@ export function useGameLogic({
 
   const fontSettings = useFontSizeSettings();
 
-  const initializeGame = () => {
+  const initializeGame = useCallback(() => {
     const answers = questionsAndAnswers.map((q) => q.answer);
     const { grid, positions } = generateGrid(answers, GRID_SIZE);
     setGrid(grid);
@@ -39,35 +40,43 @@ export function useGameLogic({
     setGameState(initialGameState);
     setHintCell(null);
     setRevealedAnswers([]);
-  };
+    setActiveHintWord(null);
+  }, [questionsAndAnswers, GRID_SIZE]);
 
-  const showHintForAnswer = (answer: string) => {
-    if (mode === "wordsearch") {
-      const pos = answerPositionsRef.current[answer];
-      if (pos?.length) {
-        setHintCell(null);
-        setTimeout(() => setHintCell(pos[0]), 10);
+  const showHintForAnswer = useCallback(
+    (answer: string) => {
+      if (mode === "wordsearch") {
+        const positions = answerPositionsRef.current[answer];
+        if (positions?.length) {
+          setHintCell(positions[0]);
+          setActiveHintWord(answer);
+        }
+      } else if (mode === "crossword_search") {
+        if (!revealedAnswers.includes(answer)) {
+          setRevealedAnswers((prev) => [...prev, answer]);
+        }
       }
-    } else if (mode === "crossword_search") {
-      if (!revealedAnswers.includes(answer)) {
-        setRevealedAnswers((prev) => [...prev, answer]);
-      }
-    }
-  };
-
-  const confirmRestart = {
-    visible: confirmRestartVisible,
-    setVisible: setConfirmRestartVisible,
-
-    onConfirm: () => {
-      initializeGame();
-      setConfirmRestartVisible(false);
     },
-  };
+    [mode, revealedAnswers]
+  );
+
+  const onConfirmRestart = useCallback(() => {
+    initializeGame();
+    setConfirmRestartVisible(false);
+  }, [initializeGame]);
+
+  const confirmRestart = useMemo(
+    () => ({
+      visible: confirmRestartVisible,
+      setVisible: setConfirmRestartVisible,
+      onConfirm: onConfirmRestart,
+    }),
+    [confirmRestartVisible, onConfirmRestart]
+  );
 
   useEffect(() => {
     initializeGame();
-  }, [questionsAndAnswers, GRID_SIZE]);
+  }, [initializeGame]);
 
   const panResponder = useDragGesture({
     GRID_SIZE,
@@ -79,6 +88,15 @@ export function useGameLogic({
     questionsAndAnswers,
   });
 
+  useEffect(() => {
+    if (!activeHintWord) return;
+
+    const isFound = gameState.foundWords.some(
+      (fw) => fw.word === activeHintWord
+    );
+    if (isFound) setActiveHintWord(null);
+  }, [gameState.foundWords, activeHintWord]);
+
   return {
     grid,
     layoutRef,
@@ -86,9 +104,10 @@ export function useGameLogic({
     hintCell,
     fontSettings,
     confirmRestart,
-    resetGame: confirmRestart.onConfirm,
+    resetGame: onConfirmRestart,
     showHintForAnswer,
     revealedAnswers,
+    activeHintWord,
     mode,
     selectedCells: gameState.selectedCells,
     currentWord: gameState.currentWord,

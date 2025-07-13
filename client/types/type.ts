@@ -27,6 +27,8 @@ export interface GameControlsProps {
   onShowHint: () => void;
   onBackHome: () => void;
   onRetryConfirm: () => void;
+  hintCount: number;
+  isHintDisabled: boolean;
 }
 
 export interface FontSettingsGroup {
@@ -123,7 +125,7 @@ export type Params = {
   layoutRef: RefObject<{ x: number; y: number }>;
   gameState: GameState;
   setGameState: Dispatch<SetStateAction<GameState>>;
-  questionsAndAnswers: { question: string; answer: string }[];
+  questionsAndAnswers: QuestionAnswer[];
 };
 
 // WordCard.tsx

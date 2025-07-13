@@ -18,6 +18,7 @@ export default function SharedGameScreen({
   const router = useRouter();
   const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
   const [isAllFoundModalVisible, setIsAllFoundModalVisible] = useState(false);
+  const [hintCount, setHintCount] = useState(3);
 
   const {
     grid,
@@ -31,6 +32,7 @@ export default function SharedGameScreen({
     layoutRef,
     panResponder,
     revealedAnswers,
+    activeHintWord,
   } = useGameLogic({ GRID_SIZE, CELL_SIZE, questionsAndAnswers, mode });
 
   const foundWordsList = foundWords.map((fw) => fw.word);
@@ -50,13 +52,27 @@ export default function SharedGameScreen({
   }, [foundWordsList, questionsAndAnswers]);
 
   const [lastHintIndex, setLastHintIndex] = useState(-1);
+  const isHintDisabled =
+    hintCount <= 0 ||
+    (mode === "crossword_search" &&
+      revealedAnswers.includes(
+        questionsAndAnswers[activeQuestionIndex].answer
+      )) ||
+    (mode === "wordsearch" && activeHintWord !== null);
 
   const onShowHint = () => {
+    if (hintCount <= 0) return;
+
     if (mode === "crossword_search") {
       const currentQA = questionsAndAnswers[activeQuestionIndex];
-      if (currentQA) {
-        showHintForAnswer(currentQA.answer);
+      if (!currentQA) return;
+
+      if (revealedAnswers.includes(currentQA.answer)) {
+        return;
       }
+
+      showHintForAnswer(currentQA.answer);
+      setHintCount((prev) => prev - 1);
     } else {
       const total = questionsAndAnswers.length;
       for (let offset = 1; offset <= total; offset++) {
@@ -65,6 +81,7 @@ export default function SharedGameScreen({
         if (!foundWordsList.includes(nextAnswer)) {
           showHintForAnswer(nextAnswer);
           setLastHintIndex(nextIndex);
+          setHintCount((prev) => prev - 1);
           return;
         }
       }
@@ -89,6 +106,8 @@ export default function SharedGameScreen({
             onRetryConfirm={handleCloseModal}
             onShowHint={onShowHint}
             onBackHome={() => router.replace("/")}
+            hintCount={hintCount}
+            isHintDisabled={isHintDisabled}
           />
         </View>
 
@@ -117,22 +136,18 @@ export default function SharedGameScreen({
             revealedAnswers={revealedAnswers}
           />
         ) : (
-          <View style={styles.wordListWrapper}>
-            {[0, 1].map((row) => (
-              <View key={row} style={styles.wordRow}>
-                {questionsAndAnswers
-                  .slice(
-                    row * Math.ceil(questionsAndAnswers.length / 2),
-                    (row + 1) * Math.ceil(questionsAndAnswers.length / 2)
-                  )
-                  .map(({ answer }) => (
-                    <WordCard
-                      key={answer}
-                      word={answer}
-                      found={foundWordsList.includes(answer)}
-                    />
-                  ))}
-              </View>
+          <View
+            style={[
+              styles.wordListWrapper,
+              { flexDirection: "row", flexWrap: "wrap" },
+            ]}
+          >
+            {questionsAndAnswers.map(({ answer }) => (
+              <WordCard
+                key={answer}
+                word={answer}
+                found={foundWordsList.includes(answer)}
+              />
             ))}
           </View>
         )}
@@ -222,7 +237,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 12,
     alignItems: "center",
-    minWidth: "100%",
+    justifyContent: "center",
   },
   wordRow: {
     flexDirection: "row",

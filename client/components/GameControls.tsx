@@ -11,6 +11,8 @@ export default function GameControls({
   onShowHint,
   onBackHome,
   onRetryConfirm,
+  hintCount,
+  isHintDisabled,
 }: GameControlsProps) {
   const {
     fontModalVisible,
@@ -41,10 +43,23 @@ export default function GameControls({
             <Text style={styles.buttonText}>Font Size</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={onShowHint} style={[styles.button]}>
-            <Text style={styles.buttonText}>Hint</Text>
+          <TouchableOpacity
+            onPress={onShowHint}
+            disabled={isHintDisabled}
+            style={[styles.button, isHintDisabled && styles.disabledButton]}
+          >
+            <Text
+              style={[
+                styles.buttonText,
+                isHintDisabled && styles.disabledButtonText,
+              ]}
+            >
+              Hint
+            </Text>
           </TouchableOpacity>
         </View>
+
+        <Text style={{ fontSize: 16 }}>Hints left: {hintCount}</Text>
       </View>
 
       <ConfirmModal
@@ -99,8 +114,8 @@ const styles = StyleSheet.create({
   },
   buttonsRow: {
     flexDirection: "row",
-    width: 160,
     justifyContent: "space-between",
+    padding: 10,
   },
   button: {
     paddingHorizontal: 8,
@@ -110,5 +125,11 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "blue",
     fontWeight: "600",
+  },
+  disabledButton: {
+    backgroundColor: "#f0f0f0",
+  },
+  disabledButtonText: {
+    color: "#888",
   },
 });
