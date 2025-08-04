@@ -1,4 +1,4 @@
-import { View, Text, Slider, Button } from 'react-native';
+import { View, Text, Button } from 'react-native';
 import { useTheme } from '../contexts/themeContext';
 
 export default function SettingsScreen() {
@@ -7,7 +7,7 @@ export default function SettingsScreen() {
   return (
     <View style={{ padding: 20 }}>
       <Text style={{ fontSize }}>Font Size: {fontSize}</Text>
-      <Slider minimumValue={12} maximumValue={40} step={1} value={fontSize} onValueChange={setFontSize} />
+      {/* <Slider minimumValue={12} maximumValue={40} step={1} value={fontSize} onValueChange={setFontSize} /> */}
       <Button title="Set Primary Color: Blue" onPress={() => setPrimaryColor('blue')} />
     </View>
   );

@@ -8,6 +8,8 @@ import {
 } from "react-native";
 import FontSizeModal from "../components/FontSizeModal";
 import ConfirmModal from "../components/ConfirmModal";
+import { useRouter } from "expo-router";
+import { Button } from "react-native-paper";
 
 const CELL_SIZE = 50;
 const GRID_SIZE = 10;
@@ -82,6 +84,12 @@ const WordSearchGame = () => {
     return "";
   };
 
+  const router = useRouter();
+
+  const navigateLogin = () => {
+    router.replace('/authentication/Login');
+  };
+
   const generateGrid = (
     words: string[]
   ): { grid: string[][]; positions: Record<string, [number, number][]> } => {
@@ -133,7 +141,7 @@ const WordSearchGame = () => {
     };
 
     let newGrid: string[][] | null;
-    while (!(newGrid = placeAllWords())) {}
+    while (!(newGrid = placeAllWords())) { }
 
     for (let i = 0; i < GRID_SIZE; i++) {
       for (let j = 0; j < GRID_SIZE; j++) {
@@ -422,6 +430,9 @@ const WordSearchGame = () => {
           {currentWord}
         </Text>
       )}
+      <Button onPress={navigateLogin}>
+        Nav to Login
+      </Button>
     </View>
   );
 };

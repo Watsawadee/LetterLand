@@ -1,19 +1,20 @@
 import { Slot } from "expo-router";
 import { ThemeProvider } from "../contexts/themeContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { TamaguiProvider } from "tamagui";
-import config from "../tamagui.config";
+import { PaperProvider } from "react-native-paper";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 const queryClient = new QueryClient();
 
 export default function Layout() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TamaguiProvider config={config}>
+      <PaperProvider>
         <ThemeProvider>
           <Slot />
+          {/* <ReactQueryDevtools initialIsOpen={true} /> */}
         </ThemeProvider>
-      </TamaguiProvider>
+      </PaperProvider>
     </QueryClientProvider>
   );
 }

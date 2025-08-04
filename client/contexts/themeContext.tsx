@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState } from "react";
 
-export const useTheme = () => useContext(ThemeContext);
 
 const ThemeContext = createContext<any>(null);
+export const useTheme = () => useContext(ThemeContext);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [fontSize, setFontSize] = useState(20);

@@ -3,17 +3,25 @@ import prisma from "../configs/db";
 
 export const saveGameFromGemini = async (req: Request, res: Response) => {
   try {
-    const { game, userId } = req.body;
+    const { game } = req.body;
+    // const { topic, questions } = game.game;
 
     if (!game || !game.success || !game.game) {
       return res.status(400).json({ error: "Missing required game data" });
     }
-
-    const { topic, questions } = game.game;
+    const {
+      id,           // Not needed, but available
+      topic,
+      questions,
+      userId,       // This is embedded in Gemini's game object!
+      difficulty,   // Could be missing, but we'll fetch from DB anyway
+      gameType      // Might not exist, just set below
+    } = game.game;
 
     if (!userId || !topic || !Array.isArray(questions)) {
       return res.status(400).json({ error: "Missing required fields" });
     }
+
 
     const user = await prisma.user.findUnique({
       where: { id: userId },

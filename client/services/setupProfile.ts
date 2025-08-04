@@ -7,8 +7,8 @@ const baseUrl =
   Platform.OS === "web"
     ? "http://localhost:3000"
     : Platform.OS === "android"
-    ? "http://10.0.2.2:3000"
-    : "http://192.168.101.118:3000";
+      ? "http://10.0.2.2:3000"
+      : "http://192.168.101.118:3000";
 // Platform.OS === "android"
 //   ? "http://10.0.2.2:3000"
 //   : "http://192.168.1.109:3000";

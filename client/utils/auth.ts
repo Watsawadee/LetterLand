@@ -21,3 +21,11 @@ export const getLoggedInUserId = async (): Promise<string | null> => {
     return null;
   }
 };
+
+export const getToken = async (): Promise<string | null> => {
+  if (Platform.OS === "web") {
+    return localStorage.getItem("user-token");
+  } else {
+    return await SecureStore.getItemAsync("user-token");
+  }
+};

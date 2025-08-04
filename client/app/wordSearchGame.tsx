@@ -7,8 +7,8 @@ export default function WordSearchGame() {
 
   return (
     <View style={styles.container}>
-      <Button title="← Back to Home" onPress={() => router.replace('/')} />
-      
+      <Button title="← Back to Home" onPress={() => router.replace('/main/Home')} />
+
       <Text style={styles.title}>Word Search Game (Coming Soon)</Text>
 
     </View>

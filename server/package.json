@@ -19,13 +19,14 @@
         "axios": "^1.8.4",
         "bcrypt": "^5.1.1",
         "cors": "^2.8.5",
+        "date-fns": "^4.1.0",
         "dotenv": "^16.5.0",
         "express": "^4.21.2",
         "fs": "^0.0.1-security",
         "google-translate-api-x": "^10.7.2",
         "multer": "^1.4.5-lts.2",
-        "pdf.js-extract": "^0.2.1",
-        "path": "^0.12.7"
+        "path": "^0.12.7",
+        "pdf.js-extract": "^0.2.1"
     },
     "devDependencies": {
         "@types/cors": "^2.8.17",

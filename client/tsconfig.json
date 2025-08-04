@@ -3,11 +3,14 @@
     "jsx": "react-native",
     "allowJs": true,
     "esModuleInterop": true,
-    "moduleResolution": "node",
+    "moduleResolution": "node16",
+    "customConditions": [
+      "react-native"
+    ],
     "strict": true,
     "types": [],
     "target": "esnext",
-    "module": "esnext",
+    "module": "node16",
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
@@ -16,10 +19,9 @@
       "@/*": [
         "./*"
       ]
-    }
+    },
   },
   "include": [
-    "tamagui.config.ts",
     "**/*.ts",
     "**/*.tsx",
     "declaration.d.ts",

@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useRouter } from "expo-router";
-import { Alert } from "react-native";
-import { Button, Input, YStack, Card, Text } from "tamagui";
+import { Alert, View } from "react-native";
+import { Card, TextInput, Button, Text } from "react-native-paper";
 import { registerUser } from "@/services/authService";
 import { useMutation } from "@tanstack/react-query";
 import { useRegister } from "@/hooks/useRegister";
 import * as SecureStore from "expo-secure-store"
 import { storeToken } from "@/utils/storeToken";
+import GardenBackground from "@/assets/backgroundTheme/GardenBackground";
 
 const RegisterScreen = () => {
   const [username, setUsername] = useState("");
@@ -27,7 +28,7 @@ const RegisterScreen = () => {
     // await SecureStore.setItemAsync("user-token", token);
     await storeToken(token);
     router.replace({
-      pathname: "/setupProfile/age",
+      pathname: "/setupProfile/Age",
       params: { userId: user.id.toString() },
     })
   })
@@ -43,70 +44,91 @@ const RegisterScreen = () => {
     registerMutate({ username, email, password })
   }
   return (
-    <YStack
-      flex={1}
-      width="100%"
-      height="100%"
-      justifyContent="center"
-      alignItems="center"
-      backgroundColor={"#ffff"}
+    <View
+      style={{
+        flex: 1,
+        width: "100%",
+        height: "100%",
+        justifyContent: "center",
+        alignItems: "center",
+        position: "relative",
+        backgroundColor: "#F2F8F9",
+      }}
     >
+      <GardenBackground
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          width: "100%",
+          height: 1000,
+          zIndex: 0,
+        }}
+      />
       <Card
-        elevate
-        bordered
-        padding="$6"
-        width="100%"
-        maxWidth={400}
-        backgroundColor={"#fae269"}
-        borderRadius="$8"
-        gap="$4"
+        style={{
+          padding: 24,
+          width: "100%",
+          maxWidth: 400,
+          backgroundColor: "transparent",
+          gap: 16,
+        }}
       >
-        <Card.Header alignItems="center">
-          <Text fontSize="$8" fontWeight="800" color="#5B6073">
-            Create Account
-          </Text>
-        </Card.Header>
-        <Input
-          placeholder="Username"
+        <Text
+          variant="titleLarge"
+          style={{
+            textAlign: "center",
+            fontWeight: "800",
+            color: "#5B6073",
+            marginBottom: 12,
+          }}
+        >
+          Create Account
+        </Text>
+        <TextInput
+          label="Username"
           value={username}
           onChangeText={setUsername}
-          size="$4"
+          mode="outlined"
+          style={{ marginBottom: 12 }}
         />
-        <Input
-          placeholder="Email"
+        <TextInput
+          label="Email"
           value={email}
           onChangeText={setEmail}
-          size="$4"
+          mode="outlined"
           autoCapitalize="none"
+          style={{ marginBottom: 12 }}
         />
-        <Input
-          placeholder="Password"
+        <TextInput
+          label="Password"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
-          size="$4"
+          mode="outlined"
+          style={{ marginBottom: 12 }}
         />
-        <Input
-          placeholder="Confirm Password"
+        <TextInput
+          label="Confirm Password"
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           secureTextEntry
-          size="$4"
+          mode="outlined"
+          style={{ marginBottom: 12 }}
         />
         <Button
-          size="$4"
-          backgroundColor="#007AFF"
-          // icon={Brain}
-          borderRadius="$4"
+          mode="contained"
           onPress={handleRegister}
-          color={"white"}
+          style={{ backgroundColor: "#007AFF", borderRadius: 8 }}
+          contentStyle={{ paddingVertical: 6 }}
         >
-          <Text fontWeight="800" fontSize="$4" color="white">
+          <Text style={{ color: "white", fontWeight: "800", fontSize: 16 }}>
             {isPending ? "Registering..." : "Register"}
           </Text>
         </Button>
       </Card>
-    </YStack>
+    </View>
   );
 };
 

@@ -96,7 +96,6 @@ export const loginUserController = async (
     const token = jwt.sign({ userId: user.id, email: user.email }, JWTtoken, {
       expiresIn: "7d",
     });
-
     res.status(200).json({
       message: "LoggedIn Successfully",
       token,

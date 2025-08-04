@@ -5,9 +5,10 @@ import pronunciationRoutes from "./routes/pronunciationRoutes";
 import geminiRoutes from "./routes/geminiRoutes";
 import genImageRoutes from "./routes/genImageRoutes";
 import setupRoute from "./routes/setupRoutes";
-import getCEFRDefaultRoute from "./routes/cefrRoute";
 import dotenv from "dotenv";
 import cors from "cors";
+import dashboardRoute from "./routes/dashboardRoute";
+import userProfileRoute from "./routes/userProfileRoute"
 
 dotenv.config();
 const app = express();
@@ -21,7 +22,8 @@ app.use("/api/pronunciations", pronunciationRoutes);
 app.use("/api/geminis", geminiRoutes);
 app.use("/api/images", genImageRoutes);
 app.use("/api", setupRoute);
-app.use("/api/users", getCEFRDefaultRoute);
+app.use("/api/dashboard", dashboardRoute);
+app.use("/api/users", userProfileRoute)
 app.listen(3000, () => {
   console.log("Server is running on port 3000");
 });

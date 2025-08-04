@@ -3,10 +3,9 @@ import Svg, { G, Path, Rect, Defs, ClipPath, SvgProps } from "react-native-svg";
 
 const GardenBackground = (props: SvgProps) => (
     <Svg
-        width={1196}
-        height={836}
         viewBox="0 0 1196 836"
         fill="none"
+        preserveAspectRatio="xMidYMin slice"
         {...props}
     >
         <G clipPath="url(#clip0)">
