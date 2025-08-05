@@ -1,3 +1,4 @@
+import axios from "axios";
 import { Platform } from "react-native";
 
 const baseUrl =
@@ -21,17 +22,17 @@ const baseUrl =
 //   ? "http://10.0.2.2:3000"
 //   : "http://192.168.101.118:3000";
 
+const axiosInstance = axios.create({
+  baseURL: baseUrl,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
 export const getWords = async (): Promise<string[]> => {
   try {
-    const res = await fetch(`${baseUrl}/api/getwords`);
-
-    if (!res.ok) {
-      console.error("Failed to fetch words:", res.status);
-      throw new Error("Failed to fetch words");
-    }
-
-    const data = await res.json();
-    return data.words;
+    const res = await axiosInstance.get(`${baseUrl}/api/getwords`);
+    return res.data.words
   } catch (error) {
     console.error("Error fetching words:", error);
     throw error;
@@ -44,21 +45,13 @@ export const setupProfile = async (
   selectedWords: string[]
 ) => {
   try {
-    const res = await fetch(`${baseUrl}/api/setup-profile`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ userId, age, selectedWords }),
+    const res = await axiosInstance.post(`${baseUrl}/api/setup-profile`, {
+      userId,
+      age,
+      selectedWords,
     });
 
-    const data = await res.json();
-    if (!res.ok) {
-      console.error("Failed to setup profile:", data);
-      throw new Error(data.error || "Setup profile failed");
-    }
-
-    return data;
+    return res.data;
   } catch (error) {
     console.error("Error submitting profile setup:", error);
     throw error;

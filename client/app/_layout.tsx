@@ -12,7 +12,7 @@ export default function Layout() {
       <PaperProvider>
         <ThemeProvider>
           <Slot />
-          {/* <ReactQueryDevtools initialIsOpen={true} /> */}
+          <ReactQueryDevtools initialIsOpen={true} />
         </ThemeProvider>
       </PaperProvider>
     </QueryClientProvider>

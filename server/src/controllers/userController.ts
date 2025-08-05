@@ -3,6 +3,8 @@ import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import prisma from "../configs/db";
+import { CreateUserRequest, CreateUserResponse } from "../types/createUser";
+import { LoginRequestBody, LoginResponse } from "../types/loginUser";
 const JWTtoken = process.env.JWT_SECRET as string;
 export const getUserByIdController = async (req: Request, res: Response) => {
   try {
@@ -20,13 +22,14 @@ export const getUserByIdController = async (req: Request, res: Response) => {
 };
 
 export const createUserController = async (
-  req: Request,
-  res: Response
-): Promise<any> => {
+  req: CreateUserRequest
+
+): Promise<CreateUserResponse> => {
   try {
-    const { email, username, password } = req.body;
+    const { email, username, password } = req;
     if (!email || !username || !password) {
-      return res.status(400).json({ error: "Please fill in all fields" });
+      // return res.status(400).json({ error: "Please fill in all fields" });
+      throw new Error("Please Fill in All Fields")
     }
     const normalisedEmail = email.toLowerCase();
     const existedUser = await prisma.user.findUnique({
@@ -34,10 +37,7 @@ export const createUserController = async (
     });
 
     if (existedUser) {
-      res
-        .status(400)
-        .json({ messsage: "User with this email is already existed" });
-      return;
+      throw new Error("User account is already existed")
     }
     const salt = 10;
     const hashedPassword = await bcrypt.hash(password, salt);
@@ -54,28 +54,26 @@ export const createUserController = async (
     const token = jwt.sign({ userId: user.id }, JWTtoken, {
       expiresIn: "7d",
     });
-    res.status(201).json({
-      message: "Successfully Create Username",
+    return {
+      message: "Successfully created user",
       user,
       token,
-    });
+    }
   } catch (error) {
     console.error("Create user error:", error);
-    res.status(500).json({ error: "Failed to create user" });
+    throw new Error("Failed to create account")
   }
 };
 
 export const loginUserController = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+  req: LoginRequestBody,
+): Promise<LoginResponse> => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req;
     const normalisedEmail = email.toLowerCase();
 
     if (!normalisedEmail || !password) {
-      res.status(400).json({ error: "Email and Password are required !" });
-      return;
+      throw new Error("Incorrect credential")
     }
 
     const user = await prisma.user.findUnique({
@@ -83,33 +81,42 @@ export const loginUserController = async (
     });
 
     if (!user) {
-      res.status(401).json({ error: "Invalid Email or Password" });
-      return;
+      throw new Error("Incorrect credential")
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      res.status(401).json({ error: "Invalid Email or Password" });
-      return;
+      throw new Error("Incorrect credential")
     }
 
-    const token = jwt.sign({ userId: user.id, email: user.email }, JWTtoken, {
+    const token = jwt.sign({ userId: user.id, email: user.email, username: user.username, hasCompletedSetup: !!(user.age && user.englishLevel), }, JWTtoken, {
       expiresIn: "7d",
     });
-    res.status(200).json({
+    // res.status(200).json({
+    //   message: "LoggedIn Successfully",
+    //   token,
+    //   user: {
+    //     id: user.id,
+    //     email: user.email,
+    //     username: user.username,
+    //     age: user.age,
+    //     hasCompletedSetup: !!(user.age && user.englishLevel),
+    //   },
+    // });
+    return {
       message: "LoggedIn Successfully",
       token,
       user: {
-        id: user.id,
-        email: user.email,
-        username: user.username,
         age: user.age,
-        hasCompletedSetup: !!(user.age && user.englishLevel),
+        englishLevel: user.englishLevel,
+        coin: user.coin,
+        hint: user.hint,
+        created_at: user.created_at.toISOString(),
+        total_playtime: user.total_playtime,
       },
-    });
-    return;
+    }
+
   } catch (error) {
-    res.status(500).json({ error: "Internal Server Error" });
-    return;
+    throw new Error("Incorrect Credential")
   }
 };
