@@ -1,18 +1,9 @@
 import { useMutation, UseMutationResult } from "@tanstack/react-query";
 import { loginUser } from "@/services/authService";
+import { LoginResponse } from "@/types/auth";
 interface LoginInput {
   email: string;
   password: string;
-}
-interface User {
-  id: number;
-  email: string;
-  username: string;
-}
-
-interface LoginResponse {
-  user: User;
-  token: string;
 }
 
 export const useLogin = (

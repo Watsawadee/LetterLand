@@ -20,6 +20,7 @@
     "include": [
         "src/**/*.ts",
         "routes/**/*.ts",
+        "../client/types/decodedJwtToken.ts",
     ],
     "exclude": [
         "node_modules",

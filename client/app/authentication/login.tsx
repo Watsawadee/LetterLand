@@ -3,29 +3,38 @@ import { useRouter } from "expo-router";
 import { Alert, View, Dimensions } from "react-native";
 import { Card, TextInput, Button, Text } from "react-native-paper";
 import { useLogin } from "@/hooks/useLogins";
-import * as SecureStore from "expo-secure-store";
 import { storeToken } from "@/utils/storeToken";
 import GardenBackground from "@/assets/backgroundTheme/GardenBackground";
-
+import { DecodedToken } from "@/types/decodedJwtToken";
+import { jwtDecode } from "jwt-decode";
 
 
 const LoginScreen = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+
   const router = useRouter();
   const { mutate: loginMutate } = useLogin(async ({ user, token }) => {
-    if (!user?.id || !token) {
-      Alert.alert("Login failed", "Missing user or token");
+    console.log("Navigating to /main/Home with userId:", user.id);
+    if (!token) {
+      Alert.alert("Login failed", "Missing token");
       return;
     }
 
     await storeToken(token);
 
+    const decoded: any = jwtDecode(token);
+    console.log("Decoded JWT:", decoded);
+
+    if (!decoded?.userId) {
+      Alert.alert("Invalid token payload");
+      return;
+    }
 
     router.replace({
       pathname: "/main/Home",
-      params: { userId: user.id.toString() },
+      params: { userId: decoded.userId.toString() },
     });
   });
 
