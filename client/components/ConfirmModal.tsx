@@ -1,92 +1,71 @@
-import React from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React from "react";
+import {
+  Modal,
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+} from "react-native";
+import { ConfirmModalProps } from "../types/type";
 
-interface ConfirmModalProps {
-  visible: boolean;
-  title?: string;
-  message: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-  confirmText?: string;
-  cancelText?: string;
-}
-
-const ConfirmModal: React.FC<ConfirmModalProps> = ({
-  visible,
+export default function ConfirmModal({
+  visible = false,
   title,
   message,
   onConfirm,
   onCancel,
-  confirmText = "Yes",
-  cancelText = "No",
-}) => {
+  confirmText = "OK",
+  cancelText = "Cancel",
+}: ConfirmModalProps) {
   return (
-    <Modal visible={visible} transparent animationType="fade">
-      <View style={styles.overlay}>
+    <Modal
+      animationType="fade"
+      transparent
+      visible={visible}
+      accessibilityLabel="Confirmation Modal"
+    >
+      <View style={styles.backdrop}>
         <View style={styles.container}>
           {title && <Text style={styles.title}>{title}</Text>}
           <Text style={styles.message}>{message}</Text>
-          <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.button} onPress={onConfirm}>
-              <Text style={styles.buttonText}>{confirmText}</Text>
+
+          <View style={styles.buttons}>
+            <TouchableOpacity onPress={onCancel} style={styles.button}>
+              <Text style={styles.buttonText}>{cancelText}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={onCancel}>
-              <Text style={[styles.buttonText, styles.cancelText]}>{cancelText}</Text>
+
+            <TouchableOpacity
+              onPress={onConfirm}
+              style={[styles.button, styles.confirm]}
+            >
+              <Text style={[styles.buttonText, { color: "white" }]}>
+                {confirmText}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
       </View>
     </Modal>
   );
-};
-
-export default ConfirmModal;
+}
 
 const styles = StyleSheet.create({
-  overlay: {
+  backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#00000088",
+    justifyContent: "center",
+    alignItems: "center",
   },
   container: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 12,
-    width: '80%',
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  message: {
-    fontSize: 16,
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
-  },
-  button: {
-    flex: 1,
-    padding: 12,
-    backgroundColor: '#007bff',
+    width: 300,
+    backgroundColor: "white",
     borderRadius: 8,
-    marginHorizontal: 5,
-    alignItems: 'center',
+    padding: 20,
   },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  cancelButton: {
-    backgroundColor: '#e0e0e0',
-  },
-  cancelText: {
-    color: '#333',
-  },
+  title: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
+  message: { fontSize: 16, marginBottom: 20 },
+  buttons: { flexDirection: "row", justifyContent: "flex-end" },
+  button: { paddingHorizontal: 15, paddingVertical: 8, marginLeft: 10 },
+  buttonText: { fontSize: 16, color: "blue" },
+  confirm: { backgroundColor: "blue", borderRadius: 4 },
 });

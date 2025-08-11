@@ -10,7 +10,8 @@ import cors from "cors";
 import dashboardRoute from "./routes/dashboardRoute";
 import userProfileRoute from "./routes/userProfileRoute"
 
-dotenv.config();
+dotenv.config(); import gameRoutes from './routes/gameRoutes';
+
 const app = express();
 app.use(express.json());
 app.use(cors());
@@ -23,7 +24,9 @@ app.use("/api/geminis", geminiRoutes);
 app.use("/api/images", genImageRoutes);
 app.use("/api", setupRoute);
 app.use("/api/dashboard", dashboardRoute);
-app.use("/api/users", userProfileRoute)
+app.use("/api/users", userProfileRoute);
+app.use('/api/games', gameRoutes);
+
 app.listen(3000, () => {
   console.log("Server is running on port 3000");
 });

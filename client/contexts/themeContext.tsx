@@ -5,7 +5,7 @@ const ThemeContext = createContext<any>(null);
 export const useTheme = () => useContext(ThemeContext);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [fontSize, setFontSize] = useState(20);
+  const [fontSize, setFontSize] = useState(32);
   const [primaryColor, setPrimaryColor] = useState('black');
 
   return (
