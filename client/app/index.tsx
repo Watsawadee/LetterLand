@@ -1,18 +1,17 @@
-import React, { useState } from 'react';
-import { View, Text, Button, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
-import GameSelectionModal from '../components/GameSelectionModal';
+import React, { useState } from "react";
+import { View, Text, Button, StyleSheet } from "react-native";
+import { useRouter } from "expo-router";
+import GameSelectionModal from "../components/GameSelectionModal";
 
 export default function Home() {
   const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
-
-  const handleGameSelection = (type: 'word' | 'crossword') => {
+  const handleGameSelection = (type: "word" | "crossword") => {
     setModalVisible(false);
-    if (type === 'word') {
-      router.push('/wordSearchGame');
+    if (type === "word") {
+      router.push("/wordSearchGame");
     } else {
-      router.push('/game');
+      router.push('/crosswordSearchGame');
     }
   };
 
@@ -25,7 +24,7 @@ export default function Home() {
       </View>
 
       <View>
-        <Button title="Settings" onPress={() => router.push('/setting')} />
+        <Button title="Settings" onPress={() => router.push("/setting")} />
       </View>
 
       <GameSelectionModal
@@ -38,7 +37,7 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  container: { flex: 1, justifyContent: "center", alignItems: "center" },
   title: { fontSize: 24, margin: 10 },
   buttonContainer: { margin: 20 },
 });
