@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, Button, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
-import GameSelectionModal from "../components/GameSelectionModal";
+import GameSelectionModal from "@/components/GameSelectionModal";
 
 export default function Home() {
   const router = useRouter();
