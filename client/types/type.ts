@@ -72,7 +72,6 @@ export interface GameBoardProps {
   CELL_SIZE: number;
   selectedCells: [number, number][];
   foundWords: FoundWord[];
-
   hintCell: [number, number] | null;
   fontSize: number;
   panHandlers: GestureResponderHandlers;
