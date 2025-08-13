@@ -34,7 +34,6 @@ const LoginScreen = () => {
 
     router.replace({
       pathname: "/main/Home",
-      params: { userId: decoded.userId.toString() },
     });
   });
 

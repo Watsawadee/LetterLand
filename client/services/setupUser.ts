@@ -1,6 +1,6 @@
 import axios from "axios";
 import { Platform } from "react-native";
-import { GetWordsResponse, SetupProfileRequestBody, SetupProfileResponse } from "@/types/setUpUser";
+import { GetWordsResponse, SetupProfileRequestBody, SetupProfileResponse } from "@/types/setupUser";
 
 const baseUrl =
   // const baseUrl =

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useUserProfile } from "@/hooks/useGetUserProfile";
 import { View, Dimensions } from "react-native";
 import {
@@ -9,21 +9,23 @@ import {
   Card,
 } from "react-native-paper";
 import { theme } from "@/theme";
-import { useCreateGame } from "@/hooks/useCreateGame";
+import { useCreateGameFromGemini } from "@/hooks/useCreateGeminiGame";
+import { CreateGameFromGeminiRequest } from "@/types/createGameFromGemini";
 
 const CreateGameScreen = () => {
-  const { userId, gameType } = useLocalSearchParams<{
-    userId?: string;
-    gameType?: "crossword" | "wordsearch";
+  const router = useRouter();
+  const { gameType } = useLocalSearchParams<{
+    gameType?: "WORD_SEARCH" | "CROSSWORD_SEARCH";
   }>();
 
-  type CEFRResponse = {
-    englishLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
-  };
 
-  const [englishLevel, setEnglishLevel] = useState<CEFRResponse["englishLevel"]>();
+  const [englishLevel, setEnglishLevel] = useState<CreateGameFromGeminiRequest["userCEFR"]>();
+  const [timer, setTimer] = useState<"none" | "1" | "3" | "5">("none");
+  const [uploadType, setUploadType] = useState<"text" | "link" | "image">("text");
+  const [input, setInput] = useState("");
 
   const { data: user, isLoading, isError } = useUserProfile();
+  const createGameMutation = useCreateGameFromGemini();
 
   useEffect(() => {
     if (user?.englishLevel) {
@@ -31,15 +33,9 @@ const CreateGameScreen = () => {
     }
   }, [user]);
 
-
-  const [timer, setTimer] = useState<"none" | "1" | "3" | "5">("none");
-  const [uploadType, setUploadType] = useState<"text" | "link" | "image">("text");
-  const [input, setInput] = useState("");
-
-  const createGameMutation = useCreateGame();
-  const handleCreate = () => {
-    if (!user?.id || !englishLevel || !input) {
-      alert("Please fill in all fields")
+  const handleCreate = async () => {
+    if (!user?.id || !englishLevel || !input || !gameType) {
+      alert("Please fill in all fields");
       return;
     }
     const apiUploadType = uploadType === "image" ? "pdf" : uploadType;
@@ -48,6 +44,7 @@ const CreateGameScreen = () => {
       userCEFR: englishLevel,
       inputData: input,
       type: apiUploadType,
+      gameType: gameType!,
     });
   };
 

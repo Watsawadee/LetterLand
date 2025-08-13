@@ -9,8 +9,8 @@ import dotenv from "dotenv";
 import cors from "cors";
 import dashboardRoute from "./routes/dashboardRoute";
 import userProfileRoute from "./routes/userProfileRoute"
-
-dotenv.config(); import gameRoutes from './routes/gameRoutes';
+import gameRoutes from './routes/gameRoutes';
+dotenv.config();
 
 const app = express();
 app.use(express.json());

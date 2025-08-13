@@ -3,18 +3,28 @@ import { View } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { getWords, setupProfile } from "../../services/setupUser";
 import { ActivityIndicator, Button, Card, Text } from "react-native-paper";
+import { getLoggedInUserId } from "@/utils/auth";
 const VocabEvalScreen = () => {
-  const { userId, age } = useLocalSearchParams<{
-    userId: string;
+  const { age } = useLocalSearchParams<{
     age: string;
   }>();
+  const [userId, setUserId] = useState<string | null>(null);
   const [words, setWords] = useState<string[]>([]);
   const [selectedWords, setSelectedWords] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    const fetchWords = async () => {
+    const init = async () => {
+      const id = await getLoggedInUserId();
+      if (!id) {
+        alert("Session expired. Please log in again.");
+        router.replace("/authentication/login");
+        return;
+      }
+
+      setUserId(id);
+
       try {
         const data = await getWords();
         setWords(data.slice(0, 30));
@@ -25,7 +35,7 @@ const VocabEvalScreen = () => {
       }
     };
 
-    fetchWords();
+    init();
   }, []);
 
   const handleWordToggle = (word: string) => {
