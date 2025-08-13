@@ -2,10 +2,7 @@ import { useState } from "react";
 import { useRouter } from "expo-router";
 import { Alert, View } from "react-native";
 import { Card, TextInput, Button, Text } from "react-native-paper";
-import { registerUser } from "@/services/authService";
-import { useMutation } from "@tanstack/react-query";
 import { useRegister } from "@/hooks/useRegister";
-import * as SecureStore from "expo-secure-store"
 import { storeToken } from "@/utils/storeToken";
 import GardenBackground from "@/assets/backgroundTheme/GardenBackground";
 

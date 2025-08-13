@@ -1,16 +1,13 @@
 import prisma from "../configs/db";
 import { Request, Response } from "express";
 import { AuthenticatedRequest } from "../types/authenticatedRequest";
-import { startOfWeek, formatISO, endOfWeek, eachDayOfInterval, format } from "date-fns";
-import { count } from "console";
+import { startOfWeek, endOfWeek, eachDayOfInterval, format } from "date-fns";
 export const getUserTotalPlaytime = async (
   req: AuthenticatedRequest,
   res: Response
 ): Promise<void> => {
   const userId = Number(req.params.userId);
   const loggedInUserId = req.user?.id;
-  console.log("👉 URL userId:", userId);
-  console.log("👉 Logged in userId from token:", loggedInUserId);
 
   if (isNaN(userId)) {
     res.status(400).json({ error: "Invalid user ID" });

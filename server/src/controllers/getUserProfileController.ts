@@ -1,9 +1,10 @@
 import { Request, Response } from "express";
 import prisma from "../configs/db";
 import { AuthenticatedRequest } from "../types/authenticatedRequest";
+import { UserProfileResponse } from "../types/userProfile";
 export const getUserProfile = async (
   req: AuthenticatedRequest,
-  res: Response
+  res: Response<UserProfileResponse | { error: string }>
 ): Promise<void> => {
 
   const userId = req.user?.id;
@@ -11,10 +12,8 @@ export const getUserProfile = async (
   if (!userId) {
     res.status(401).json({ error: "Unauthorised Access" })
     return;
-
   }
   try {
-
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, username: true, coin: true, englishLevel: true, email: true } })
     if (!user) {
       res.status(404).json({ error: "User not found" })
