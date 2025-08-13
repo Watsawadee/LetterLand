@@ -13,7 +13,7 @@ export default function AgeScreen() {
       return;
     }
     router.replace({
-      pathname: "/setupProfile/VocabEval",
+      pathname: "/setupProfile/vocabEval",
       params: { userId, age: age.toString() },
     });
   };

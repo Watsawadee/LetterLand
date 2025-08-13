@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { getWords, setupProfile } from "../../services/setupProfile";
+import { getWords, setupProfile } from "../../services/setupUser";
 import { ActivityIndicator, Button, Card, Text } from "react-native-paper";
 const VocabEvalScreen = () => {
   const { userId, age } = useLocalSearchParams<{
@@ -46,7 +46,7 @@ const VocabEvalScreen = () => {
     });
     try {
       await setupProfile(Number(userId), Number(age), selectedWords);
-      router.replace("/authentication/Login");
+      router.replace("/authentication/login");
     } catch (error) {
       console.error(error);
       alert("Failed to setup profile.");

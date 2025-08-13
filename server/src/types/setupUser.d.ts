@@ -1,12 +1,28 @@
-// setupUser.ts
-import { EnglishLevel } from "@prisma/client";
+import { EnglishLevel, User } from "@prisma/client";
 
-export type SetupProfileResponse = {
-  message: string;
+export interface OxfordEntry {
+  word: string;
+  level: EnglishLevel;
+}
+
+export interface GetWordsResponse {
+  words: string[];
+}
+
+export interface ErrorResponse {
+  error: string;
+}
+
+export interface SetupProfileRequestBody {
+  userId: number;
+  age: number;
+  selectedWords: string[];
+}
+
+export interface SetupProfileSuccess {
+  message: "Setup completed";
   cefrLevel: EnglishLevel;
-  user: {
-    id: number;
-    age: number;
-    englishLevel: EnglishLevel;
-  };
-};
+  user: User;
+}
+
+export type SetupProfileResponse = SetupProfileSuccess | ErrorResponse;

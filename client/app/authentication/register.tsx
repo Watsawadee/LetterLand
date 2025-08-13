@@ -28,7 +28,7 @@ const RegisterScreen = () => {
     // await SecureStore.setItemAsync("user-token", token);
     await storeToken(token);
     router.replace({
-      pathname: "/setupProfile/Age",
+      pathname: "/setupProfile/age",
       params: { userId: user.id.toString() },
     })
   })

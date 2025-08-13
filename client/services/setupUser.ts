@@ -1,5 +1,6 @@
 import axios from "axios";
 import { Platform } from "react-native";
+import { GetWordsResponse, SetupProfileRequestBody, SetupProfileResponse } from "@/types/setUpUser";
 
 const baseUrl =
   // const baseUrl =
@@ -31,7 +32,7 @@ const axiosInstance = axios.create({
 
 export const getWords = async (): Promise<string[]> => {
   try {
-    const res = await axiosInstance.get(`${baseUrl}/api/getwords`);
+    const res = await axiosInstance.get<GetWordsResponse>(`${baseUrl}/api/getwords`);
     return res.data.words
   } catch (error) {
     console.error("Error fetching words:", error);
@@ -43,13 +44,16 @@ export const setupProfile = async (
   userId: number,
   age: number,
   selectedWords: string[]
-) => {
+): Promise<SetupProfileResponse> => {
   try {
-    const res = await axiosInstance.post(`${baseUrl}/api/setup-profile`, {
+    const payload: SetupProfileRequestBody = {
       userId,
       age,
       selectedWords,
-    });
+    };
+    const res = await axiosInstance.post<SetupProfileResponse>(`${baseUrl}/api/setup-profile`,
+      payload
+    );
 
     return res.data;
   } catch (error) {
