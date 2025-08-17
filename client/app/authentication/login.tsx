@@ -1,22 +1,19 @@
 import { useState } from "react";
 import { useRouter } from "expo-router";
-import { Alert, View, Dimensions } from "react-native";
+import { Alert, View } from "react-native";
 import { Card, TextInput, Button, Text } from "react-native-paper";
 import { useLogin } from "@/hooks/useLogins";
 import { storeToken } from "@/utils/storeToken";
 import GardenBackground from "@/assets/backgroundTheme/GardenBackground";
-import { DecodedToken } from "@/types/decodedJwtToken";
 import { jwtDecode } from "jwt-decode";
-
-
 const LoginScreen = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
 
   const router = useRouter();
   const { mutate: loginMutate } = useLogin(async ({ user, token }) => {
-    console.log("Navigating to /main/Home with userId:", user.id);
     if (!token) {
       Alert.alert("Login failed", "Missing token");
       return;
@@ -42,11 +39,15 @@ const LoginScreen = () => {
       Alert.alert("Please fill in all fields");
       return;
     }
+    setIsSubmitting(true);
+    loginMutate({ email, password }, {
+      onSettled: () => {
+        setIsSubmitting(false);
+      },
+    });
 
-    loginMutate({ email, password });
   };
 
-  const [isFocused, setIsFocused] = useState(false);
 
 
   return (
@@ -56,7 +57,7 @@ const LoginScreen = () => {
         width: "100%",
         height: "100%",
         justifyContent: "center",
-        alignItems: "center",
+        // alignItems: "center",
         position: "relative",
         backgroundColor: "#F2F8F9",
       }}
@@ -80,10 +81,11 @@ const LoginScreen = () => {
         style={{
           padding: 24,
           width: '100%',
-          maxWidth: 400,
+          maxWidth: "100%",
           backgroundColor: 'transparent',
           elevation: 0,
           borderColor: 'transparent',
+          borderRadius: 0,
         }}
       >
         <Text
@@ -123,6 +125,9 @@ const LoginScreen = () => {
           onPress={handleLogin}
           style={{ backgroundColor: "#007AFF", borderRadius: 8 }}
           contentStyle={{ paddingVertical: 6 }}
+          loading={isSubmitting}
+          disabled={isSubmitting}
+
         >
           <Text style={{ color: "white", fontWeight: "800", fontSize: 16 }}>
             Login

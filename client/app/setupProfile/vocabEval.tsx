@@ -85,7 +85,7 @@ const VocabEvalScreen = () => {
         style={{
           padding: 24,
           width: "90%",
-          maxWidth: 600,
+          maxWidth: "100%",
           borderRadius: 16,
           gap: 16,
         }}
