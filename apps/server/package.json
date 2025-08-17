@@ -1,0 +1,42 @@
+{
+    "name": "letterland",
+    "version": "1.0.0",
+    "main": "index.js",
+    "types": "index.ts",
+    "scripts": {
+        "generate": "prisma generate",
+        "dev": "nodemon src/index.ts",
+        "start": "node dist/index.js",
+        "build": "tsc --project .",
+        "prisma": "npx prisma db pull && npx prisma generate",
+        "prisma:migrate": "prisma migrate dev"
+    },
+    "dependencies": {
+        "@postlight/mercury-parser": "^2.2.1",
+        "@prisma/client": "^4.16.2",
+        "@types/bcrypt": "^5.0.2",
+        "@types/jsonwebtoken": "^9.0.9",
+        "@types/multer": "^1.4.12",
+        "axios": "^1.8.4",
+        "bcrypt": "^5.1.1",
+        "cors": "^2.8.5",
+        "date-fns": "^4.1.0",
+        "dotenv": "^16.5.0",
+        "express": "^4.21.2",
+        "fs": "^0.0.1-security",
+        "google-translate-api-x": "^10.7.2",
+        "multer": "^1.4.5-lts.2",
+        "path": "^0.12.7",
+        "pdf.js-extract": "^0.2.1"
+    },
+    "devDependencies": {
+        "@types/cors": "^2.8.17",
+        "@types/express": "^5.0.1",
+        "@types/postlight__mercury-parser": "^2.2.7",
+        "jsonwebtoken": "^9.0.2",
+        "nodemon": "^2.0.15",
+        "prisma": "^4.0.0",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.8.2"
+    }
+}
