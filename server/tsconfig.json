@@ -14,13 +14,14 @@
         "resolveJsonModule": true,
         "isolatedModules": true,
         "jsx": "react-jsx",
-        "rootDir": "./src",
+        // "rootDir": "./src",
         "outDir": "./dist"
     },
     "include": [
         "src/**/*.ts",
         "routes/**/*.ts",
         "../../client/types/decodedJwtToken.ts",
+        "../shared"
     ],
     "exclude": [
         "node_modules",

@@ -1,8 +1,10 @@
 import { Platform } from "react-native";
 import axios from "axios";
-import { LoginResponse, RegisterResponse } from "@/types/auth";
+// import { LoginResponse, RegisterResponse } from "@/types/auth";
 import { getToken } from "@/utils/auth";
 import * as SecureStore from "expo-secure-store";
+import { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse } from "@/libs/type";
+import { LoginResponseSchema, RegisterResponseSchema } from "../../shared/schemas/auth.schema";
 // const baseUrl =
 // const baseUrl =
 // Platform.OS === "android" ? "http://10.0.2.2:3000" : "http://192.168.1.109:3000";
@@ -16,25 +18,19 @@ const baseUrl =
 
 
 export const registerUser = async (
-  username: string,
-  email: string,
-  password: string
+  payload: RegisterRequest
 ): Promise<RegisterResponse> => {
   const res = await axios.post<RegisterResponse>(
     `${baseUrl}/api/users/auth/register`,
-    {
-      username,
-      email,
-      password,
-    }
+    payload
   );
 
-  return res.data;
+  return RegisterResponseSchema.parse(res.data);
 };
 
-export const loginUser = async (email: string, password: string): Promise<LoginResponse> => {
+export const loginUser = async (payload: LoginRequest): Promise<LoginResponse> => {
   try {
-    const res = await axios.post(`${baseUrl}/api/users/auth/login`, { email, password });
+    const res = await axios.post(`${baseUrl}/api/users/auth/login`, payload);
     const token = res.data.token;
     if (Platform.OS === "web") {
       localStorage.setItem("user-token", token);
@@ -42,7 +38,7 @@ export const loginUser = async (email: string, password: string): Promise<LoginR
       await SecureStore.setItemAsync("user-token", token);
     }
 
-    return res.data;
+    return LoginResponseSchema.parse(res.data)
   }
   catch (error: any) {
     throw new Error("Failed to login")

@@ -1,10 +1,11 @@
 import { Request, Response } from "express";
 import prisma from "../configs/db";
 import { EnglishLevel } from "@prisma/client";
-import { ErrorResponse, GetWordsResponse, OxfordEntry, SetupProfileRequestBody, SetupProfileResponse } from "../types/setupUser";
+import { ErrorResponse, GetWordsOrError, GetWordsResponse, OxfordEntry, SetupProfileRequest, SetupProfileResponse } from "../types/type";
 import { calculateCEFRLevelFromSelectedWords } from "../services/cefrScoreService";
 import fs from "fs";
 import path from "path";
+import { ErrorResponseSchema, SetupProfileRequestSchema, SetupProfileResponseSchema } from "../../../shared/schemas/setup.schema";
 
 const oxfordDataPath = path.join(__dirname, "../../data/oxford3000.json");
 const oxfordWords: OxfordEntry[] = JSON.parse(
@@ -25,29 +26,29 @@ function pickRandom<T>(arr: T[], count: number): T[] {
   return copy.slice(0, count);
 }
 
-export const getWords = async (req: Request, res: Response<GetWordsResponse | ErrorResponse>) => {
+export const getWords = async (req: Request, res: Response<GetWordsOrError>) => {
   try {
     const selected = pickRandom(oxfordWords, 30);
     const wordList = selected.map((e) => e.word);
     res.status(200).json({ words: wordList });
   } catch (error: any) {
     console.error("Error fetching words:", error);
-    res.status(500).json({ error: "Failed to fetch words" });
+    const response = { error: "Failed to fetch words" };
+    return res.status(500).json(ErrorResponseSchema.parse(response));
   }
 };
 
 export const setupProfile = async (
-  req: Request<unknown, SetupProfileResponse, SetupProfileRequestBody>,
+  req: Request,
   res: Response<SetupProfileResponse>
-): Promise<void> => {
+) => {
   try {
-    const userId = Number(req.body.userId);
-    const age = Number(req.body.age);
-    const { selectedWords } = req.body;
-    if (!Number.isFinite(userId) || !Number.isFinite(age) || !Array.isArray(selectedWords)) {
-      res.status(400).json({ error: "Missing or invalid required field." });
-      return;
+    const parsed = SetupProfileRequestSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: "Missing or invalid required field." });
     }
+
+    const { userId, age, selectedWords }: SetupProfileRequest = parsed.data;
     const mappedWords = selectedWords
       .map((word) => {
         const level = wordToLevelMap.get(word.toLowerCase());
@@ -69,12 +70,13 @@ export const setupProfile = async (
       where: { id: userId },
       data: { age, englishLevel: predictedLevel },
     });
-
-    res.status(200).json({
+    const response: SetupProfileResponse = {
       message: "Setup completed",
       cefrLevel: predictedLevel,
       user: updatedUser,
-    });
+    };
+
+    res.status(200).json(SetupProfileResponseSchema.parse(response));
   } catch (error) {
     console.error("Setup profile error: ", error);
     res.status(500).json({ error: "Internal Server Error" });

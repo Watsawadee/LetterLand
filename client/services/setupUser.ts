@@ -1,6 +1,7 @@
 import axios from "axios";
 import { Platform } from "react-native";
-import { GetWordsResponse, SetupProfileRequestBody, SetupProfileResponse } from "@/types/setupUser";
+import { GetWordsOrError, SetupProfileRequest, SetupProfileResponse } from "../libs/type";
+import { GetWordsOrErrorSchema, SetupProfileResponseSchema } from "../../shared/schemas/setup.schema";
 
 const baseUrl =
   // const baseUrl =
@@ -30,32 +31,25 @@ const axiosInstance = axios.create({
   },
 });
 
-export const getWords = async (): Promise<string[]> => {
+export const getWords = async (): Promise<GetWordsOrError> => {
   try {
-    const res = await axiosInstance.get<GetWordsResponse>(`${baseUrl}/api/getwords`);
-    return res.data.words
+    const res = await axiosInstance.get(`${baseUrl}/api/getwords`);
+    return GetWordsOrErrorSchema.parse(res.data);
   } catch (error) {
     console.error("Error fetching words:", error);
-    throw error;
+    return { error: "Failed to fetch words" };
   }
 };
 
 export const setupProfile = async (
-  userId: number,
-  age: number,
-  selectedWords: string[]
+  payload: SetupProfileRequest
 ): Promise<SetupProfileResponse> => {
   try {
-    const payload: SetupProfileRequestBody = {
-      userId,
-      age,
-      selectedWords,
-    };
     const res = await axiosInstance.post<SetupProfileResponse>(`${baseUrl}/api/setup-profile`,
       payload
     );
 
-    return res.data;
+    return SetupProfileResponseSchema.parse(res.data);
   } catch (error) {
     console.error("Error submitting profile setup:", error);
     throw error;
