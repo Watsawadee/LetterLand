@@ -4,11 +4,11 @@ import {
     LoginResponseSchema,
     RegisterRequestSchema,
     RegisterResponseSchema,
-} from "../../../package/shared/schemas/auth.schema";
-import { UserSchema } from "../../../package/shared/schemas/user.schema";
-import { ErrorResponseSchema, GetWordsOrErrorSchema, GetWordsResponseSchema, OxfordEntrySchema, SetupProfileRequestSchema, SetupProfileResponseSchema, SetupProfileSuccessSchema } from "../../../package/shared/schemas/setup.schema"
-import { UserProfileOrErrorSchema, UserProfileResponseSchema } from "../../../package/shared/schemas/userProfile.schema"
-import { GamesPlayedPerWeekOrErrorSchema, GamesPlayedPerWeekResponseSchema, TotalPlaytimeOrErrorSchema, TotalPlaytimeResponseSchema, WordsLearnedOrErrorSchema, WordsLearnedResponseSchema } from "../../../package/shared/schemas/dashboard.schema"
+} from "@letterland/shared";
+import { UserSchema } from "@letterland/shared";
+import { ErrorResponseSchema, GetWordsOrErrorSchema, GetWordsResponseSchema, OxfordEntrySchema, SetupProfileRequestSchema, SetupProfileResponseSchema, SetupProfileSuccessSchema } from "@letterland/shared"
+import { UserProfileOrErrorSchema, UserProfileResponseSchema } from "@letterland/shared"
+import { GamesPlayedPerWeekOrErrorSchema, GamesPlayedPerWeekResponseSchema, TotalPlaytimeOrErrorSchema, TotalPlaytimeResponseSchema, WordsLearnedOrErrorSchema, WordsLearnedResponseSchema } from "@letterland/shared"
 //Auth
 export type User = z.infer<typeof UserSchema>;
 
