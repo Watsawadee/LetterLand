@@ -26,7 +26,6 @@ const RegisterScreen = () => {
     await storeToken(token);
     router.replace({
       pathname: "/setupProfile/age",
-      params: { userId: user.id.toString() },
     })
   })
   const handleRegister = () => {

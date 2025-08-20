@@ -27,7 +27,13 @@ const VocabEvalScreen = () => {
 
       try {
         const data = await getWords();
-        setWords(data.slice(0, 30));
+        if ("words" in data && Array.isArray(data.words)) {
+          setWords(data.words.slice(0, 30));
+        } else {
+          // Handle error case
+          setWords([]);
+          alert("Failed to load words.");
+        }
       } catch (error) {
         console.error("Failed to load words", error);
       } finally {
@@ -55,7 +61,11 @@ const VocabEvalScreen = () => {
       selectedWords,
     });
     try {
-      await setupProfile(Number(userId), Number(age), selectedWords);
+      await setupProfile({
+        userId: Number(userId),
+        age: Number(age),
+        selectedWords,
+      });
       router.replace("/authentication/login");
     } catch (error) {
       console.error(error);
@@ -85,7 +95,7 @@ const VocabEvalScreen = () => {
         style={{
           padding: 24,
           width: "90%",
-          maxWidth: "100%",
+          maxWidth: "50%",
           borderRadius: 16,
           gap: 16,
         }}

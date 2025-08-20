@@ -58,7 +58,7 @@ export const createUserController = async (
     const JWTtoken = process.env.JWT_SECRET as string;
 
 
-    const token = jwt.sign({ userId: user.id }, JWTtoken, {
+    const token = jwt.sign({ userId: user.id, email: user.email, username: user.username, hasCompletedSetup: !!(user.age && user.englishLevel), }, JWTtoken, {
       expiresIn: "7d",
     });
     const response: RegisterResponse = {
