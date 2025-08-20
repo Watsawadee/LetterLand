@@ -128,7 +128,11 @@ const UserOverviewPerformance = () => {
                             <Text style={{ fontWeight: "bold" }}>
                                 Words Learned
                             </Text>
-                            <Text style={{ color: theme.colors.darkGrey }}>{wordsLearned} Word(s)</Text>
+                            <Text style={{ color: theme.colors.darkGrey }}>{wordsLearned && "error" in wordsLearned
+                                ? "Error"
+                                : wordsLearned && "wordsLearned" in wordsLearned
+                                    ? `${wordsLearned.wordsLearned} Word(s)`
+                                    : "0 Word(s)"}</Text>
                         </View>
                     </View>
                 </Card>
@@ -139,7 +143,11 @@ const UserOverviewPerformance = () => {
                             <Text style={{ fontWeight: "bold" }}>
                                 Total Playtime
                             </Text>
-                            <Text style={{ color: theme.colors.darkGrey }}>{totalPlaytime} Hour(s)</Text>
+                            <Text style={{ color: theme.colors.darkGrey }}> {totalPlaytime && "error" in totalPlaytime
+                                ? "Error"
+                                : totalPlaytime && "totalPlaytime" in totalPlaytime
+                                    ? `${totalPlaytime.totalPlaytime} Hour(s)`
+                                    : "0 Hour(s)"}</Text>
                         </View>
                     </View>
                 </Card>
