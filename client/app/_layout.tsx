@@ -19,10 +19,11 @@ export default function Layout() {
   useEffect(() => {
     const checkAuth = async () => {
       const token = await getToken();
+      const inAuthGroup = segments[0] === "authentication";
 
-      if (!token && pathName !== "/login") {
-        router.replace("/login");
-      } else if (token && pathName !== "/Home") {
+      if (!token && !inAuthGroup && pathName !== "/authentication/login") {
+        router.replace("/authentication/login");
+      } else if (token && inAuthGroup && pathName !== "/Home") {
         router.replace("/Home");
       }
 
@@ -39,7 +40,7 @@ export default function Layout() {
       <PaperProvider>
         <ThemeProvider>
           <Stack />
-          <ReactQueryDevtools initialIsOpen={true} />
+          {/* <ReactQueryDevtools initialIsOpen={true} /> */}
         </ThemeProvider>
       </PaperProvider>
     </QueryClientProvider>

@@ -2,54 +2,44 @@ import { useState } from "react";
 import { useRouter } from "expo-router";
 import { Alert, View } from "react-native";
 import { Card, TextInput, Button, Text } from "react-native-paper";
-import { useLogin } from "@/hooks/useLogins";
+import { useRegister } from "@/hooks/useRegister";
 import { storeToken } from "@/utils/storeToken";
 import GardenBackground from "@/assets/backgroundTheme/GardenBackground";
-import { jwtDecode } from "jwt-decode";
-const LoginScreen = () => {
+
+const RegisterScreen = () => {
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isFocused, setIsFocused] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+
 
   const router = useRouter();
-  const { mutate: loginMutate } = useLogin(async ({ user, token }) => {
-    if (!token) {
-      Alert.alert("Login failed", "Missing token");
+
+  const { mutate: registerMutate, isPending } = useRegister(async ({ user, token }) => {
+    console.log("User ID:", user.id);
+    console.log("Token:", token);
+    if (!user?.id || !token) {
+      Alert.alert("Registration failed, Missing user or token");
       return;
     }
-
+    // await SecureStore.setItemAsync("user-token", token);
     await storeToken(token);
-
-    const decoded: any = jwtDecode(token);
-    console.log("Decoded JWT:", decoded);
-
-    if (!decoded?.userId) {
-      Alert.alert("Invalid token payload");
-      return;
-    }
-
     router.replace({
-      pathname: "/Home",
-    });
-  });
-
-  const handleLogin = () => {
-    if (!email || !password) {
+      pathname: "/setupProfile/age",
+    })
+  })
+  const handleRegister = () => {
+    if (!username || !email || !password || !confirmPassword) {
       Alert.alert("Please fill in all fields");
       return;
     }
-    setIsSubmitting(true);
-    loginMutate({ email, password }, {
-      onSettled: () => {
-        setIsSubmitting(false);
-      },
-    });
-
-  };
-
-
-
+    if (password !== confirmPassword) {
+      Alert.alert("Password did not match");
+      return;
+    }
+    registerMutate({ username, email, password })
+  }
   return (
     <View
       style={{
@@ -57,7 +47,7 @@ const LoginScreen = () => {
         width: "100%",
         height: "100%",
         justifyContent: "center",
-        // alignItems: "center",
+        alignItems: "center",
         position: "relative",
         backgroundColor: "#F2F8F9",
       }}
@@ -73,19 +63,13 @@ const LoginScreen = () => {
           zIndex: 0,
         }}
       />
-
-
-
       <Card
-        mode="contained"
         style={{
           padding: 24,
-          width: '100%',
-          maxWidth: "100%",
-          backgroundColor: 'transparent',
-          elevation: 0,
-          borderColor: 'transparent',
-          borderRadius: 0,
+          width: "100%",
+          maxWidth: 400,
+          backgroundColor: "transparent",
+          gap: 16,
         }}
       >
         <Text
@@ -97,40 +81,49 @@ const LoginScreen = () => {
             marginBottom: 12,
           }}
         >
-          Log in to your Account
+          Create Account
         </Text>
         <TextInput
-          placeholder={isFocused ? '' : "Email"}
+          label="Username"
+          value={username}
+          onChangeText={setUsername}
+          mode="outlined"
+          style={{ marginBottom: 12 }}
+        />
+        <TextInput
+          label="Email"
           value={email}
           onChangeText={setEmail}
           mode="outlined"
           autoCapitalize="none"
-          textColor="black"
-          activeOutlineColor="#5B6073"
-          style={{ marginBottom: 12, backgroundColor: "transparent" }}
+          style={{ marginBottom: 12 }}
         />
-
         <TextInput
-          placeholder={isFocused ? '' : 'Password'}
+          label="Password"
           value={password}
           onChangeText={setPassword}
-          mode="outlined"
           secureTextEntry
-          textColor="black"
-          activeOutlineColor="#5B6073"
-          style={{ marginBottom: 12, backgroundColor: "transparent", color: "black" }}
+          mode="outlined"
+          style={{ marginBottom: 12 }}
+        />
+        <TextInput
+          label="Confirm Password"
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secureTextEntry
+          mode="outlined"
+          style={{ marginBottom: 12 }}
         />
         <Button
           mode="contained"
-          onPress={handleLogin}
+          onPress={handleRegister}
           style={{ backgroundColor: "#007AFF", borderRadius: 8 }}
           contentStyle={{ paddingVertical: 6 }}
-          loading={isSubmitting}
-          disabled={isSubmitting}
-
+          loading={isPending}
+          disabled={isPending}
         >
           <Text style={{ color: "white", fontWeight: "800", fontSize: 16 }}>
-            Login
+            "Register"
           </Text>
         </Button>
       </Card>
@@ -138,4 +131,4 @@ const LoginScreen = () => {
   );
 };
 
-export default LoginScreen;
+export default RegisterScreen;

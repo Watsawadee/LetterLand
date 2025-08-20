@@ -8,7 +8,7 @@ export default function Home() {
   const handleLogout = async () => {
     // await SecureStore.deleteItemAsync("user-token");
     localStorage.removeItem("user-token");
-    router.replace("/login");
+    router.replace("/authentication/login");
   };
   return (
     <View
