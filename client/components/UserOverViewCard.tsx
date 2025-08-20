@@ -30,7 +30,7 @@ const UserOverviewCard = () => {
   const { data: user, isLoading } = useUserProfile();
 
   if (!userId || isLoading || !user) return <Text>Loading...</Text>;
-
+  if ("error" in user) return <Text>Error: {user.error}</Text>;
 
 
   const handleSelect = (type: "crossword" | "wordsearch") => {
@@ -39,7 +39,7 @@ const UserOverviewCard = () => {
     if (!userId) return;
 
     router.push({
-      pathname: "/main/CreateGame",
+      pathname: "/CreateGame",
       params: {
         gameType: type === "wordsearch" ? "WORD_SEARCH" : "CROSSWORD_SEARCH"
       },

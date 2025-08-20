@@ -14,7 +14,7 @@ export default function AgeScreen() {
     const userId = await getLoggedInUserId();
     if (!userId) {
       alert("Session expired. Please log in again.");
-      router.replace("/authentication/login");
+      router.replace("/login");
       return;
     }
     router.replace({

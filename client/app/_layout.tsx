@@ -19,12 +19,11 @@ export default function Layout() {
   useEffect(() => {
     const checkAuth = async () => {
       const token = await getToken();
-      const inAuthGroup = segments[0] === "authentication";
 
-      if (!token && !inAuthGroup && pathName !== "/authentication/login") {
-        router.replace("/authentication/login");
-      } else if (token && inAuthGroup && pathName !== "/main/Home") {
-        router.replace("/main/Home");
+      if (!token && pathName !== "/login") {
+        router.replace("/login");
+      } else if (token && pathName !== "/Home") {
+        router.replace("/Home");
       }
 
       setIsChecking(false);

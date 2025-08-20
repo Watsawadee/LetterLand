@@ -19,7 +19,7 @@ const VocabEvalScreen = () => {
       const id = await getLoggedInUserId();
       if (!id) {
         alert("Session expired. Please log in again.");
-        router.replace("/authentication/login");
+        router.replace("/login");
         return;
       }
 
@@ -66,7 +66,7 @@ const VocabEvalScreen = () => {
         age: Number(age),
         selectedWords,
       });
-      router.replace("/authentication/login");
+      router.replace("/login");
     } catch (error) {
       console.error(error);
       alert("Failed to setup profile.");
