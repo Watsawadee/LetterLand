@@ -11,6 +11,8 @@ const RegisterScreen = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isFocused, setIsFocused] = useState(false);
+
 
 
 
@@ -84,35 +86,43 @@ const RegisterScreen = () => {
           Create Account
         </Text>
         <TextInput
-          label="Username"
+          placeholder={isFocused ? "" : "Username"}
           value={username}
           onChangeText={setUsername}
           mode="outlined"
-          style={{ marginBottom: 12 }}
+          textColor="black"
+          activeOutlineColor="#5B6073"
+          style={{ marginBottom: 12, backgroundColor: "transparent" }}
         />
         <TextInput
-          label="Email"
+          placeholder={isFocused ? "" : "Email"}
           value={email}
           onChangeText={setEmail}
           mode="outlined"
           autoCapitalize="none"
-          style={{ marginBottom: 12 }}
+          textColor="black"
+          activeOutlineColor="#5B6073"
+          style={{ marginBottom: 12, backgroundColor: "transparent" }}
         />
         <TextInput
-          label="Password"
+          placeholder={isFocused ? "" : "Password"}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
           mode="outlined"
-          style={{ marginBottom: 12 }}
+          textColor="black"
+          activeOutlineColor="#5B6073"
+          style={{ marginBottom: 12, backgroundColor: "transparent" }}
         />
         <TextInput
-          label="Confirm Password"
+          placeholder={isFocused ? "" : "Confirm Password"}
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           secureTextEntry
           mode="outlined"
-          style={{ marginBottom: 12 }}
+          textColor="black"
+          activeOutlineColor="#5B6073"
+          style={{ marginBottom: 12, backgroundColor: "transparent" }}
         />
         <Button
           mode="contained"
@@ -123,7 +133,7 @@ const RegisterScreen = () => {
           disabled={isPending}
         >
           <Text style={{ color: "white", fontWeight: "800", fontSize: 16 }}>
-            "Register"
+            Register
           </Text>
         </Button>
       </Card>

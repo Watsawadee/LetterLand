@@ -118,7 +118,7 @@ const UserOverviewCard = () => {
 
               <Text style={{ fontWeight: "700", color: theme.colors.darkGrey, display: "flex", flexDirection: "column", justifyContent: "center" }}>Solve puzzles created by others</Text>
             </View>
-            <Button mode="contained" style={{ backgroundColor: theme.colors.green }}>
+            <Button mode="contained" style={{ backgroundColor: theme.colors.green }} onPress={() => { router.replace("/") }}>
               <Text style={{ color: theme.colors.darkGrey, fontWeight: "bold" }}>Explore other game</Text>
             </Button>
           </View>
