@@ -31,14 +31,14 @@ export const getFileFromDrive = async (fileName: string, folderId: string) => {
   return res.data.files?.[0] || null;
 };
 
-export const uploadToDrive = async (filePath: string, fileName: string, folderId: string) => {
+export const uploadToDrive = async (filePath: string, fileName: string, folderId: string, mimeType: string) => {
   try {
     const fileMetadata = {
       name: fileName,
       parents: [folderId],
     };
     const media = {
-      mimeType: 'audio/mpeg',
+      mimeType,
       body: fs.createReadStream(filePath),
     };
 

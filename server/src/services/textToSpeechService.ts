@@ -25,7 +25,7 @@ export const uploadAudio = async (
   filePath: string,
   fileName: string
 ): Promise<string> => {
-  const fileData = await uploadToDrive(filePath, fileName, AUDIO_FOLDERID);
+  const fileData = await uploadToDrive(filePath, fileName, AUDIO_FOLDERID, "audio/mpeg");
   fs.unlinkSync(filePath);
 
   return fileData.webViewLink || fileData.webContentLink || "";
