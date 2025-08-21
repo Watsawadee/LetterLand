@@ -1,19 +1,3 @@
-// import React from "react";
-// import SharedGameScreen from "../components/SharedGameScreen";
-
-// export default function WordSearchGame() {
-//   return (
-//     <></>
-    // <SharedGameScreen
-    //   mode="wordsearch"
-    //   title="Find all the words!"
-    //   CELL_SIZE={60}
-    //   GRID_SIZE={10}
-    //   questionsAndAnswers={questionsAndAnswers}
-    // />
-//   );
-// }
-
 import React, { useEffect, useState } from "react";
 import { Text } from "react-native";
 import SharedGameScreen from "../components/SharedGameScreen";
