@@ -4,6 +4,7 @@ import { generateCrosswordHints } from "../services/geminiService";
 import prisma from "../configs/db";
 import { CreateGameFromGeminiRequestSchema, CreateGameFromGeminiResponseSchema } from "../types/createGame.schema";
 import { z } from "zod"
+import { genImage } from "../services/genImageService";
 export const createGameFromGemini = async (req: Request, res: Response) => {
   const parsed = CreateGameFromGeminiRequestSchema.safeParse(req.body);
 
@@ -69,9 +70,21 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
         },
       },
     });
+
+    let imageData = null;
+    if (geminiResult.game.imagePrompt) {
+      imageData = await genImage(
+        geminiResult.game.imagePrompt,
+        "anime",
+        "16:9",
+        "5"
+      );
+    }
     const result = CreateGameFromGeminiResponseSchema.safeParse({
       message: "Game created successfully from Gemini",
       game,
+      image: imageData,
+      imagePrompt: geminiResult.game.imagePrompt,
     });
 
     if (!result.success) {
