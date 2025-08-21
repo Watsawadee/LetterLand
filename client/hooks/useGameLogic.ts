@@ -45,13 +45,13 @@ export function useGameLogic({
 
   const showHintForAnswer = useCallback(
     (answer: string) => {
-      if (mode === "wordsearch") {
+      if (mode === "WORD_SEARCH") {
         const positions = answerPositionsRef.current[answer];
         if (positions?.length) {
           setHintCell(positions[0]);
           setActiveHintWord(answer);
         }
-      } else if (mode === "crossword_search") {
+      } else if (mode === "CROSSWORD_SEARCH") {
         if (!revealedAnswers.includes(answer)) {
           setRevealedAnswers((prev) => [...prev, answer]);
         }
@@ -75,8 +75,10 @@ export function useGameLogic({
   );
 
   useEffect(() => {
-    initializeGame();
-  }, [initializeGame]);
+    if (questionsAndAnswers.length > 0) {
+      initializeGame();
+    }
+  }, [initializeGame, questionsAndAnswers]);
 
   const panResponder = useDragGesture({
     GRID_SIZE,

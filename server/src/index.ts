@@ -18,14 +18,14 @@ app.use(cors());
 
 app.use("/assets", express.static(path.join(process.cwd(), "assets")));
 
-app.use("/api/users", userRoutes);
-app.use("/api/pronunciations", pronunciationRoutes);
-app.use("/api/geminis", geminiRoutes);
-app.use("/api/images", genImageRoutes);
-app.use("/api", setupRoute);
-app.use("/api/dashboard", dashboardRoute);
-app.use("/api/users", userProfileRoute);
-app.use('/api/games', gameRoutes);
+app.use("/users", userRoutes);
+app.use("/pronunciations", pronunciationRoutes);
+app.use("/geminis", geminiRoutes);
+app.use("/images", genImageRoutes);
+app.use("/setup", setupRoute);
+app.use("/dashboard", dashboardRoute);
+app.use("/users", userProfileRoute);
+app.use('/games', gameRoutes);
 
 app.listen(3000, () => {
   console.log("Server is running on port 3000");

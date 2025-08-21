@@ -4,19 +4,44 @@ import {
 } from "react-native";
 
 // SharedGameScreen.tsx
-export type GameProps = {
-  mode: "wordsearch" | "crossword_search";
+export interface GameProps {
+  mode: "WORD_SEARCH" | "CROSSWORD_SEARCH";
   title: string;
   CELL_SIZE: number;
   GRID_SIZE: number;
   questionsAndAnswers: QuestionAnswer[];
-};
+  gameData?: GameData;
+}
+
+export interface GameData {
+  id: number;
+  userId: number;
+  gameTemplateId: number;
+  startedAt: string;
+  finishedAt: string | null;
+  isHintUsed: boolean;
+  isFinished: boolean;
+  gameCode: string | null;
+  timer: number | null;
+  gameTemplate: GameTemplate;
+}
+
+export interface GameTemplate {
+  id: number;
+  gameTopic: string;
+  gameType: "WORDSEARCH" | "CROSSWORD_SEARCH";
+  difficulty: string;
+  isPublic: boolean;
+  questions: QuestionAnswer[];
+}
 
 // gameData.ts
 export interface QuestionAnswer {
-  name: string;
-  answer: string;
-  hint: string;
+  id: number,
+  gameTemplateId: number,
+  name: string,
+  answer: string,
+  hint: string
 }
 
 // GameControls.tsx
@@ -105,7 +130,7 @@ export interface UseGameLogicProps {
   GRID_SIZE: number;
   CELL_SIZE: number;
   questionsAndAnswers: QuestionAnswer[];
-  mode: "wordsearch" | "crossword_search";
+  mode: "WORD_SEARCH" | "CROSSWORD_SEARCH";
 }
 
 // useDragGesture.ts

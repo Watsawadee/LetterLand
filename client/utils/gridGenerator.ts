@@ -15,13 +15,19 @@ export const generateGrid = (
     [1, 1], // down-right
   ];
 
+  const cleanWords = words.map(w => w.replace(/\s+/g, ""));
   const placeAllWords = (): string[][] | null => {
     const grid = Array.from({ length: gridSize }, () =>
       Array(gridSize).fill("")
     );
 
-    for (const word of words) {
+    for (const word of cleanWords) {
+      if (word.length > gridSize) {
+        console.error(`Word "${word}" is too long for grid size ${gridSize}`);
+        continue;
+      }
       let placed = false;
+
       for (let attempts = 0; attempts < 100 && !placed; attempts++) {
         const dir = directions[Math.floor(Math.random() * directions.length)];
         let r = Math.floor(Math.random() * gridSize);
@@ -52,16 +58,31 @@ export const generateGrid = (
           }
           positions[word] = wordPos;
           placed = true;
+          // console.log(
+          //   `✅ Placed word '${word}' at (${r},${c}) with direction [${dir}]`
+          // );
+        } else {
+          // console.log(
+          //   `❌ Failed attempt for word '${word}' at (${r},${c}) with direction [${dir}]`
+          // );
         }
       }
-      if (!placed) return null;
+
+      if (!placed) {
+        // console.log(`🚫 Could not place word '${word}' after 100 attempts`);
+        return null;
+      }
     }
+
+    // grid.forEach((row) => console.log(row.join(" ")));
+
     return grid;
   };
 
   let newGrid: string[][] | null;
   while (!(newGrid = placeAllWords())) {}
 
+  // Fill empty cells
   for (let i = 0; i < gridSize; i++) {
     for (let j = 0; j < gridSize; j++) {
       if (!newGrid[i][j]) {
@@ -69,6 +90,7 @@ export const generateGrid = (
       }
     }
   }
+  // newGrid.forEach((row) => console.log(row.join(" ")));
 
   return { grid: newGrid, positions };
 };

@@ -34,3 +34,7 @@ Thumbs.db
 
 # Assets
 /assets
+
+# Google Cloud credentials
+/config/credentials.json
+credentials.json
