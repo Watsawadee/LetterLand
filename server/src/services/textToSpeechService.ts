@@ -1,31 +1,52 @@
 import { speak } from "google-translate-api-x";
 import fs from "fs";
 import path from "path";
+import dotenv from "dotenv";
+import { getFileFromDrive, uploadToDrive } from "./ggDriveService";
+
+dotenv.config();
+
+const AUDIO_FOLDERID = process.env.AUDIO_FOLDERID!;
+
+export const textToSpeech = async (word: string): Promise<string> => {
+  const normalizedWord = word.toLowerCase();
+  const tts = await speak(word, { to: "en" });
+
+  const tmpDir = path.join(process.cwd(), "tmp");
+  if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
+
+  const tempFilePath = path.join(tmpDir, `${normalizedWord}.mp3`);
+  fs.writeFileSync(tempFilePath, tts, { encoding: "base64" });
+
+  return tempFilePath;
+};
+
+export const uploadAudio = async (
+  filePath: string,
+  fileName: string
+): Promise<string> => {
+  const fileData = await uploadToDrive(filePath, fileName, AUDIO_FOLDERID, "audio/mpeg");
+  fs.unlinkSync(filePath);
+
+  return fileData.webViewLink || fileData.webContentLink || "";
+};
 
 export const generatePronunciation = async (word: string) => {
-  try {
-    const tts = await speak(word, { to: "en" });
-    const normalizedWord = word.toLowerCase();
+  const fileName = `${word.toLowerCase()}.mp3`;
 
-    const soundsDir = path.join(process.cwd(), "assets", "sounds");
-
-    if (!fs.existsSync(soundsDir)) {
-      fs.mkdirSync(soundsDir, { recursive: true });
-    }
-
-    const filePath = path.join(soundsDir, `${normalizedWord}.mp3`);
-    const fileUrl = `/assets/sounds/${normalizedWord}.mp3`;
-
-    if (fs.existsSync(filePath)) {
-      console.log(`${normalizedWord}.mp3 already exists, skipping save.`);
-      return fileUrl;
-    }
-
-    fs.writeFileSync(filePath, tts, { encoding: "base64" });
-
-    return fileUrl;
-  } catch (err) {
-    console.error("Error pronunciation:", err);
-    throw new Error("Failed to create pronunciation");
+  const existingFile = await getFileFromDrive(fileName, AUDIO_FOLDERID);
+  if (existingFile) {
+    return {
+      alreadyExists: true,
+      url: existingFile.webViewLink || existingFile.webContentLink || "",
+    };
   }
+
+  const tempFile = await textToSpeech(word);
+  const url = await uploadAudio(tempFile, fileName);
+
+  return {
+    alreadyExists: false,
+    url,
+  };
 };

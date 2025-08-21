@@ -25,6 +25,7 @@
         "express": "^4.21.2",
         "fs": "^0.0.1-security",
         "google-translate-api-x": "^10.7.2",
+        "googleapis": "^156.0.0",
         "multer": "^1.4.5-lts.2",
         "path": "^0.12.7",
         "pdf.js-extract": "^0.2.1"

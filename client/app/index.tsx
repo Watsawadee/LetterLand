@@ -10,17 +10,17 @@ import {
   ScrollView,
   TouchableOpacity,
   Modal,
-} from 'react-native';
-import { CustomButton } from '@/theme/ButtonCustom';
-import { Typography } from '../theme/Font';
-import { recentGamesMock, publicGamesMock } from '@/mock/gamemock';
-import { mapRecentGameToCard, mapPublicGameToCard } from '@/utils/gameMappers';
-import { Card } from '../components/GameCard';
-import { achievementMock } from '@/mock/achievementMock';
-import { mapUserAchievementToCard } from '@/utils/achievementMappers';
-import { AchievementCard } from '@/components/AchievementCard';
-import { wordBankStyles } from '../theme/WordBank';
-import SvgIcon from '../components/WordBank';
+} from "react-native";
+import { CustomButton } from "@/theme/ButtonCustom";
+import { Typography } from "../theme/Font";
+import { recentGamesMock, publicGamesMock } from "@/mock/gamemock";
+import { mapRecentGameToCard, mapPublicGameToCard } from "@/utils/gameMappers";
+import { Card } from "../components/GameCard";
+import { achievementMock } from "@/mock/achievementMock";
+import { mapUserAchievementToCard } from "@/utils/achievementMappers";
+import { AchievementCard } from "@/components/AchievementCard";
+import { wordBankStyles } from "../theme/WordBank";
+import SvgIcon from "../components/WordBank";
 
 export default function Home() {
   const router = useRouter();
@@ -31,7 +31,7 @@ export default function Home() {
     if (type === "word") {
       router.push("/wordSearchGame");
     } else {
-      router.push('/crosswordSearchGame');
+      router.push("/crosswordSearchGame");
     }
   };
 
@@ -50,7 +50,7 @@ export default function Home() {
       <CustomButton
         label="Play"
         type="medium"
-        onPress={() => router.push('/')}
+        onPress={() => router.push("/")}
       />
 
       {/* ✅ Word Bank Button */}
@@ -77,11 +77,11 @@ export default function Home() {
       <CustomButton
         label="Play"
         type="small"
-        onPress={() => router.push('/crosswordSearchGame')}
+        onPress={() => router.push("/crosswordSearchGame")}
       />
       <CustomButton
         type="fontSize"
-        onPress={() => router.push('/crosswordSearchGame')}
+        onPress={() => router.push("/crosswordSearchGame")}
       />
 
       <View>
@@ -90,28 +90,56 @@ export default function Home() {
 
       {/* Recent & Public Games */}
       <View style={styles.cardSection}>
-        <Text style={[Typography.header20, { marginBottom: 8 }]}>Recent Games</Text>
+        <Text style={[Typography.header20, { marginBottom: 8 }]}>
+          Recent Games
+        </Text>
         <FlatList
           data={recentGameCards}
           horizontal
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <Card {...item} />}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => (
+            <Card
+              {...item}
+              onPress={() =>
+                router.push({
+                  pathname: "/crosswordSearchGame",
+                  // Fix the gameId
+                  params: { gameId: item.id.toString() },
+                })
+              }
+            />
+          )}
           showsHorizontalScrollIndicator={false}
         />
 
-        <Text style={[Typography.header20, { marginVertical: 16 }]}>Public Games</Text>
+        <Text style={[Typography.header20, { marginVertical: 16 }]}>
+          Public Games
+        </Text>
         <FlatList
           data={publicGameCards}
           horizontal
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <Card {...item} />}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => (
+            <Card
+              {...item}
+              onPress={() =>
+                router.push({
+                  pathname: "/wordSearchGame",
+                  // Fix the gameId
+                  params: { gameId: item.id.toString() },
+                })
+              }
+            />
+          )}
           showsHorizontalScrollIndicator={false}
         />
       </View>
 
       {/* Achievements */}
       <View>
-        <Text style={[Typography.header20, { marginBottom: 8 }]}>Achievements</Text>
+        <Text style={[Typography.header20, { marginBottom: 8 }]}>
+          Achievements
+        </Text>
         <FlatList
           data={achievements}
           horizontal

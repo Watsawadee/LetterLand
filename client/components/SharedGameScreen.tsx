@@ -54,16 +54,16 @@ export default function SharedGameScreen({
   const [lastHintIndex, setLastHintIndex] = useState(-1);
   const isHintDisabled =
     hintCount <= 0 ||
-    (mode === "crossword_search" &&
+    (mode === "CROSSWORD_SEARCH" &&
       revealedAnswers.includes(
         questionsAndAnswers[activeQuestionIndex].answer
       )) ||
-    (mode === "wordsearch" && activeHintWord !== null);
+    (mode === "WORD_SEARCH" && activeHintWord !== null);
 
   const onShowHint = () => {
     if (hintCount <= 0) return;
 
-    if (mode === "crossword_search") {
+    if (mode === "CROSSWORD_SEARCH") {
       const currentQA = questionsAndAnswers[activeQuestionIndex];
       if (!currentQA) return;
 
@@ -126,7 +126,7 @@ export default function SharedGameScreen({
       </View>
 
       <View style={styles.itemWrapper}>
-        {mode === "crossword_search" ? (
+        {mode === "CROSSWORD_SEARCH" ? (
           <QuestionListSlider
             questionsAndAnswers={questionsAndAnswers}
             foundWords={foundWordsList}

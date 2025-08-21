@@ -70,10 +70,14 @@ export const recordFoundWordController = async (
 
     const gameData = await getGameData(gameId);
     const gameTemplateId = Number(gameData?.gameTemplateId);
+    if (!gameTemplateId) {
+      res.status(400).json({ message: "Can't get gameTemplateId" });
+      return;
+    }
     const question = await getCorrectAnswerById(gameTemplateId, questionId);
 
     if (!question) {
-      res.status(404).json({ message: "Question not found" });
+      res.status(400).json({ message: "Question not found" });
       return;
     }
 
@@ -105,7 +109,7 @@ export const batchRecordFoundWordsController = async (
 ) => {
   try {
     const { foundWords } = req.body;
-    const { gameId } = (req.params);
+    const { gameId } = req.params;
 
     if (!Array.isArray(foundWords)) {
       res.status(400).json({ message: "Invalid data" });
@@ -123,10 +127,14 @@ export const batchRecordFoundWordsController = async (
 
       const gameData = await getGameData(Number(gameId));
       const gameTemplateId = Number(gameData?.gameTemplateId);
+      if (!gameTemplateId) {
+        res.status(400).json({ message: "Can't get gameTemplateId" });
+        return;
+      }
       const question = await getCorrectAnswerById(gameTemplateId, questionId);
 
       if (!question) {
-        res.status(404).json({ message: "Question not found" });
+        res.status(400).json({ message: "Question not found" });
         return;
       }
 
@@ -136,9 +144,8 @@ export const batchRecordFoundWordsController = async (
       }
     }
 
-    await batchRecordFoundWords(foundWords);
-    console.log(foundWords)
-    res.status(201).json({ message: "Batch recorded" });
+    const result = await batchRecordFoundWords(foundWords);
+    res.status(201).json({ message: "Batch recorded", data: result });
   } catch (err) {
     console.error("Batch record error:", err);
     res.status(500).json({ message: "Batch record failed" });
