@@ -17,7 +17,7 @@ export default function CrosswordSearchGame() {
     const fetchGameData = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:3000/api/games/gamedata/${gameId}`
+          `http://localhost:3000/games/gamedata/${gameId}`
         );
         const data: GameData = response.data.data;
 

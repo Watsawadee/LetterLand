@@ -33,7 +33,7 @@ const axiosInstance = axios.create({
 
 export const getWords = async (): Promise<GetWordsOrError> => {
   try {
-    const res = await axiosInstance.get(`${baseUrl}/api/getwords`);
+    const res = await axiosInstance.get(`${baseUrl}/setup/getwords`);
     return GetWordsOrErrorSchema.parse(res.data);
   } catch (error) {
     console.error("Error fetching words:", error);
@@ -45,7 +45,7 @@ export const setupProfile = async (
   payload: SetupProfileRequest
 ): Promise<SetupProfileResponse> => {
   try {
-    const res = await axiosInstance.post<SetupProfileResponse>(`${baseUrl}/api/setup-profile`,
+    const res = await axiosInstance.post<SetupProfileResponse>(`${baseUrl}/setup/setup-profile`,
       payload
     );
 

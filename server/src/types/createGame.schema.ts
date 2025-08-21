@@ -21,7 +21,6 @@ export const CreateGameFromGeminiResponseSchema = z.object({
         id: z.number(),
         userId: z.number(),
         gameTemplateId: z.number(),
-        timer: z.number().nullable().optional(),
         isHintUsed: z.boolean(),
         isFinished: z.boolean(),
         gameTemplate: z.object({
@@ -38,5 +37,7 @@ export const CreateGameFromGeminiResponseSchema = z.object({
                 })
             ),
         }),
+        imagePrompt: z.string().optional(),
+        image: z.any().optional(),
     }),
 });

@@ -9,9 +9,10 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
   const parsed = CreateGameFromGeminiRequestSchema.safeParse(req.body);
 
   if (!parsed.success) {
-    return res.status(400).json({
+    res.status(400).json({
       issues: z.treeifyError(parsed.error),
     });
+    return;
   }
 
   const { type, userId, difficulty, gameType, timer, inputData } = parsed.data;
@@ -20,16 +21,19 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
     let rawInput: string | Buffer;
     if (type === "pdf") {
       if (!req.file?.buffer) {
-        return res.status(400).json({ message: "PDF file is missing" });
+        res.status(400).json({ message: "PDF file is missing" });
+        return;
       }
       rawInput = req.file.buffer;
     } else if (type === "link" || type === "text") {
       if (!inputData) {
-        return res.status(400).json({ message: "Input data is missing" });
+        res.status(400).json({ message: "Input data is missing" });
+        return;
       }
       rawInput = inputData;
     } else {
-      return res.status(400).json({ message: "Unsupported type" });
+      res.status(400).json({ message: "Unsupported type" });
+      return;
     }
 
     const data = await extractData(rawInput, type);
@@ -43,7 +47,7 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
 
     const gameTemplate = await prisma.gameTemplate.create({
       data: {
-        gameTopic: geminiResult.game.topic,
+        gameTopic: geminiResult.game.gameTopic,
         gameType: gameType,
         difficulty: difficulty,
         isPublic: false,
@@ -72,27 +76,30 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
     });
 
     let imageData = null;
-    if (geminiResult.game.imagePrompt) {
+    if (geminiResult.imagePrompt) {
       imageData = await genImage(
-        geminiResult.game.imagePrompt,
-        "anime",
+        geminiResult.imagePrompt,
+        "realistic",
         "16:9",
-        "5"
+        "5",
+        game.id.toString(),
+        geminiResult.game.gameTopic
       );
     }
     const result = CreateGameFromGeminiResponseSchema.safeParse({
       message: "Game created successfully from Gemini",
       game,
       image: imageData,
-      imagePrompt: geminiResult.game.imagePrompt,
+      imagePrompt: geminiResult.imagePrompt,
     });
 
     if (!result.success) {
       console.error("Response validation error:", z.treeifyError(result.error));
-      return res.status(500).json({
+      res.status(500).json({
         message: "Invalid response format",
         issues: z.treeifyError(result.error),
       });
+      return;
     }
     res.status(201).json(result.data);
   } catch (error: any) {

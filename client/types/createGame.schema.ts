@@ -37,5 +37,7 @@ export const CreateGameFromGeminiResponseSchema = z.object({
                 })
             ),
         }),
+        imagePrompt: z.string().optional(),
+        image: z.any().optional(),
     }),
 });

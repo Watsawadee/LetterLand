@@ -29,7 +29,7 @@ export async function getTotalGameThisWeek(): Promise<WeeklyGameData> {
     const userId = await getLoggedInUserId();
     const config = await getAuthHeader();
     const res = await axiosInstance.get<WeeklyGameData>(
-        `/api/dashboard/user/${userId}/gameplayedperweek`,
+        `/dashboard/user/${userId}/gameplayedperweek`,
         config
     );
     const ok = GamesPlayedPerWeekResponseSchema.safeParse(res.data);
@@ -46,7 +46,7 @@ export async function getUserTotalPlaytime(): Promise<TotalPlaytimeOrError> {
     const config = await getAuthHeader();
 
     const res = await axiosInstance.get<{ totalPlaytime: number }>(
-        `/api/dashboard/user/${userId}/playtime`,
+        `/dashboard/user/${userId}/playtime`,
         config
     );
 
@@ -57,7 +57,7 @@ export async function getUserWordLearned(): Promise<WordsLearnedOrError> {
     const userId = await getLoggedInUserId();
     const config = await getAuthHeader();
     const res = await axiosInstance.get<{ wordsLearned: number }>(
-        `/api/dashboard/user/${userId}/wordlearned`,
+        `/dashboard/user/${userId}/wordlearned`,
         config
     );
     return WordsLearnedOrErrorSchema.parse(res.data);

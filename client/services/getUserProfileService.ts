@@ -17,7 +17,7 @@ export const getUserProfile = async (): Promise<UserProfileOrError> => {
     }
 
     const response = await axios.get<UserProfileOrError>(
-      `${baseUrl}/api/users/me/profile`,
+      `${baseUrl}/users/me/profile`,
       {
         headers: {
           Authorization: `Bearer ${token}`,

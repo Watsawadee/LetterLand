@@ -40,7 +40,7 @@ export const createGameFromGemini = async (
     if (!token) throw new Error("No token provided");
 
     const res = await axiosInstance.post(
-        "/api/geminis/gemini",
+        "/geminis/gemini",
         payload,
         {
             headers: {

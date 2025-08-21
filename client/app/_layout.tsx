@@ -40,7 +40,7 @@ export default function Layout() {
       <PaperProvider>
         <ThemeProvider>
           <Stack />
-          {/* <ReactQueryDevtools initialIsOpen={true} /> */}
+          <ReactQueryDevtools initialIsOpen={true} />
         </ThemeProvider>
       </PaperProvider>
     </QueryClientProvider>

@@ -5,9 +5,8 @@ import { getFileFromDrive } from "../services/ggDriveService";
 
 dotenv.config();
 const IMAGE_FOLDERID = process.env.IMAGE_FOLDERID!;
-
 export const genImageAPI = async (req: Request, res: Response) => {
-    const { prompt, style, aspect_ratio, seed, gameId, gameTopic } = req.body;
+  const { prompt, style, aspect_ratio, seed, gameId, gameTopic } = req.body;
 
   try {
     const data = await genImage(prompt, style, aspect_ratio, seed, gameId, gameTopic);

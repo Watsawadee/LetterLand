@@ -21,7 +21,7 @@ export const registerUser = async (
   payload: RegisterRequest
 ): Promise<RegisterResponse> => {
   const res = await axios.post<RegisterResponse>(
-    `${baseUrl}/api/users/auth/register`,
+    `${baseUrl}/users/auth/register`,
     payload
   );
 
@@ -30,7 +30,7 @@ export const registerUser = async (
 
 export const loginUser = async (payload: LoginRequest): Promise<LoginResponse> => {
   try {
-    const res = await axios.post(`${baseUrl}/api/users/auth/login`, payload);
+    const res = await axios.post(`${baseUrl}/users/auth/login`, payload);
     const token = res.data.token;
     if (Platform.OS === "web") {
       localStorage.setItem("user-token", token);
