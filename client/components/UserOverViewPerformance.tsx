@@ -1,44 +1,62 @@
-import React from "react"
+import React, { useEffect, useState } from "react"
 import { View, Text } from "react-native"
 import { useTotalGamesThisWeek, useUserTotalPlaytime, useUserWordLearned } from "@/hooks/useDashboard";
 import {
-    LineChart,
+    BarChart,
 } from "react-native-chart-kit";
 import Svg, { Text as SvgText } from "react-native-svg";
 import { theme } from "@/theme";
 import { Card } from "react-native-paper";
+import { ActivityIndicator } from "react-native";
 import Clock from "@/assets/icon/Clock";
 import Pencil from "@/assets/icon/Pencil";
 
 
 const UserOverviewPerformance = () => {
 
-    const {
-        data,
-    } = useTotalGamesThisWeek();
-    const maxValue = Math.max(...data?.counts ?? [1]);
-    const segments = maxValue <= 6 ? maxValue : 5;
+    const { data: TotalgamesData, isLoading: loadingChart, isError: chartError } = useTotalGamesThisWeek();
+    const [forceLoading, setForceLoading] = useState(true);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setForceLoading(false), 1000);
+        return () => clearTimeout(timer);
+    }, []);
+
+    //For custom segment
+    // const maxValue = Math.max(...data?.counts ?? [1]);
+    // const segments = maxValue <= 10 ? maxValue : 5;
+
     const chartData = {
-        labels: data?.labels ?? ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
-        datasets: [{ data: data?.counts ?? [0, 0, 0, 0, 0, 0, 0] }],
+        labels: TotalgamesData?.labels ?? ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
+        datasets: [{ data: TotalgamesData?.counts ?? [0, 0, 0, 0, 0, 0, 0] }],
     };
+
+    //For UI mock up test
+    // const chartData = {
+    //     labels: ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
+    //     datasets: [
+    //         { data: [50, 0, 123, 0, 200, 0, 0] }
+    //     ],
+    // };
+
     const chartConfig = {
         backgroundColor: "#F2F8F9",
         backgroundGradientFrom: "#F2F8F9",
         backgroundGradientTo: "#F2F8F9",
 
         decimalPlaces: 0,
-        color: () => `rgba(255, 214, 0)`,
+        color: () => `#000`,
         labelColor: () => `rgba(91, 96, 115)`,
         style: {
             borderRadius: 16,
         },
         propsForBackgroundLines: {
-            stroke: theme.colors.darkGrey,
-            strokeDasharray: "",
-            strokeWidth: 0.5,
+            strokeWidth: 0,
         },
     };
+
+    const showLoader = forceLoading || loadingChart || !TotalgamesData;
+
 
     const { data: totalPlaytime, isLoading: loadingPlaytime } = useUserTotalPlaytime();
     const { data: wordsLearned, isLoading: loadingWords } = useUserWordLearned();
@@ -54,9 +72,45 @@ const UserOverviewPerformance = () => {
                     backgroundColor: "#F2F8F9", borderRadius: 16,
                     padding: 10,
                     margin: 12,
+                    display: "flex",
+                    justifyContent: "center"
                 }}>
+                    {
+                        chartError ? (
+                            <View style={{ height: 200, alignItems: "center", justifyContent: "center" }}>
+                                <Text style={{ color: theme.colors.darkGrey }}>Failed to load chart</Text>
+                            </View>) : showLoader ? (
+                                <View style={{
+                                    width: 450,
+                                    height: 200,
+                                    display: "flex",
+                                    justifyContent: "center"
+                                }}>
+                                    <ActivityIndicator size={"small"} />
+                                </View>
+                            ) : (
+                            <BarChart
+                                data={chartData}
+                                width={450}
+                                height={200}
+                                chartConfig={chartConfig}
+                                fromZero={true}
+                                yAxisLabel=""
+                                yAxisSuffix=""
+                                showValuesOnTopOfBars
+                                // segments={segments}
+                                style={{
+                                    borderRadius: 16,
+                                    display: "flex",
+                                    flexDirection: "row",
+                                    alignItems: "flex-start",
+                                    justifyContent: "flex-start"
+                                }}
+                            />
+                        )
+                    }
 
-                    <LineChart
+                    {/* <LineChart
                         data={chartData}
                         width={450}
                         height={200}
@@ -116,7 +170,7 @@ const UserOverviewPerformance = () => {
                                 </Svg>
                             );
                         }}
-                    />
+                    /> */}
                 </View>
             </Card>
 
