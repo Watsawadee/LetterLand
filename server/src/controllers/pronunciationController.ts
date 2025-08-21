@@ -4,8 +4,8 @@ import { getFileFromDrive } from "../services/ggDriveService";
 import dotenv from "dotenv";
 
 dotenv.config();
-
 const AUDIO_FOLDERID = process.env.AUDIO_FOLDERID!;
+
 export const pronunciation = async (req: Request, res: Response) => {
   const { word } = req.body;
 
