@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useUserProfile } from "@/hooks/useGetUserProfile";
-import { View, Dimensions } from "react-native";
+import { View, Dimensions, Switch } from "react-native";
 import {
   Text,
   Button,
@@ -20,9 +20,15 @@ const CreateGameScreen = () => {
 
 
   const [englishLevel, setEnglishLevel] = useState<CreateGameFromGeminiRequest["difficulty"]>();
-  const [timer, setTimer] = useState<"none" | "1" | "3" | "5">("none");
-  const [uploadType, setUploadType] = useState<"text" | "link" | "image">("text");
+  type UiTimer = "none" | "1" | "3" | "5";
+  const [timer, setTimer] = useState<UiTimer>("none");
+  const [uploadType, setUploadType] = useState<"text" | "link" | "pdf">("text");
+  const [isPublic, setIsPublic] = useState(false)
   const [input, setInput] = useState("");
+
+  const handleToggle = () => {
+    setIsPublic(previousState => !previousState);
+  }
 
   const { data: user, isLoading, isError } = useUserProfile();
   const createGameMutation = useCreateGameFromGemini();
@@ -39,13 +45,17 @@ const CreateGameScreen = () => {
       alert("Please fill in all fields");
       return;
     }
-    const apiUploadType = uploadType === "image" ? "pdf" : uploadType;
+    const apiUploadType = uploadType === "pdf" ? "pdf" : uploadType;
+    const apiTimer: number | null = timer === "none" ? null : Number(timer);
+
     createGameMutation.mutate({
       userId: user.id,
       difficulty: englishLevel,
       inputData: input,
       type: apiUploadType,
       gameType: gameType!,
+      timer: apiTimer,
+      isPublic
     });
   };
 
@@ -56,6 +66,7 @@ const CreateGameScreen = () => {
       </View>
     );
   }
+
 
   return (
     <View style={{ flex: 1, backgroundColor: "#fef9f2" }}>
@@ -91,11 +102,8 @@ const CreateGameScreen = () => {
               </Button>
             ))}
           </View>
-          <Text style={{ fontWeight: "700", color: "#555" }}>
-            Timer
-          </Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            {["none", "1", "3", "5"].map((t) => (
+            {(["none", "1", "3", "5"] as UiTimer[]).map((t) => (
               <Button
                 key={t}
                 style={{
@@ -105,20 +113,33 @@ const CreateGameScreen = () => {
                   backgroundColor: timer === t ? "#58A7F8" : "#fff",
                   borderColor: "#ddd",
                 }}
-                onPress={() => setTimer(t as any)}
+                onPress={() => setTimer(t)}
               >
-                <Text style={{ color: timer === t ? theme.colors.white : theme.colors.darkGrey, fontWeight: "bold" }}>
+                <Text
+                  style={{
+                    color: timer === t ? theme.colors.white : theme.colors.darkGrey,
+                    fontWeight: "bold",
+                  }}
+                >
                   {t === "none" ? "None" : `${t} mins`}
                 </Text>
               </Button>
             ))}
+          </View>
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <Text style={{ fontWeight: "700", color: "#555" }}>Privacy</Text>
+            <Switch trackColor={{ false: '#3e3e3e', true: '#f5dd4b' }}
+              thumbColor={isPublic ? "#3e3e3e" : "#f5dd4b"}
+              onValueChange={handleToggle}
+              value={isPublic} />
+
           </View>
 
           <Text style={{ fontWeight: "700", color: "#555" }}>
             Upload type
           </Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            {["text", "link", "image"].map((type) => (
+            {["text", "link", "pdf"].map((type) => (
               <Button
                 key={type}
                 style={{

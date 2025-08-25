@@ -11,6 +11,7 @@ export const CreateGameFromGeminiRequestSchema = z.object({
     difficulty: EnglishLevelSchema,
     timer: z.number().nullable().optional(),
     type: MaterialTypeSchema,
+    isPublic: z.boolean().optional(),
     inputData: z.string().optional(),
 });
 

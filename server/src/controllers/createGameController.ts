@@ -15,7 +15,7 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
     return;
   }
 
-  const { type, userId, difficulty, gameType, timer, inputData } = parsed.data;
+  const { type, userId, difficulty, gameType, timer, inputData, isPublic } = parsed.data;
 
   try {
     let rawInput: string | Buffer;
@@ -50,7 +50,7 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
         gameTopic: geminiResult.game.gameTopic,
         gameType: gameType,
         difficulty: difficulty,
-        isPublic: false,
+        isPublic: isPublic,
         questions: {
           create: geminiResult.game.questions.map((q: any) => ({
             name: q.question,
