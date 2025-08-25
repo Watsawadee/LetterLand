@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Text } from "react-native";
 import SharedGameScreen from "../components/SharedGameScreen";
-import axios from "axios";
 import { GameData } from "../types/type";
 import { useLocalSearchParams } from "expo-router";
+import { getGameData } from "../services/gameService";
 
 export default function WordSearchGame() {
   const { gameId } = useLocalSearchParams<{ gameId: string }>();
@@ -16,10 +16,7 @@ export default function WordSearchGame() {
 
     const fetchGameData = async () => {
       try {
-        const response = await axios.get(
-          `http://localhost:3000/api/games/gamedata/${gameId}`
-        );
-        const data: GameData = response.data.data;
+        const data: GameData = await getGameData(gameId);
 
         const questionsWithUppercase = data.gameTemplate.questions.map((q) => ({
           ...q,
