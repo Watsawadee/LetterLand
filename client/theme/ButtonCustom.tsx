@@ -1,24 +1,51 @@
-import React from 'react';
-import { Text, TouchableOpacity, View, StyleProp, ViewStyle } from 'react-native';
-import { ButtonStyles } from './ButtonStyles';
+import React from "react";
+import {
+  Text,
+  TouchableOpacity,
+  View,
+  StyleProp,
+  ViewStyle,
+  TextStyle,
+} from "react-native";
+import { ButtonStyles } from "./ButtonStyles";
 
 type ButtonType = keyof typeof ButtonStyles;
 
 interface Props {
   label?: string;
   onPress: () => void;
-  type: ButtonType;  
+  type: ButtonType;
   icon?: React.ReactNode;
-  //customStyle?: StyleProp<ViewStyle>; เอาไว้ style เพิ่มเติม
+  disabled?: boolean;
+  number?: number;
+  customStyle?: StyleProp<ViewStyle>;
+  customTextStyle?: StyleProp<TextStyle>;
+  iconStyle?: StyleProp<ViewStyle>;
 }
 
-export const CustomButton = ({ label, onPress, type, icon }: Props) => {
-  const { container, text } = ButtonStyles[type]; 
+export const CustomButton = ({
+  label,
+  onPress,
+  disabled,
+  type,
+  icon,
+  number,
+  customStyle,
+  customTextStyle,
+  iconStyle,
+}: Props) => {
+  const { container, text } = ButtonStyles[type];
 
   return (
-    <TouchableOpacity onPress={onPress} style={[container]}>
-      {icon && <View>{icon}</View>}
-      <Text style={text}>{label}</Text>
+    <TouchableOpacity
+      onPress={onPress}
+      disabled={disabled}
+      style={[container, customStyle]}
+    >
+      {icon && <View style={iconStyle}>{icon}</View>}
+      <Text style={[text, customTextStyle]}>
+        {label} {number !== undefined ? number : ""}
+      </Text>
     </TouchableOpacity>
   );
 };

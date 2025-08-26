@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useRouter } from "expo-router";
-import GameSelectionModal from "@/components/GameSelectionModal";
 import {
   View,
   Text,
@@ -24,16 +23,7 @@ import SvgIcon from "../components/WordBank";
 
 export default function Home() {
   const router = useRouter();
-  const [modalVisible, setModalVisible] = useState(false);
   const [showBook, setShowBook] = useState(false);
-  const handleGameSelection = (type: "word" | "crossword") => {
-    setModalVisible(false);
-    if (type === "word") {
-      router.push("/wordSearchGame");
-    } else {
-      router.push("/crosswordSearchGame");
-    }
-  };
 
   const recentGameCards = recentGamesMock.map(mapRecentGameToCard);
   const publicGameCards = publicGamesMock.map(mapPublicGameToCard);
@@ -43,16 +33,12 @@ export default function Home() {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Welcome to LetterLand!</Text>
 
-      <View style={styles.buttonContainer}>
-        <Button title="Start Game" onPress={() => setModalVisible(true)} />
-      </View>
-
       <CustomButton
         label="Play"
         type="medium"
-        onPress={() => router.push("/")}
+        onPress={() => router.push(`/`)}
       />
-
+      
       {/* ✅ Word Bank Button */}
       <TouchableOpacity
         style={wordBankStyles.button}
@@ -74,15 +60,7 @@ export default function Home() {
         </View>
       </Modal>
 
-      <CustomButton
-        label="Play"
-        type="small"
-        onPress={() => router.push("/crosswordSearchGame")}
-      />
-      <CustomButton
-        type="fontSize"
-        onPress={() => router.push("/crosswordSearchGame")}
-      />
+      <CustomButton type="fontSize" onPress={() => router.push("/")} />
 
       <View>
         <Button title="Settings" onPress={() => router.push("/setting")} />
@@ -102,8 +80,7 @@ export default function Home() {
               {...item}
               onPress={() =>
                 router.push({
-                  pathname: "/crosswordSearchGame",
-                  // Fix the gameId
+                  pathname: "/gameScreen",
                   params: { gameId: item.id.toString() },
                 })
               }
@@ -124,8 +101,7 @@ export default function Home() {
               {...item}
               onPress={() =>
                 router.push({
-                  pathname: "/wordSearchGame",
-                  // Fix the gameId
+                  pathname: "/gameScreen",
                   params: { gameId: item.id.toString() },
                 })
               }
@@ -148,13 +124,6 @@ export default function Home() {
           showsHorizontalScrollIndicator={false}
         />
       </View>
-
-      {/* Game Selection Modal */}
-      <GameSelectionModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        onSelect={handleGameSelection}
-      />
     </ScrollView>
   );
 }

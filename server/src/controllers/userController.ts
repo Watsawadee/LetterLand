@@ -1,4 +1,4 @@
-import { getUserById } from "../services/userService";
+import { getAllUser, getUserById, useHint} from "../services/userService";
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
@@ -6,6 +6,21 @@ import prisma from "../configs/db";
 import { CreateUserRequest, CreateUserResponse } from "../types/createUser";
 import { LoginRequestBody, LoginResponse } from "../types/loginUser";
 const JWTtoken = process.env.JWT_SECRET as string;
+
+export const getAllUserController = async (req: Request, res: Response) => {
+  try {
+    const user = await getAllUser();
+
+    res.status(200).json({
+      message: "Get User successfully",
+      data: user,
+    });
+  } catch (error) {
+    console.error("User Controller error:", error);
+    res.status(500).json({ message: "Failed to get user" });
+  }
+};
+
 export const getUserByIdController = async (req: Request, res: Response) => {
   try {
     const userId = Number(req.params.userId);
@@ -118,5 +133,26 @@ export const loginUserController = async (
 
   } catch (error) {
     throw new Error("Incorrect Credential")
+  }
+};
+
+export const useHintController = async (req: Request, res: Response) => {
+  try {
+    const userId = Number(req.params.userId);
+
+    if (!userId) {
+      res.status(400).json({ message: "Missing userId" });
+      return;
+    }
+
+    const updatedUser = await useHint(userId);
+
+    res.status(200).json({
+      message: "Hint used successfully",
+      data: updatedUser,
+    });
+  } catch (error) {
+    console.error("Use Hint Controller error:", error);
+    res.status(400).json("Failed to use hint");
   }
 };

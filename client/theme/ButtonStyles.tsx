@@ -1,14 +1,14 @@
 // buttonStyles.ts
-import { ViewStyle, TextStyle } from 'react-native';
-import { Color } from './Color';
-import { Typography } from './Font';
+import { ViewStyle, TextStyle } from "react-native";
+import { Color } from "./Color";
+import { Typography } from "./Font";
 
 const baseContainer: ViewStyle = {
   backgroundColor: Color.blue,
   borderRadius: 20,
-  justifyContent: 'center',
-  alignItems: 'center',
-  flexDirection: 'row',
+  justifyContent: "center",
+  alignItems: "center",
+  flexDirection: "row",
   paddingHorizontal: 16,
 };
 
@@ -33,7 +33,7 @@ export const ButtonStyles: {
     container: {
       ...baseContainer,
       width: 237,
-      height: 54,     
+      height: 54,
     },
     text: {
       ...Typography.Button,
@@ -86,21 +86,27 @@ export const ButtonStyles: {
   },
   fontSize: {
     container: {
-      backgroundColor: Color.green, 
+      backgroundColor: Color.green,
       height: 99,
       width: 99,
       borderRadius: 130,
+      justifyContent: "center",
+      alignItems: "center",
     },
     text: {},
   },
   buyHint: {
     container: {
-      backgroundColor: Color.pink, 
+      backgroundColor: Color.pink,
       height: 99,
       width: 99,
       borderRadius: 130,
+      justifyContent: "center",
+      alignItems: "center",
     },
-    text: {},
+    text: {
+      ...Typography.header20,
+      color: Color.white,
+    },
   },
-  
 };
