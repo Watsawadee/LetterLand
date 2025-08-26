@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Text } from "react-native";
 import GameControls from "./GameControls";
 import GameBoard from "./GameBoard";
 import CluesPanel from "./CluesPanel";
@@ -34,19 +34,27 @@ export default function SharedGameScreen({
     revealedAnswers,
   } = useGameLogic({ GRID_SIZE, CELL_SIZE, questionsAndAnswers, mode });
 
-  const foundWordsList = useMemo(() => foundWords.map((fw) => fw.word), [foundWords]);
-  const allAnswers = useMemo(() => questionsAndAnswers.map((q) => q.answer), [questionsAndAnswers]);
+  const foundWordsList = useMemo(
+    () => foundWords.map((fw) => fw.word),
+    [foundWords]
+  );
+  const allAnswers = useMemo(
+    () => questionsAndAnswers.map((q) => q.answer),
+    [questionsAndAnswers]
+  );
 
-  const { visible: allFoundVisible, setVisible: setAllFoundVisible } = useAllFound(allAnswers, foundWordsList);
+  const { visible: allFoundVisible, setVisible: setAllFoundVisible } =
+    useAllFound(allAnswers, foundWordsList);
 
-  const { hintCount, isHintDisabled, onShowHint, clearActiveHint, resetHints } = useHints({
-    mode,
-    questionsAndAnswers,
-    foundWordsList,
-    revealedAnswers,
-    activeQuestionIndex,
-    showHintForAnswer,
-  });
+  const { hintCount, isHintDisabled, onShowHint, clearActiveHint, resetHints } =
+    useHints({
+      mode,
+      questionsAndAnswers,
+      foundWordsList,
+      revealedAnswers,
+      activeQuestionIndex,
+      showHintForAnswer,
+    });
 
   const handleCloseModal = () => {
     setAllFoundVisible(false);
@@ -67,7 +75,7 @@ export default function SharedGameScreen({
             onRetryConfirm={handleCloseModal}
             onShowHint={onShowHint}
             onBackHome={() => router.replace("/")}
-            hintCount={hintCount}
+            hintCount={hintCount ?? 0}
             isHintDisabled={isHintDisabled}
             startTimeSeconds={3000}
           />
@@ -108,5 +116,9 @@ const styles = StyleSheet.create({
   topRow: { flexDirection: "row", flex: 1, marginBottom: 10 },
   leftColumn: { width: 300, justifyContent: "center", marginRight: 30 },
   rightColumn: { flex: 1, marginTop: 20, justifyContent: "center" },
-  itemWrapper: { flexDirection: "row", justifyContent: "center", flexWrap: "wrap" },
+  itemWrapper: {
+    flexDirection: "row",
+    justifyContent: "center",
+    flexWrap: "wrap",
+  },
 });

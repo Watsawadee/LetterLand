@@ -5,6 +5,11 @@ export const getGameData = async (gameId: string | number) => {
   return response.data.data;
 };
 
+export const getUserData =  async (userId: number) => {
+  const response = await api.get(`/users/${userId}`);
+  return response.data.data;
+};
+
 export const getBGImage = async (gameId: string, gameTopic: string) => {
   try {
     const topic = gameTopic;

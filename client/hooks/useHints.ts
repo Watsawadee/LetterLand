@@ -1,5 +1,7 @@
 import { useCallback, useMemo, useState, useEffect } from "react";
 import { UseHintsArgs } from "../types/type";
+import { getUserData, useHint } from "../services/gameService";
+import { getLoggedInUserId } from "../utils/auth";
 
 function norm(s: string) {
   return s.trim().toUpperCase();
@@ -13,18 +15,46 @@ export function useHints(args: UseHintsArgs) {
     revealedAnswers,
     activeQuestionIndex,
     showHintForAnswer,
-    initialHints = 3,
   } = args;
 
-  const [hintCount, setHintCount] = useState(initialHints);
+  const [hintCount, setHintCount] = useState<number | null>(null);
   const [lastHintIndex, setLastHintIndex] = useState(-1);
-
   const [activeHintWord, setActiveHintWord] = useState<string | null>(null);
-
   const [requiredFindWord, setRequiredFindWord] = useState<string | null>(null);
 
-  const foundSet = useMemo(() => new Set(foundWordsList.map(norm)), [foundWordsList]);
-  const revealedSet = useMemo(() => new Set(revealedAnswers.map(norm)), [revealedAnswers]);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  const foundSet = useMemo(
+    () => new Set(foundWordsList.map(norm)),
+    [foundWordsList]
+  );
+  const revealedSet = useMemo(
+    () => new Set(revealedAnswers.map(norm)),
+    [revealedAnswers]
+  );
+
+  useEffect(() => {
+    const fetchUserId = async () => {
+      const id = await getLoggedInUserId();
+      setUserId(id);
+    };
+    fetchUserId();
+  }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const fetchHints = async () => {
+      try {
+        const userData = await getUserData(Number(userId));
+        setHintCount(userData.hint ?? 3);
+      } catch (err) {
+        console.error("Failed to fetch user hint count", err);
+        setHintCount(3);
+      }
+    };
+    fetchHints();
+  }, [userId]);
 
   useEffect(() => {
     if (!activeHintWord) return;
@@ -41,9 +71,7 @@ export function useHints(args: UseHintsArgs) {
     (word: string | null) => {
       if (!word) return false;
       const n = norm(word);
-      if (mode === "WORD_SEARCH") {
-        return foundSet.has(n);
-      }
+      if (mode === "WORD_SEARCH") return foundSet.has(n);
       return revealedSet.has(n);
     },
     [mode, foundSet, revealedSet]
@@ -56,6 +84,7 @@ export function useHints(args: UseHintsArgs) {
   }, [requiredFindWord, isWordSatisfied]);
 
   const isHintDisabled = useMemo(() => {
+    if (hintCount === null) return true;
     const noHintsLeft = hintCount <= 0;
     const mustFindPrev = !!requiredFindWord;
 
@@ -66,43 +95,50 @@ export function useHints(args: UseHintsArgs) {
     }
 
     return noHintsLeft || mustFindPrev;
-  }, [mode, hintCount, requiredFindWord, questionsAndAnswers, activeQuestionIndex]);
+  }, [
+    mode,
+    hintCount,
+    requiredFindWord,
+    questionsAndAnswers,
+    activeQuestionIndex,
+  ]);
 
-  const onShowHint = useCallback(() => {
-    if (hintCount <= 0) return;
+  const onShowHint = useCallback(async () => {
+    if (!hintCount || hintCount <= 0 || !userId) return;
 
-    if (requiredFindWord) {
-      if (isWordSatisfied(requiredFindWord)) {
-        setRequiredFindWord(null);
-      } else {
-        return;
-      }
-    }
+    if (requiredFindWord && !isWordSatisfied(requiredFindWord)) return;
+
+    let nextAnswer: string | null = null;
 
     if (mode === "CROSSWORD_SEARCH") {
       const current = questionsAndAnswers[activeQuestionIndex];
       if (!current) return;
-
-      setActiveHintWord(current.answer);
-      showHintForAnswer(current.answer);
-      setHintCount((c) => c - 1);
-      return;
+      nextAnswer = current.answer;
+    } else {
+      const total = questionsAndAnswers.length;
+      for (let offset = 1; offset <= total; offset++) {
+        const nextIndex = (lastHintIndex + offset) % total;
+        const answer = questionsAndAnswers[nextIndex].answer;
+        if (!foundSet.has(norm(answer))) {
+          nextAnswer = answer;
+          setLastHintIndex(nextIndex);
+          setRequiredFindWord(answer);
+          break;
+        }
+      }
     }
 
-    const total = questionsAndAnswers.length;
-    for (let offset = 1; offset <= total; offset++) {
-      const nextIndex = (lastHintIndex + offset) % total;
-      const nextAnswer = questionsAndAnswers[nextIndex].answer;
+    if (!nextAnswer) return;
 
-      const isFound = foundSet.has(norm(nextAnswer));
-      if (!isFound) {
-        setActiveHintWord(nextAnswer);
-        setRequiredFindWord(nextAnswer);
-        showHintForAnswer(nextAnswer);
-        setLastHintIndex(nextIndex);
-        setHintCount((c) => c - 1);
-        return;
-      }
+    setActiveHintWord(nextAnswer);
+    showHintForAnswer(nextAnswer);
+
+    try {
+      await useHint(Number(userId));
+      const userData = await getUserData(Number(userId));
+      setHintCount(userData.hint ?? 3);
+    } catch (err) {
+      console.error("Failed to update hint", err);
     }
   }, [
     hintCount,
@@ -114,19 +150,24 @@ export function useHints(args: UseHintsArgs) {
     showHintForAnswer,
     lastHintIndex,
     foundSet,
+    userId,
   ]);
 
   const clearActiveHint = useCallback(() => setActiveHintWord(null), []);
 
-  const resetHints = useCallback(
-    (n = initialHints) => {
-      setHintCount(n);
-      setLastHintIndex(-1);
-      setActiveHintWord(null);
-      setRequiredFindWord(null);
-    },
-    [initialHints]
-  );
+  const resetHints = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const userData = await getUserData(Number(userId));
+      setHintCount(userData.hint ?? 3);
+    } catch (err) {
+      console.error("Failed to reset hint count", err);
+      setHintCount(3);
+    }
+    setLastHintIndex(-1);
+    setActiveHintWord(null);
+    setRequiredFindWord(null);
+  }, [userId]);
 
   return {
     hintCount,
