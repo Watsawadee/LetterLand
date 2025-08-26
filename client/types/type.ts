@@ -108,13 +108,6 @@ export interface FoundWord {
   cells: [number, number][];
 }
 
-// GameSelectionModal.tsx
-export type GameSelectionModalProps = {
-  visible: boolean;
-  onClose: () => void;
-  onSelect: (type: "word" | "crossword") => void;
-};
-
 // QuestionListSlider.tsx
 export type QuestionListSliderProps = {
   questionsAndAnswers: QuestionAnswer[];
@@ -156,4 +149,24 @@ export type Params = {
 export type WordCardProps = {
   word: string;
   found: boolean;
+};
+
+// useHints.ts
+export type UseHintsArgs = {
+  mode: "WORD_SEARCH" | "CROSSWORD_SEARCH";
+  questionsAndAnswers: QuestionAnswer[];
+  foundWordsList: string[];
+  revealedAnswers: string[];
+  activeQuestionIndex: number;
+  showHintForAnswer: (answer: string) => void;
+  initialHints?: number;
+};
+
+export type CluesProps = {
+  mode: "WORD_SEARCH" | "CROSSWORD_SEARCH";
+  questionsAndAnswers: QuestionAnswer[];
+  foundWordsList: string[];
+  revealedAnswers: string[];
+  activeIndex: number;
+  onChangeIndex: (i: number) => void;
 };

@@ -1,19 +1,47 @@
-import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import FontSizeModal from "./FontSizeModal";
+import React, { useEffect, useState } from "react";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import ConfirmModal from "./ConfirmModal";
-import { GameControlsProps } from "../types/type";
+import FontSizeModal from "./FontSizeModal";
 
-export default function GameControls({
-  title,
-  fontSettings,
-  confirmRestart,
-  onShowHint,
-  onBackHome,
-  onRetryConfirm,
-  hintCount,
-  isHintDisabled,
-}: GameControlsProps) {
+type FontSettings = {
+  fontModalVisible: boolean;
+  tempFontSize: number;
+  fontSize: number;
+  setTempFontSize: (n: number) => void;
+  setFontModalVisible: (v: boolean) => void;
+  setFontSize: (n: number) => void;
+};
+
+type ConfirmRestart = {
+  visible: boolean;
+  setVisible: (v: boolean) => void;
+};
+
+type GameControlsProps = {
+  title: string;
+  onShowHint: () => void;
+  onBackHome: () => void;
+  onRetryConfirm: () => void;
+  hintCount: number;
+  isHintDisabled: boolean;
+  fontSettings: FontSettings;
+  confirmRestart: ConfirmRestart;
+  startTimeSeconds: number;
+};
+
+export default function GameControls(props: GameControlsProps) {
+  const {
+    title,
+    fontSettings,
+    confirmRestart,
+    onShowHint,
+    onBackHome,
+    onRetryConfirm,
+    hintCount,
+    isHintDisabled,
+    startTimeSeconds,
+  } = props;
+
   const {
     fontModalVisible,
     tempFontSize,
@@ -22,7 +50,36 @@ export default function GameControls({
     setFontSize,
   } = fontSettings;
 
-  const currentTime = new Date().toLocaleTimeString();
+  const [secondsLeft, setSecondsLeft] = useState(startTimeSeconds);
+
+  useEffect(() => {
+    setSecondsLeft(startTimeSeconds);
+  }, [startTimeSeconds]);
+
+  useEffect(() => {
+    if (secondsLeft <= 0) return;
+
+    const timer = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer); // stop timer
+          alert("Time's up!"); // alert when time reaches 0
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [secondsLeft]);
+
+  const formatTime = (sec: number) => {
+    const minutes = Math.floor(sec / 60);
+    const seconds = sec % 60;
+    return `${minutes.toString().padStart(2, "0")}:${seconds
+      .toString()
+      .padStart(2, "0")}`;
+  };
 
   return (
     <View style={styles.container}>
@@ -34,15 +91,15 @@ export default function GameControls({
 
       <View style={styles.centerLeft}>
         <Text style={styles.title}>{title}</Text>
-        <Text style={styles.time}>{currentTime}</Text>
+        <Text style={styles.time}>{formatTime(secondsLeft)}</Text>
+
         <View style={styles.buttonsRow}>
           <TouchableOpacity
             onPress={() => setFontModalVisible(true)}
-            style={[styles.button]}
+            style={styles.button}
           >
             <Text style={styles.buttonText}>Font Size</Text>
           </TouchableOpacity>
-
           <TouchableOpacity
             onPress={onShowHint}
             disabled={isHintDisabled}
@@ -58,7 +115,6 @@ export default function GameControls({
             </Text>
           </TouchableOpacity>
         </View>
-
         <Text style={{ fontSize: 16 }}>Hints left: {hintCount}</Text>
       </View>
 
@@ -70,7 +126,6 @@ export default function GameControls({
         onConfirm={onRetryConfirm}
         onCancel={() => confirmRestart.setVisible(false)}
       />
-
       <FontSizeModal
         visible={fontModalVisible}
         tempFontSize={tempFontSize}
@@ -86,50 +141,19 @@ export default function GameControls({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    width: "100%",
-    paddingHorizontal: 10,
-    paddingVertical: 20,
-    justifyContent: "center",
-  },
-  topLeft: {
-    position: "absolute",
-    top: 10,
-    left: 10,
-  },
-  centerLeft: {
-    marginTop: 60,
-    alignItems: "flex-start",
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 6,
-    width: "100%",
-  },
-  time: {
-    fontSize: 16,
-    color: "#666",
-    marginBottom: 12,
-  },
-  buttonsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    padding: 10,
-  },
+  container: { width: "100%" },
+  topLeft: { alignItems: "flex-start" },
+  centerLeft: { marginTop: 12 },
+  title: { fontSize: 20, fontWeight: "700" },
+  time: { marginTop: 6, fontSize: 14, opacity: 0.6 },
+  buttonsRow: { flexDirection: "row", gap: 8, marginTop: 10 },
   button: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 4,
+    backgroundColor: "#333",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
   },
-  buttonText: {
-    color: "blue",
-    fontWeight: "600",
-  },
-  disabledButton: {
-    backgroundColor: "#f0f0f0",
-  },
-  disabledButtonText: {
-    color: "#888",
-  },
+  disabledButton: { backgroundColor: "#aaa" },
+  buttonText: { color: "white" },
+  disabledButtonText: { color: "#eee" },
 });
