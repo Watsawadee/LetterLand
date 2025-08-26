@@ -29,6 +29,7 @@ export const CreateGameFromGeminiResponseSchema = z.object({
             gameTopic: z.string(),
             gameType: GameTypeSchema,
             difficulty: EnglishLevelSchema,
+            imageUrl: z.string().nullable().optional(),
             questions: z.array(
                 z.object({
                     id: z.number(),

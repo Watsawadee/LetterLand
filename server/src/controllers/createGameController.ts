@@ -76,7 +76,11 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
     });
 
     let imageData = null;
+    let fileName: string | null = null;
+
     if (geminiResult.imagePrompt) {
+      const sanitizedTopic = geminiResult.game.gameTopic.toLowerCase().replace(/\s+/g, "_");
+      fileName = `image_${game.id.toString()}_${sanitizedTopic}`;
       imageData = await genImage(
         geminiResult.imagePrompt,
         "realistic",
@@ -85,12 +89,18 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
         game.id.toString(),
         geminiResult.game.gameTopic
       );
+      await prisma.gameTemplate.update({
+        where: { id: gameTemplate.id },
+        data: { imageUrl: fileName },
+      });
     }
     const result = CreateGameFromGeminiResponseSchema.safeParse({
       message: "Game created successfully from Gemini",
-      game,
-      image: imageData,
-      imagePrompt: geminiResult.imagePrompt,
+      game: {
+        ...game,
+        imagePrompt: geminiResult.imagePrompt,
+        image: imageData,
+      },
     });
 
     if (!result.success) {
