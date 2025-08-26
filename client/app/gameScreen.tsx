@@ -1,63 +1,66 @@
 import React, { useEffect, useState } from "react";
-import { Text, View, ActivityIndicator, StyleSheet } from "react-native";
+import {
+  Text,
+  View,
+  ActivityIndicator,
+  StyleSheet,
+  ImageBackground,
+} from "react-native";
 import SharedGameScreen from "../components/SharedGameScreen";
 import { useLocalSearchParams } from "expo-router";
 import { GameData } from "../types/type";
 import { getGameData, getBGImage } from "../services/gameService";
-import { ImageBackground } from "react-native";
 
-// Route example: /gameScreen?gameId=123
 export default function GameScreen() {
   const { gameId } = useLocalSearchParams<{ gameId: string }>();
   const [gameData, setGameData] = useState<GameData | null>(null);
   const [mode, setMode] = useState<"WORD_SEARCH" | "CROSSWORD_SEARCH" | null>(
     null
   );
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [imageUri, setImageUri] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!gameId) return;
-    (async () => {
-      try {
-        const data: GameData = await getGameData(String(gameId));
-        const questionsWithUppercase = data.gameTemplate.questions.map((q) => ({
-          ...q,
-          answer: q.answer.toUpperCase(),
-        }));
-        const finalData = {
-          ...data,
-          gameTemplate: {
-            ...data.gameTemplate,
-            questions: questionsWithUppercase,
-          },
-        };
-        setGameData(finalData);
+  if (!gameId) return;
 
-        const gameType = finalData.gameTemplate.gameType as
-          | "WORD_SEARCH"
-          | "CROSSWORD_SEARCH";
-        setMode(gameType);
+  (async () => {
+    try {
+      const data: GameData = await getGameData(String(gameId));
 
+      const questionsWithUppercase = data.gameTemplate.questions.map((q) => ({
+        ...q,
+        answer: q.answer.toUpperCase(),
+      }));
+
+      const finalData = {
+        ...data,
+        gameTemplate: {
+          ...data.gameTemplate,
+          questions: questionsWithUppercase,
+        },
+      };
+
+      setGameData(finalData);
+      setMode(finalData.gameTemplate.gameType as "WORD_SEARCH" | "CROSSWORD_SEARCH");
+
+      if (finalData.gameTemplate.imageUrl) {
         try {
-          const imageUrl = await getBGImage(
-            String(gameId),
-            finalData.gameTemplate.gameTopic
-          );
+          const imageUrl = await getBGImage(finalData.gameTemplate.imageUrl);
           setImageUri(imageUrl);
-        } catch {
-          console.warn("Background image not found, continuing without it.");
+        } catch (e) {
           setImageUri(null);
         }
-      } catch (e) {
-        setError("Failed to load game data");
-      } finally {
-        setLoading(false);
       }
-    })();
-  }, [gameId]);
+    } catch (e) {
+      console.error("Failed to load game data:", e);
+      setError("Failed to load game data");
+    } finally {
+      setLoading(false);
+    }
+  })();
+}, [gameId]);
+
 
   if (loading)
     return (
@@ -100,9 +103,6 @@ export default function GameScreen() {
 }
 
 const styles = StyleSheet.create({
-  bg: {
-    flex: 1,
-  },
   center: {
     flex: 1,
     justifyContent: "center",

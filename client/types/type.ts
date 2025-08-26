@@ -1,7 +1,5 @@
 import { Dispatch, SetStateAction, RefObject } from "react";
-import {
-  GestureResponderHandlers,
-} from "react-native";
+import { GestureResponderHandlers } from "react-native";
 
 // SharedGameScreen.tsx
 export interface GameProps {
@@ -33,15 +31,16 @@ export interface GameTemplate {
   difficulty: string;
   isPublic: boolean;
   questions: QuestionAnswer[];
+  imageUrl?: string;
 }
 
 // gameData.ts
 export interface QuestionAnswer {
-  id: number,
-  gameTemplateId: number,
-  name: string,
-  answer: string,
-  hint: string
+  id: number;
+  gameTemplateId: number;
+  name: string;
+  answer: string;
+  hint: string;
 }
 
 // GameControls.tsx

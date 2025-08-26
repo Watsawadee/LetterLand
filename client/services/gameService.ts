@@ -10,11 +10,8 @@ export const getUserData =  async (userId: number) => {
   return response.data.data;
 };
 
-export const getBGImage = async (gameId: string, gameTopic: string) => {
+export const getBGImage = async (imgName: string) => {
   try {
-    const topic = gameTopic;
-    const sanitizedTopic = topic.replace(/\s+/g, "_");
-    const imgName = `image_${gameId}_${sanitizedTopic}`;
 
     const response = await api.get(`/images/image/${imgName}.png`, {
       responseType: "blob",
