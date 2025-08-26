@@ -1,7 +1,11 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import ConfirmModal from "./ConfirmModal";
+import React, { useEffect, useState, useRef } from "react";
+import { View, Text, StyleSheet } from "react-native";
 import FontSizeModal from "./FontSizeModal";
+import { CustomButton } from "../theme/ButtonCustom";
+import { Magnify } from "../assets/icon/Magnify";
+import FontIcon from "@/assets/icon/FontIcon";
+import Timer from "@/assets/icon/Timer";
+import { Typography } from "@/theme/Font";
 
 type FontSettings = {
   fontModalVisible: boolean;
@@ -12,36 +16,25 @@ type FontSettings = {
   setFontSize: (n: number) => void;
 };
 
-type ConfirmRestart = {
-  visible: boolean;
-  setVisible: (v: boolean) => void;
-};
-
 type GameControlsProps = {
   title: string;
   onShowHint: () => void;
-  onBackHome: () => void;
-  onRetryConfirm: () => void;
   hintCount: number;
   isHintDisabled: boolean;
   fontSettings: FontSettings;
-  confirmRestart: ConfirmRestart;
   startTimeSeconds: number;
+  onTimeUp: () => void;
 };
 
-export default function GameControls(props: GameControlsProps) {
-  const {
-    title,
-    fontSettings,
-    confirmRestart,
-    onShowHint,
-    onBackHome,
-    onRetryConfirm,
-    hintCount,
-    isHintDisabled,
-    startTimeSeconds,
-  } = props;
-
+export default function GameControls({
+  title,
+  fontSettings,
+  onShowHint,
+  hintCount,
+  isHintDisabled,
+  startTimeSeconds,
+  onTimeUp,
+}: GameControlsProps) {
   const {
     fontModalVisible,
     tempFontSize,
@@ -51,27 +44,35 @@ export default function GameControls(props: GameControlsProps) {
   } = fontSettings;
 
   const [secondsLeft, setSecondsLeft] = useState(startTimeSeconds);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Reset timer whenever startTimeSeconds changes
   useEffect(() => {
     setSecondsLeft(startTimeSeconds);
   }, [startTimeSeconds]);
 
+  // Start countdown
   useEffect(() => {
-    if (secondsLeft <= 0) return;
+    if (!startTimeSeconds || startTimeSeconds <= 0) return;
+    setSecondsLeft(startTimeSeconds);
 
-    const timer = setInterval(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+
+    timerRef.current = setInterval(() => {
       setSecondsLeft((prev) => {
         if (prev <= 1) {
-          clearInterval(timer); // stop timer
-          alert("Time's up!"); // alert when time reaches 0
+          clearInterval(timerRef.current!);
+          onTimeUp();
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
 
-    return () => clearInterval(timer);
-  }, [secondsLeft]);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [startTimeSeconds, onTimeUp]);
 
   const formatTime = (sec: number) => {
     const minutes = Math.floor(sec / 60);
@@ -83,49 +84,34 @@ export default function GameControls(props: GameControlsProps) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.topLeft}>
-        <TouchableOpacity onPress={onBackHome} style={styles.button}>
-          <Text style={styles.buttonText}>Home</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.centerLeft}>
+      <View style={styles.box}>
         <Text style={styles.title}>{title}</Text>
-        <Text style={styles.time}>{formatTime(secondsLeft)}</Text>
-
-        <View style={styles.buttonsRow}>
-          <TouchableOpacity
-            onPress={() => setFontModalVisible(true)}
-            style={styles.button}
-          >
-            <Text style={styles.buttonText}>Font Size</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={onShowHint}
-            disabled={isHintDisabled}
-            style={[styles.button, isHintDisabled && styles.disabledButton]}
-          >
-            <Text
-              style={[
-                styles.buttonText,
-                isHintDisabled && styles.disabledButtonText,
-              ]}
-            >
-              Hint
-            </Text>
-          </TouchableOpacity>
-        </View>
-        <Text style={{ fontSize: 16 }}>Hints left: {hintCount}</Text>
       </View>
 
-      <ConfirmModal
-        visible={confirmRestart.visible}
-        message="If you exit now, your progress in this grid will be lost. Are you sure?"
-        confirmText="Yes"
-        cancelText="No"
-        onConfirm={onRetryConfirm}
-        onCancel={() => confirmRestart.setVisible(false)}
-      />
+      {startTimeSeconds > 0 && (
+        <View style={styles.box}>
+          <View style={styles.timerRow}>
+            <Timer />
+            <Text style={styles.time}>{formatTime(secondsLeft)}</Text>
+          </View>
+        </View>
+      )}
+
+      <View style={styles.buttonsRow}>
+        <CustomButton
+          onPress={() => setFontModalVisible(true)}
+          type="fontSize"
+          icon={<FontIcon />}
+        />
+        <CustomButton
+          onPress={onShowHint}
+          type="buyHint"
+          icon={<Magnify />}
+          disabled={isHintDisabled}
+          number={hintCount}
+        />
+      </View>
+
       <FontSizeModal
         visible={fontModalVisible}
         tempFontSize={tempFontSize}
@@ -141,19 +127,33 @@ export default function GameControls(props: GameControlsProps) {
 }
 
 const styles = StyleSheet.create({
-  container: { width: "100%" },
-  topLeft: { alignItems: "flex-start" },
-  centerLeft: { marginTop: 12 },
-  title: { fontSize: 20, fontWeight: "700" },
-  time: { marginTop: 6, fontSize: 14, opacity: 0.6 },
-  buttonsRow: { flexDirection: "row", gap: 8, marginTop: 10 },
-  button: {
-    backgroundColor: "#333",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+  container: { width: "100%", padding: 16 },
+  title: { ...Typography.header25, textAlign: "center" },
+  box: {
+    backgroundColor: "rgba(249, 249, 249, 0.8)",
+    padding: 12,
     borderRadius: 8,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
   },
-  disabledButton: { backgroundColor: "#aaa" },
-  buttonText: { color: "white" },
-  disabledButtonText: { color: "#eee" },
+  time: { marginTop: 4, ...Typography.header30 },
+  buttonsRow: {
+    flexDirection: "row",
+    gap: 20,
+    marginTop: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  timerRow: {
+    flexDirection: "row",
+    gap: 15,
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+    padding: 16,
+  },
 });

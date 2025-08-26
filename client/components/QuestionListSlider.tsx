@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { QuestionListSliderProps } from "../types/type";
+import { Typography } from "@/theme/Font";
 
 export default function QuestionListSlider({
   questionsAndAnswers,
@@ -37,17 +38,14 @@ export default function QuestionListSlider({
         </TouchableOpacity>
 
         <View style={styles.questionInfo}>
-          <Text style={styles.questionNumber}>
-            Question {activeIndex + 1} / {questionsAndAnswers.length}
-          </Text>
 
           <Text
-            style={[styles.questionText, found && styles.found]}
+            style={[styles.questionText]}
             numberOfLines={1}
             ellipsizeMode="tail"
           >
+            {activeIndex + 1}.{" "}
             {showQuestion ? currentQA.name : currentQA.answer}
-            {found && " ✓"}
           </Text>
 
           {showQuestion && (
@@ -99,30 +97,24 @@ const styles = StyleSheet.create({
   container: {
     marginBottom: 5,
     minWidth: "100%",
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "rgba(249, 249, 249, 0.8)",
     padding: 10,
     borderRadius: 10,
   },
-  questionNumber: {
-    color: "gray",
-    marginBottom: 3,
-    textAlign: "center",
-    fontSize: 14,
-  },
   questionText: {
     textAlign: "center",
-    fontSize: 18,
     minWidth: 0,
     flexShrink: 1,
+    ...Typography.header20,
   },
   found: {
     color: "green",
   },
   answerText: {
-    fontSize: 16,
     color: "green",
     marginTop: 5,
     textAlign: "center",
+    ...Typography.header20,
   },
   navigation: {
     flexDirection: "row",

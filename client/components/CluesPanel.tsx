@@ -46,24 +46,9 @@ export default function CluesPanel(props: CluesProps) {
 
 const styles = StyleSheet.create({
   wordListWrapper: {
-    backgroundColor: "#f0f0f0",
     padding: 10,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-  },
-  crosswordList: {
-    width: "100%",
-    backgroundColor: "#f8f8f8",
-    padding: 12,
-    borderRadius: 12,
-  },
-  clue: {
-    fontSize: 16,
-    paddingVertical: 6,
-  },
-  clueFound: {
-    textDecorationLine: "line-through",
-    opacity: 0.6,
   },
 });

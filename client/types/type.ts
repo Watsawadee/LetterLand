@@ -10,7 +10,7 @@ export interface GameProps {
   CELL_SIZE: number;
   GRID_SIZE: number;
   questionsAndAnswers: QuestionAnswer[];
-  gameData?: GameData;
+  gameData: GameData;
 }
 
 export interface GameData {
