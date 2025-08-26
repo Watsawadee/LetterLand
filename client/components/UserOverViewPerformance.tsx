@@ -22,20 +22,27 @@ const UserOverviewPerformance = () => {
         return () => clearTimeout(timer);
     }, []);
 
+
+
     //For custom segment
-    // const maxValue = Math.max(...data?.counts ?? [1]);
-    // const segments = maxValue <= 10 ? maxValue : 5;
+    const counts = TotalgamesData?.counts ?? [0, 0, 0, 0, 0, 0, 0];
+    const labels = TotalgamesData?.labels ?? ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+    const rawMax = Math.max(...counts);
+    const safeMax = Math.max(rawMax, 1);
+
+    // Segments: show up to 6 lines, but at least 2
+    const segments = Math.min(Math.max(safeMax, 1), 6);
 
     const chartData = {
-        labels: TotalgamesData?.labels ?? ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
-        datasets: [{ data: TotalgamesData?.counts ?? [0, 0, 0, 0, 0, 0, 0] }],
+        labels,
+        datasets: [{ data: counts }],
     };
 
     //For UI mock up test
     // const chartData = {
     //     labels: ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
     //     datasets: [
-    //         { data: [50, 0, 123, 0, 200, 0, 0] }
+    //         { data: [0, 0, 0, 0, 0, 0, 1] }
     //     ],
     // };
 
@@ -98,7 +105,7 @@ const UserOverviewPerformance = () => {
                                 yAxisLabel=""
                                 yAxisSuffix=""
                                 showValuesOnTopOfBars
-                                // segments={segments}
+                                segments={segments}
                                 style={{
                                     borderRadius: 16,
                                     display: "flex",
