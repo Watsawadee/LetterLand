@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { Text } from "react-native";
+import { Text, View, ActivityIndicator, StyleSheet } from "react-native";
 import SharedGameScreen from "../components/SharedGameScreen";
 import { useLocalSearchParams } from "expo-router";
 import { GameData } from "../types/type";
-import { getGameData } from "../services/gameService";
+import { getGameData, getBGImage } from "../services/gameService";
+import { ImageBackground } from "react-native";
 
 // Route example: /gameScreen?gameId=123
 export default function GameScreen() {
@@ -15,6 +16,7 @@ export default function GameScreen() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [imageUri, setImageUri] = useState<string | null>(null);
 
   useEffect(() => {
     if (!gameId) return;
@@ -38,6 +40,17 @@ export default function GameScreen() {
           | "WORD_SEARCH"
           | "CROSSWORD_SEARCH";
         setMode(gameType);
+
+        try {
+          const imageUrl = await getBGImage(
+            String(gameId),
+            finalData.gameTemplate.gameTopic
+          );
+          setImageUri(imageUrl);
+        } catch {
+          console.warn("Background image not found, continuing without it.");
+          setImageUri(null);
+        }
       } catch (e) {
         setError("Failed to load game data");
       } finally {
@@ -46,18 +59,53 @@ export default function GameScreen() {
     })();
   }, [gameId]);
 
-  if (loading) return <Text>Loading game...</Text>;
-  if (error) return <Text>{error}</Text>;
-  if (!gameData || !mode) return <Text>No game data</Text>;
+  if (loading)
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#000" />
+        <Text>Loading game...</Text>
+      </View>
+    );
+
+  if (error)
+    return (
+      <View style={styles.center}>
+        <Text>{error}</Text>
+      </View>
+    );
+
+  if (!gameData || !mode)
+    return (
+      <View style={styles.center}>
+        <Text>No game data</Text>
+      </View>
+    );
 
   return (
-    <SharedGameScreen
-      mode={mode}
-      title={gameData.gameTemplate.gameTopic}
-      CELL_SIZE={55}
-      GRID_SIZE={12}
-      questionsAndAnswers={gameData.gameTemplate.questions}
-      gameData={gameData}
-    />
+    <ImageBackground
+      source={{ uri: imageUri || "" }}
+      style={{ flex: 1 }}
+      resizeMode="stretch"
+    >
+      <SharedGameScreen
+        mode={mode}
+        title={gameData.gameTemplate.gameTopic}
+        CELL_SIZE={55}
+        GRID_SIZE={12}
+        questionsAndAnswers={gameData.gameTemplate.questions}
+        gameData={gameData}
+      />
+    </ImageBackground>
   );
 }
+
+const styles = StyleSheet.create({
+  bg: {
+    flex: 1,
+  },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+});
