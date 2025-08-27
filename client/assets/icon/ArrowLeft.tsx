@@ -1,22 +1,22 @@
 import * as React from "react";
-import { SvgProps } from "react-native-svg";
+import Svg, { Path, SvgProps } from "react-native-svg";
 
 const ArrowLeft = (props: SvgProps) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
+  <Svg
     width={48}
     height={48}
     viewBox="0 0 24 24"
+    {...props}
   >
-    <path
+    <Path
       fill="none"
       stroke="currentColor"
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeWidth={1.5}
-      d="m14 7l-5 5l5 5"
-    ></path>
-  </svg>
+      d="M14 7l-5 5l5 5"
+    />
+  </Svg>
 );
 
 export default ArrowLeft;

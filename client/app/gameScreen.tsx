@@ -27,6 +27,7 @@ export default function GameScreen() {
   (async () => {
     try {
       const data: GameData = await getGameData(String(gameId));
+      console.log("Raw json data:", data);
 
       const questionsWithUppercase = data.gameTemplate.questions.map((q) => ({
         ...q,

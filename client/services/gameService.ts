@@ -1,8 +1,9 @@
+import { Platform } from "react-native";
 import api from "./api";
 
 export const getGameData = async (gameId: string | number) => {
   const response = await api.get(`/games/${gameId}`);
-  return response.data.data;
+  return response.data.data.game;
 };
 
 export const getUserData =  async (userId: number) => {
@@ -12,13 +13,16 @@ export const getUserData =  async (userId: number) => {
 
 export const getBGImage = async (imgName: string) => {
   try {
-
-    const response = await api.get(`/images/image/${imgName}.png`, {
-      responseType: "blob",
-    });
-
-    const imageUrl = URL.createObjectURL(response.data);
-    return imageUrl;
+    if (Platform.OS === "web") {
+      // Browser → use blob
+      const response = await api.get(`/images/image/${imgName}.png`, {
+        responseType: "blob",
+      });
+      return URL.createObjectURL(response.data);
+    } else {
+      // Mobile → return direct URI
+      return `${api.defaults.baseURL}/images/image/${imgName}.png`;
+    }
   } catch (error) {
     console.error("Failed to fetch image:", error);
     throw error;

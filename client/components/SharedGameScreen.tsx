@@ -11,7 +11,7 @@ import { GameProps } from "../types/type";
 import { useHints } from "../hooks/useHints";
 import { useAllFound } from "../hooks/useAllFound";
 import ArrowLeft from "@/assets/icon/ArrowLeft";
-import Retry from "../assets/icon/Restart";
+import Restart from "../assets/icon/Restart";
 import ArrowRight from "@/assets/icon/ArrowRight";
 
 export default function SharedGameScreen({
@@ -136,7 +136,7 @@ export default function SharedGameScreen({
         message="You have found all the words on time!"
         onConfirm={handleCloseModal}
         onClose={() => router.replace("/")}
-        confirmIcon={<Retry />}
+        confirmIcon={<Restart />}
         closeIcon={<ArrowRight />}
       />
 
@@ -147,7 +147,7 @@ export default function SharedGameScreen({
         message="You can no longer continue the game."
         onConfirm={handleCloseModal}
         onClose={() => router.replace("/")}
-        confirmIcon={<Retry />}
+        confirmIcon={<Restart />}
         closeIcon={<ArrowRight />}
       />
     </View>
