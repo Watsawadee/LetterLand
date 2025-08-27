@@ -27,7 +27,7 @@ export interface GameData {
 export interface GameTemplate {
   id: number;
   gameTopic: string;
-  gameType: "WORDSEARCH" | "CROSSWORD_SEARCH";
+  gameType: "WORD_SEARCH" | "CROSSWORD_SEARCH";
   difficulty: string;
   isPublic: boolean;
   questions: QuestionAnswer[];
@@ -41,6 +41,7 @@ export interface QuestionAnswer {
   name: string;
   answer: string;
   hint: string;
+  audioUrl: string | null;
 }
 
 // GameControls.tsx

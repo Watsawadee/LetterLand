@@ -52,9 +52,7 @@ export const getGameDataController = async (req: Request, res: Response) => {
 
     res.status(200).json({
       message: "Get Game successfully",
-      data: {
-        ...game.gameTemplate,
-      },
+      data: { game },
     });
   } catch (error) {
     console.error("Game Controller error:", error);
