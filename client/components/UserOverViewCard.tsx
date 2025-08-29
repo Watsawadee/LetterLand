@@ -8,6 +8,8 @@ import coinIcon from "../assets/images/coin.png"
 import Explore from "../assets/images/Explore.png"
 import { Button, Card, Dialog, Portal, Text } from "react-native-paper";
 import { theme } from "@/theme";
+
+
 const UserOverviewCard = () => {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
@@ -15,6 +17,7 @@ const UserOverviewCard = () => {
     null
   );
   const [dialogVisible, setDialogVisible] = useState(false);
+
 
   useEffect(() => {
     const fetchId = async () => {
@@ -27,21 +30,35 @@ const UserOverviewCard = () => {
   const { data: user, isLoading } = useUserProfile();
 
   if (!userId || isLoading || !user) return <Text>Loading...</Text>;
-
+  if ("error" in user) return <Text>Error: {user.error}</Text>;
 
 
   const handleSelect = (type: "crossword" | "wordsearch") => {
     setGameType(type);
+    setDialogVisible(false);
+    if (!userId) return;
 
-    setTimeout(() => {
-      router.push({
-        pathname: "/main/CreateGame",
-        params: { userId, gameType: type, },
-      });
-    }, 500);
+    router.push({
+      pathname: "/CreateGame",
+      params: {
+        gameType: type === "wordsearch" ? "WORD_SEARCH" : "CROSSWORD_SEARCH"
+      },
+    });
   };
 
 
+  const gameOptions = [
+    {
+      type: "crossword",
+      question: "Q. What is mammal?",
+      label: "Crossword search",
+    },
+    {
+      type: "wordsearch",
+      question: "Q. Cat",
+      label: "Word search",
+    },
+  ] as const;
 
   return (
     <Card
@@ -101,7 +118,7 @@ const UserOverviewCard = () => {
 
               <Text style={{ fontWeight: "700", color: theme.colors.darkGrey, display: "flex", flexDirection: "column", justifyContent: "center" }}>Solve puzzles created by others</Text>
             </View>
-            <Button mode="contained" style={{ backgroundColor: theme.colors.green }}>
+            <Button mode="contained" style={{ backgroundColor: theme.colors.green }} onPress={() => { router.replace("/") }}>
               <Text style={{ color: theme.colors.darkGrey, fontWeight: "bold" }}>Explore other game</Text>
             </Button>
           </View>
@@ -136,32 +153,14 @@ const UserOverviewCard = () => {
                 marginTop: 12,
               }}
             >
-              {[
-                {
-                  type: "crossword",
-                  question: "Q. What is mammal?",
-                  label: "Crossword search",
-                },
-                {
-                  type: "wordsearch",
-                  question: "Q. Cat",
-                  label: "Word search",
-                },
-              ].map(({ type, question, label }, idx) => (
-                <Button
-                  key={type || idx}
-                  onPress={() => handleSelect(type as "crossword" | "wordsearch")}
-                  style={{ padding: 0, backgroundColor: "transparent", borderWidth: 0, elevation: 0, shadowColor: "transparent" }}
-                  mode="text"
-                  rippleColor={"transparent"}
-                >
-                  <GameTypeCard
-                    question={question}
-                    gameType={label}
-                    selected={gameType === type}
-                    userId={userId}
-                  />
-                </Button>
+              {gameOptions.map(({ type, question, label }) => (
+                <GameTypeCard
+                  key={type}
+                  question={question}
+                  gameType={label}
+                  selected={gameType === type}
+                  onPress={() => handleSelect(type)}
+                />
               ))}
             </View>
           </Dialog.Content>

@@ -1,72 +1,85 @@
 import { Request, Response } from "express";
 import prisma from "../configs/db";
 import { EnglishLevel } from "@prisma/client";
-import { SetupProfileResponse } from "../types/setupUser";
+import { ErrorResponse, GetWordsOrError, GetWordsResponse, OxfordEntry, SetupProfileRequest, SetupProfileResponse } from "../types/type";
 import { calculateCEFRLevelFromSelectedWords } from "../services/cefrScoreService";
 import fs from "fs";
 import path from "path";
+import { ErrorResponseSchema, SetupProfileRequestSchema, SetupProfileResponseSchema } from "../types/setup.schema";
 
 const oxfordDataPath = path.join(__dirname, "../../data/oxford3000.json");
-const oxfordWords = JSON.parse(fs.readFileSync(oxfordDataPath, "utf8"));
+const oxfordWords: OxfordEntry[] = JSON.parse(
+  fs.readFileSync(oxfordDataPath, "utf8")
+);
 
 const wordToLevelMap = new Map<string, EnglishLevel>();
-oxfordWords.forEach((entry: { word: string; level: string }) => {
-  wordToLevelMap.set(entry.word.toLowerCase(), entry.level as EnglishLevel);
-});
+for (const entry of oxfordWords) {
+  wordToLevelMap.set(entry.word.toLowerCase(), entry.level);
+}
+
+function pickRandom<T>(arr: T[], count: number): T[] {
+  const copy = arr.slice();
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy.slice(0, count);
+}
 
 export const getWords = async (req: Request, res: Response) => {
   try {
-    const randomWords = [...oxfordWords].sort(() => 0.5 - Math.random());
-    const selectedWords = randomWords.slice(0, 30);
-    const wordList = selectedWords.map((entry: { word: String }) => entry.word);
+    const selected = pickRandom(oxfordWords, 30);
+    const wordList = selected.map((e) => e.word);
     res.status(200).json({ words: wordList });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching words:", error);
-    res.status(500).json({ error: "Failed to fetch words" });
+    const response = { error: "Failed to fetch words" };
+    res.status(500).json(ErrorResponseSchema.parse(response));
   }
 };
 
 export const setupProfile = async (
   req: Request,
-  res: Response<SetupProfileResponse>
-): Promise<void> => {
+  res: Response
+) => {
   try {
-    const { userId, age, selectedWords } = req.body;
-    if (!userId || !age || !Array.isArray(selectedWords)) {
-      res.status(400).json({ error: "Missing required field" } as any);
-      return;
+    const parsed = SetupProfileRequestSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Missing or invalid required field." });
+      return
     }
+
+    const { userId, age, selectedWords }: SetupProfileRequest = parsed.data;
     const mappedWords = selectedWords
       .map((word: string) => {
         const level = wordToLevelMap.get(word.toLowerCase());
         return level ? { word, level } : null;
       })
-      .filter(Boolean) as { word: string; level: EnglishLevel }[];
-
+      .filter(
+        (v: { word: string; level: EnglishLevel } | null): v is { word: string; level: EnglishLevel } => v !== null
+      );
     if (mappedWords.length === 0) {
       res.status(400).json({
         error: "No valid CEFR levels found for selected words.",
-      } as any);
+      });
 
       return;
     }
     const predictedLevel = calculateCEFRLevelFromSelectedWords(mappedWords);
 
     const updatedUser = await prisma.user.update({
-      where: { id: Number(userId) },
-      data: {
-        age: Number(age),
-        englishLevel: predictedLevel as EnglishLevel,
-      },
+      where: { id: userId },
+      data: { age, englishLevel: predictedLevel },
     });
-
-    res.status(200).json({
+    const response: SetupProfileResponse = {
       message: "Setup completed",
       cefrLevel: predictedLevel,
       user: updatedUser,
-    });
+    };
+
+    res.status(200).json(SetupProfileResponseSchema.parse(response));
   } catch (error) {
     console.error("Setup profile error: ", error);
-    res.status(500).json({ error: "Internal Server Error" } as any);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };

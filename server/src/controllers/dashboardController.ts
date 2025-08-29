@@ -1,16 +1,22 @@
 import prisma from "../configs/db";
 import { Request, Response } from "express";
 import { AuthenticatedRequest } from "../types/authenticatedRequest";
-import { startOfWeek, formatISO, endOfWeek, eachDayOfInterval, format } from "date-fns";
-import { count } from "console";
+import { startOfWeek, endOfWeek, eachDayOfInterval, format } from "date-fns";
+import {
+  TotalPlaytimeResponseSchema,
+  WordsLearnedResponseSchema,
+  GamesPlayedPerWeekResponseSchema,
+} from "../types/dashboard.schema";
+import {
+  TotalPlaytimeOrError, WordsLearnedOrError,
+  GamesPlayedPerWeekOrError,
+} from "../types/type"
 export const getUserTotalPlaytime = async (
   req: AuthenticatedRequest,
-  res: Response
+  res: Response<TotalPlaytimeOrError>
 ): Promise<void> => {
   const userId = Number(req.params.userId);
   const loggedInUserId = req.user?.id;
-  console.log("👉 URL userId:", userId);
-  console.log("👉 Logged in userId from token:", loggedInUserId);
 
   if (isNaN(userId)) {
     res.status(400).json({ error: "Invalid user ID" });
@@ -31,7 +37,8 @@ export const getUserTotalPlaytime = async (
       res.status(200).json({ error: "User is not exist" });
       return;
     }
-    res.status(200).json({ totalPlaytime: user.total_playtime });
+    const response = TotalPlaytimeResponseSchema.parse({ totalPlaytime: user.total_playtime, })
+    res.status(200).json(response);
     return;
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });
@@ -67,8 +74,12 @@ export const getUserWordLearned = async (
       select: { word: true }
     });
 
-    const uniqueWords = new Set(wordCount.map(w => w.word));
-    res.status(200).json({ wordsLearned: uniqueWords.size });
+    const uniqueWords = new Set(wordCount.map((w: { word: string }) => w.word));
+    const response = WordsLearnedResponseSchema.parse({
+      wordsLearned: uniqueWords.size,
+    });
+
+    res.status(200).json(response);
     return;
   } catch (error) {
     console.log(error);
@@ -78,7 +89,7 @@ export const getUserWordLearned = async (
 
 export const getUserGamesPlayedPerWeek = async (
   req: AuthenticatedRequest,
-  res: Response
+  res: Response<GamesPlayedPerWeekOrError>
 ): Promise<void> => {
   const userId = Number(req.params.userId);
   const loggedInUserId = req.user?.id;
@@ -116,18 +127,18 @@ export const getUserGamesPlayedPerWeek = async (
       result[label] = 0;
     });
 
-    games.forEach((game) => {
+    games.forEach((game: { startedAt: Date }) => {
       const label = format(game.startedAt, "E").slice(0, 2);
       if (result[label] !== undefined) result[label]++;
     });
 
     const labels = days.map(day => format(day, "E").slice(0, 2));
     const counts = labels.map(label => result[label] || 0);
-
-    res.status(200).json({
+    const response = GamesPlayedPerWeekResponseSchema.parse({
       labels,
       counts,
     });
+    res.status(200).json(response);
   } catch (error) {
     console.log(error);
     res.status(500).json({ error: "Internal Server Error" });

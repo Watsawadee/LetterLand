@@ -2,10 +2,7 @@ import { useState } from "react";
 import { useRouter } from "expo-router";
 import { Alert, View } from "react-native";
 import { Card, TextInput, Button, Text } from "react-native-paper";
-import { registerUser } from "@/services/authService";
-import { useMutation } from "@tanstack/react-query";
 import { useRegister } from "@/hooks/useRegister";
-import * as SecureStore from "expo-secure-store"
 import { storeToken } from "@/utils/storeToken";
 import GardenBackground from "@/assets/backgroundTheme/GardenBackground";
 
@@ -14,6 +11,9 @@ const RegisterScreen = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isFocused, setIsFocused] = useState(false);
+
+
 
 
   const router = useRouter();
@@ -28,8 +28,7 @@ const RegisterScreen = () => {
     // await SecureStore.setItemAsync("user-token", token);
     await storeToken(token);
     router.replace({
-      pathname: "/setupProfile/Age",
-      params: { userId: user.id.toString() },
+      pathname: "/setupProfile/age",
     })
   })
   const handleRegister = () => {
@@ -87,44 +86,54 @@ const RegisterScreen = () => {
           Create Account
         </Text>
         <TextInput
-          label="Username"
+          placeholder={isFocused ? "" : "Username"}
           value={username}
           onChangeText={setUsername}
           mode="outlined"
-          style={{ marginBottom: 12 }}
+          textColor="black"
+          activeOutlineColor="#5B6073"
+          style={{ marginBottom: 12, backgroundColor: "transparent" }}
         />
         <TextInput
-          label="Email"
+          placeholder={isFocused ? "" : "Email"}
           value={email}
           onChangeText={setEmail}
           mode="outlined"
           autoCapitalize="none"
-          style={{ marginBottom: 12 }}
+          textColor="black"
+          activeOutlineColor="#5B6073"
+          style={{ marginBottom: 12, backgroundColor: "transparent" }}
         />
         <TextInput
-          label="Password"
+          placeholder={isFocused ? "" : "Password"}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
           mode="outlined"
-          style={{ marginBottom: 12 }}
+          textColor="black"
+          activeOutlineColor="#5B6073"
+          style={{ marginBottom: 12, backgroundColor: "transparent" }}
         />
         <TextInput
-          label="Confirm Password"
+          placeholder={isFocused ? "" : "Confirm Password"}
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           secureTextEntry
           mode="outlined"
-          style={{ marginBottom: 12 }}
+          textColor="black"
+          activeOutlineColor="#5B6073"
+          style={{ marginBottom: 12, backgroundColor: "transparent" }}
         />
         <Button
           mode="contained"
           onPress={handleRegister}
           style={{ backgroundColor: "#007AFF", borderRadius: 8 }}
           contentStyle={{ paddingVertical: 6 }}
+          loading={isPending}
+          disabled={isPending}
         >
           <Text style={{ color: "white", fontWeight: "800", fontSize: 16 }}>
-            {isPending ? "Registering..." : "Register"}
+            Register
           </Text>
         </Button>
       </Card>

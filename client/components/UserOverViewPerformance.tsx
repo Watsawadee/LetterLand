@@ -1,44 +1,69 @@
-import React from "react"
+import React, { useEffect, useState } from "react"
 import { View, Text } from "react-native"
 import { useTotalGamesThisWeek, useUserTotalPlaytime, useUserWordLearned } from "@/hooks/useDashboard";
 import {
-    LineChart,
+    BarChart,
 } from "react-native-chart-kit";
 import Svg, { Text as SvgText } from "react-native-svg";
 import { theme } from "@/theme";
 import { Card } from "react-native-paper";
+import { ActivityIndicator } from "react-native";
 import Clock from "@/assets/icon/Clock";
 import Pencil from "@/assets/icon/Pencil";
 
 
 const UserOverviewPerformance = () => {
 
-    const {
-        data,
-    } = useTotalGamesThisWeek();
-    const maxValue = Math.max(...data?.counts ?? [1]);
-    const segments = maxValue <= 6 ? maxValue : 5;
+    const { data: TotalgamesData, isLoading: loadingChart, isError: chartError } = useTotalGamesThisWeek();
+    const [forceLoading, setForceLoading] = useState(true);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setForceLoading(false), 1000);
+        return () => clearTimeout(timer);
+    }, []);
+
+
+
+    //For custom segment
+    const counts = TotalgamesData?.counts ?? [0, 0, 0, 0, 0, 0, 0];
+    const labels = TotalgamesData?.labels ?? ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+    const rawMax = Math.max(...counts);
+    const safeMax = Math.max(rawMax, 1);
+
+    // Segments: show up to 6 lines, but at least 2
+    const segments = Math.min(Math.max(safeMax, 1), 6);
+
     const chartData = {
-        labels: data?.labels ?? ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
-        datasets: [{ data: data?.counts ?? [0, 0, 0, 0, 0, 0, 0] }],
+        labels,
+        datasets: [{ data: counts }],
     };
+
+    //For UI mock up test
+    // const chartData = {
+    //     labels: ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
+    //     datasets: [
+    //         { data: [0, 0, 0, 0, 0, 0, 1] }
+    //     ],
+    // };
+
     const chartConfig = {
         backgroundColor: "#F2F8F9",
         backgroundGradientFrom: "#F2F8F9",
         backgroundGradientTo: "#F2F8F9",
 
         decimalPlaces: 0,
-        color: () => `rgba(255, 214, 0)`,
+        color: () => `#000`,
         labelColor: () => `rgba(91, 96, 115)`,
         style: {
             borderRadius: 16,
         },
         propsForBackgroundLines: {
-            stroke: theme.colors.darkGrey,
-            strokeDasharray: "",
-            strokeWidth: 0.5,
+            strokeWidth: 0,
         },
     };
+
+    const showLoader = forceLoading || loadingChart || !TotalgamesData;
+
 
     const { data: totalPlaytime, isLoading: loadingPlaytime } = useUserTotalPlaytime();
     const { data: wordsLearned, isLoading: loadingWords } = useUserWordLearned();
@@ -54,9 +79,45 @@ const UserOverviewPerformance = () => {
                     backgroundColor: "#F2F8F9", borderRadius: 16,
                     padding: 10,
                     margin: 12,
+                    display: "flex",
+                    justifyContent: "center"
                 }}>
+                    {
+                        chartError ? (
+                            <View style={{ height: 200, alignItems: "center", justifyContent: "center" }}>
+                                <Text style={{ color: theme.colors.darkGrey }}>Failed to load chart</Text>
+                            </View>) : showLoader ? (
+                                <View style={{
+                                    width: 450,
+                                    height: 200,
+                                    display: "flex",
+                                    justifyContent: "center"
+                                }}>
+                                    <ActivityIndicator size={"small"} />
+                                </View>
+                            ) : (
+                            <BarChart
+                                data={chartData}
+                                width={450}
+                                height={200}
+                                chartConfig={chartConfig}
+                                fromZero={true}
+                                yAxisLabel=""
+                                yAxisSuffix=""
+                                showValuesOnTopOfBars
+                                segments={segments}
+                                style={{
+                                    borderRadius: 16,
+                                    display: "flex",
+                                    flexDirection: "row",
+                                    alignItems: "flex-start",
+                                    justifyContent: "flex-start"
+                                }}
+                            />
+                        )
+                    }
 
-                    <LineChart
+                    {/* <LineChart
                         data={chartData}
                         width={450}
                         height={200}
@@ -116,7 +177,7 @@ const UserOverviewPerformance = () => {
                                 </Svg>
                             );
                         }}
-                    />
+                    /> */}
                 </View>
             </Card>
 
@@ -128,7 +189,11 @@ const UserOverviewPerformance = () => {
                             <Text style={{ fontWeight: "bold" }}>
                                 Words Learned
                             </Text>
-                            <Text style={{ color: theme.colors.darkGrey }}>{wordsLearned} Word(s)</Text>
+                            <Text style={{ color: theme.colors.darkGrey }}>{wordsLearned && "error" in wordsLearned
+                                ? "Error"
+                                : wordsLearned && "wordsLearned" in wordsLearned
+                                    ? `${wordsLearned.wordsLearned} Word(s)`
+                                    : "0 Word(s)"}</Text>
                         </View>
                     </View>
                 </Card>
@@ -139,7 +204,11 @@ const UserOverviewPerformance = () => {
                             <Text style={{ fontWeight: "bold" }}>
                                 Total Playtime
                             </Text>
-                            <Text style={{ color: theme.colors.darkGrey }}>{totalPlaytime} Hour(s)</Text>
+                            <Text style={{ color: theme.colors.darkGrey }}> {totalPlaytime && "error" in totalPlaytime
+                                ? "Error"
+                                : totalPlaytime && "totalPlaytime" in totalPlaytime
+                                    ? `${totalPlaytime.totalPlaytime} Hour(s)`
+                                    : "0 Hour(s)"}</Text>
                         </View>
                     </View>
                 </Card>

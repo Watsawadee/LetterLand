@@ -6,12 +6,13 @@ type GameTypeCardProps = {
   question: string;
   gameType: string;
   selected?: boolean;
-  userId: string;
+  onPress?: () => void;
 };
 
-const GameTypeCard = ({ question, gameType, selected }: GameTypeCardProps) => {
+const GameTypeCard = ({ question, gameType, selected, onPress }: GameTypeCardProps) => {
   return (
     <Card
+      onPress={onPress}
       style={{
         width: 180,
         height: 200,

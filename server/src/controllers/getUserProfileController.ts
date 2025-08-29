@@ -1,26 +1,26 @@
 import { Request, Response } from "express";
 import prisma from "../configs/db";
 import { AuthenticatedRequest } from "../types/authenticatedRequest";
+import { UserProfileOrError } from "../types/type";
+import { UserProfileResponseSchema } from "../types/userProfile.schema";
 export const getUserProfile = async (
   req: AuthenticatedRequest,
-  res: Response
-): Promise<void> => {
+  res: Response<UserProfileOrError>
+) => {
 
   const userId = req.user?.id;
 
   if (!userId) {
     res.status(401).json({ error: "Unauthorised Access" })
     return;
-
   }
   try {
-
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, username: true, coin: true, englishLevel: true, email: true } })
     if (!user) {
       res.status(404).json({ error: "User not found" })
       return;
     }
-    res.status(200).json(user)
+    res.status(200).json(UserProfileResponseSchema.parse(user));
   }
   catch (error) {
     res.status(500).json({ error: "Internal server error" });

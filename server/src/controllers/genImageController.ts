@@ -6,7 +6,6 @@ import axios from "axios";
 
 dotenv.config();
 const IMAGE_FOLDERID = process.env.IMAGE_FOLDERID!;
-
 export const genImageAPI = async (req: Request, res: Response) => {
   const { prompt, style, aspect_ratio, seed, gameId, gameTopic } = req.body;
 

@@ -2,17 +2,10 @@ import { Platform } from "react-native";
 import { WeeklyGameData } from "../types/weeklyGamePlayedProps"
 import { getLoggedInUserId, getToken } from "@/utils/auth";
 import axios from "axios";
-const baseUrl =
-    Platform.OS === "android"
-        ? "http://10.0.2.2:3000"
-        : "http://localhost:3000";
-
-const axiosInstance = axios.create({
-    baseURL: baseUrl,
-    headers: {
-        "Content-Type": "application/json",
-    },
-});
+import api from "./api";
+import { GamesPlayedPerWeekOrError, TotalPlaytimeOrError, WordsLearnedOrError } from "@/libs/type";
+import { GamesPlayedPerWeekOrErrorSchema, GamesPlayedPerWeekResponseSchema, TotalPlaytimeOrErrorSchema, WordsLearnedOrErrorSchema } from "../types/dashboard.schema";
+import { ErrorResponseSchema } from "../types/setup.schema";
 
 async function getAuthHeader() {
     const token = await getToken();
@@ -25,32 +18,37 @@ async function getAuthHeader() {
 export async function getTotalGameThisWeek(): Promise<WeeklyGameData> {
     const userId = await getLoggedInUserId();
     const config = await getAuthHeader();
-    const res = await axiosInstance.get<WeeklyGameData>(
-        `/api/dashboard/user/${userId}/gameplayedperweek`,
+    const res = await api.get<WeeklyGameData>(
+        `/dashboard/user/${userId}/gameplayedperweek`,
         config
     );
+    const ok = GamesPlayedPerWeekResponseSchema.safeParse(res.data);
+    if (ok.success) return ok.data;
 
-    return res.data;
+    const err = ErrorResponseSchema.safeParse(res.data);
+    if (err.success) throw new Error(err.data.error);
+
+    throw new Error("Invalid response from server");
 }
 
-export async function getUserTotalPlaytime(): Promise<number> {
+export async function getUserTotalPlaytime(): Promise<TotalPlaytimeOrError> {
     const userId = await getLoggedInUserId();
     const config = await getAuthHeader();
 
-    const res = await axiosInstance.get<{ totalPlaytime: number }>(
-        `/api/dashboard/user/${userId}/playtime`,
+    const res = await api.get<{ totalPlaytime: number }>(
+        `/dashboard/user/${userId}/playtime`,
         config
     );
 
-    return res.data.totalPlaytime;
+    return TotalPlaytimeOrErrorSchema.parse(res.data);
 }
 
-export async function getUserWordLearned(): Promise<number> {
+export async function getUserWordLearned(): Promise<WordsLearnedOrError> {
     const userId = await getLoggedInUserId();
     const config = await getAuthHeader();
-    const res = await axiosInstance.get<{ wordsLearned: number }>(
-        `/api/dashboard/user/${userId}/wordlearned`,
+    const res = await api.get<{ wordsLearned: number }>(
+        `/dashboard/user/${userId}/wordlearned`,
         config
     );
-    return res.data.wordsLearned;
+    return WordsLearnedOrErrorSchema.parse(res.data);
 }

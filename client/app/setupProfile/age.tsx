@@ -1,20 +1,25 @@
 import { View } from "react-native";
 import { useState } from "react";
 import { Card, Text, TextInput, Button } from "react-native-paper";
-import { useLocalSearchParams, useRouter } from "expo-router";
-
+import { useRouter } from "expo-router";
+import { getLoggedInUserId } from "@/utils/auth";
 export default function AgeScreen() {
-  const { userId } = useLocalSearchParams<{ userId: string }>();
   const [age, setAge] = useState("");
   const router = useRouter();
-  const handleAge = () => {
+  const handleAge = async () => {
     if (!age) {
       alert("Age required, please fill in your age");
       return;
     }
+    const userId = await getLoggedInUserId();
+    if (!userId) {
+      alert("Session expired. Please log in again.");
+      router.replace("/authentication/login");
+      return;
+    }
     router.replace({
-      pathname: "/setupProfile/VocabEval",
-      params: { userId, age: age.toString() },
+      pathname: "/setupProfile/vocabEval",
+      params: { age: age.toString() },
     });
   };
   return (

@@ -1,17 +1,16 @@
+import dotenv from "dotenv";
 import express from "express";
 import path from "path";
 import userRoutes from "./routes/userRoutes";
 import pronunciationRoutes from "./routes/pronunciationRoutes";
-import geminiRoutes from "./routes/geminiRoutes";
+import geminiRoutes from "./routes/createGameRoutes";
 import genImageRoutes from "./routes/genImageRoutes";
 import setupRoute from "./routes/setupRoutes";
-import dotenv from "dotenv";
 import cors from "cors";
 import dashboardRoute from "./routes/dashboardRoute";
 import userProfileRoute from "./routes/userProfileRoute"
-
-dotenv.config(); import gameRoutes from './routes/gameRoutes';
-
+import gameRoutes from './routes/gameRoutes';
+dotenv.config();
 const app = express();
 app.use(express.json());
 app.use(cors());

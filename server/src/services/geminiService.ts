@@ -59,7 +59,11 @@ Your task:
 - Use words commonly found in general articles, spoken language, and popular media.
 - Do **not** include words that would confuse an advanced English learner unfamiliar with biology or science.
 - Clues should be clear and accessible for the target CEFR level.
-
+- The answer for each clue must not exceed the following character limits:
+  - A1, A2: 8 characters
+  - B1, B2: 10 characters
+  - C1, C2: 12 characters
+- If a suitable answer cannot be found within the limit, use a shorter synonym or a simpler word.
 Also include an **imagePrompt** — a creative description for generating an image that represents the crossword’s topic. It should work for AI image generation tools.
 
 Respond only with the following strict JSON format:
@@ -67,21 +71,22 @@ Respond only with the following strict JSON format:
 {
   "success": true,
   "game": {
-    "id": 1,
-    "topic": "Space",
+    "gameTopic": "Space",
     "questions": [
       {
         "question": "The planet we live on.",
-        "answer": "EARTH"
+        "answer": "EARTH",
+        "hint": "Our home planet"
       },
       {
         "question": "The bright object that provides light during the night.",
-        "answer": "MOON"
+        "answer": "MOON",
+        "hint": "Earth's satellite"
       }
     ],
-    "userId": ${userId},
-    "imagePrompt": "A detailed digital illustration of outer space featuring Earth and Moon."
-  }
+    "userId": ${userId}
+  },
+  "imagePrompt": "A detailed digital illustration of outer space featuring Earth and Moon."
 }
 \`\`\`
 `;
@@ -102,10 +107,15 @@ Respond only with the following strict JSON format:
 
     let gameData = JSON.parse(geminiResponse);
 
-    if (gameData.game?.clues) {
-      gameData = transformGameFormat(gameData, userId);
+    if (gameData.game?.topic && !gameData.game.gameTopic) {
+      gameData.game.gameTopic = gameData.game.topic;
+      delete gameData.game.topic;
     }
-
+    gameData.game.questions = gameData.game.questions.map((q: any) => ({
+      question: q.question,
+      answer: q.answer,
+      hint: q.hint ?? "",
+    }));
     console.log("Transformed Game Format:", gameData);
 
     const words = gameData.game.questions.map((q: any) => q.answer);
@@ -124,21 +134,43 @@ Respond only with the following strict JSON format:
       JSON.stringify(rankedWords, null, 2)
     );
 
+    const gridLengths: Record<string, number> = {
+      A1: 8,
+      A2: 8,
+      B1: 10,
+      B2: 10,
+      C1: 12,
+      C2: 12,
+    };
     gameData.game.questions = gameData.game.questions.map((q: any) => {
       const originalWord = q.answer;
 
       const userWordChoice =
         rankedWords?.[originalWord]?.[userCEFR] || originalWord;
+      const maxLen = gridLengths[userCEFR];
+      const finalAnswer =
+        userWordChoice.length > maxLen ? originalWord : userWordChoice;
+
 
       console.log(
         `Replacing word: "${originalWord}" → "${userWordChoice}" for CEFR Level: ${userCEFR}`
       );
 
-      return { ...q, answer: userWordChoice };
+      return { ...q, answer: finalAnswer };
     });
 
     console.log("Final Processed Game:", gameData);
-    return gameData;
+    // return gameData;
+    return {
+      success: true,
+      game: {
+        id: gameData.game.id,
+        gameTopic: gameData.game.gameTopic,
+        questions: gameData.game.questions,
+        userId: gameData.game.userId,
+      },
+      imagePrompt: gameData.imagePrompt,
+    };
   } catch (error: any) {
     console.error("Error generating crossword hints:", error.message);
     throw new Error("Failed to generate crossword hints.");
@@ -195,8 +227,8 @@ Return a JSON object in this exact structure:
     
     Words and their synonyms:
     ${Object.entries(wordSynonyms)
-      .map(([word, synonyms]) => `"${word}": ["${synonyms.join('", "')}"]`)
-      .join(",\n")}
+        .map(([word, synonyms]) => `"${word}": ["${synonyms.join('", "')}"]`)
+        .join(",\n")}
     `;
 
     console.log("🔍 Sending request to Gemini for CEFR ranking...");

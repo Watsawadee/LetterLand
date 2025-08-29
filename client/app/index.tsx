@@ -38,7 +38,7 @@ export default function Home() {
         type="medium"
         onPress={() => router.push(`/`)}
       />
-      
+
       {/* ✅ Word Bank Button */}
       <TouchableOpacity
         style={wordBankStyles.button}

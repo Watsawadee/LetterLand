@@ -21,8 +21,8 @@ export const useRegister = (
   onSuccess: (data: RegisterResponse) => void
 ): UseMutationResult<RegisterResponse, Error, RegisterInput> =>
   useMutation<RegisterResponse, Error, RegisterInput>({
-    mutationFn: ({ username, email, password }) =>
-      registerUser(username, email, password),
+    mutationFn: (payload) =>
+      registerUser(payload),
     onSuccess,
     onError: (err) => {
       console.error("Registration error:", err);

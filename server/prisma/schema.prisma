@@ -53,17 +53,17 @@ model GameTemplate {
 }
 
 model Game {
-  id             Int           @id @default(autoincrement())
+  id             Int          @id @default(autoincrement())
   userId         Int
   gameTemplateId Int
-  startedAt      DateTime      @default(now())
+  startedAt      DateTime     @default(now())
   finishedAt     DateTime?
-  isHintUsed     Boolean       @default(false)
-  isFinished     Boolean       @default(false)
+  isHintUsed     Boolean      @default(false)
+  isFinished     Boolean      @default(false)
   gameCode       Int?
   timer          Int?
-  gameTemplate   GameTemplate  @relation(fields: [gameTemplateId], references: [id])
-  user           User          @relation(fields: [userId], references: [id])
+  gameTemplate   GameTemplate @relation(fields: [gameTemplateId], references: [id])
+  user           User         @relation(fields: [userId], references: [id])
 }
 
 model Question {
