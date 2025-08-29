@@ -1,12 +1,18 @@
-import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Modal, Text, TouchableOpacity } from "react-native";
+import React, { useMemo, useState } from "react";
+import { View, StyleSheet, TouchableOpacity } from "react-native";
 import GameControls from "./GameControls";
 import GameBoard from "./GameBoard";
-import QuestionListSlider from "./QuestionListSlider";
-import WordCard from "./WordCard";
+import CluesPanel from "./CluesPanel";
+import GameEndModal from "./GameEndModal";
+import ConfirmModal from "./ConfirmModal";
 import { useRouter } from "expo-router";
 import { useGameLogic } from "../hooks/useGameLogic";
 import { GameProps } from "../types/type";
+import { useHints } from "../hooks/useHints";
+import { useAllFound } from "../hooks/useAllFound";
+import ArrowLeft from "@/assets/icon/ArrowLeft";
+import Restart from "../assets/icon/Restart";
+import ArrowRight from "@/assets/icon/ArrowRight";
 
 export default function SharedGameScreen({
   mode,
@@ -14,11 +20,12 @@ export default function SharedGameScreen({
   CELL_SIZE,
   GRID_SIZE,
   questionsAndAnswers,
+  gameData,
 }: GameProps) {
   const router = useRouter();
   const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
-  const [isAllFoundModalVisible, setIsAllFoundModalVisible] = useState(false);
-  const [hintCount, setHintCount] = useState(3);
+  const [confirmExitVisible, setConfirmExitVisible] = useState(false);
+  const [timeUp, setTimeUp] = useState(false);
 
   const {
     grid,
@@ -26,88 +33,65 @@ export default function SharedGameScreen({
     foundWords,
     hintCell,
     fontSettings,
-    confirmRestart,
     resetGame,
     showHintForAnswer,
     layoutRef,
     panResponder,
     revealedAnswers,
-    activeHintWord,
   } = useGameLogic({ GRID_SIZE, CELL_SIZE, questionsAndAnswers, mode });
 
-  const foundWordsList = foundWords.map((fw) => fw.word);
+  const foundWordsList = useMemo(
+    () => foundWords.map((fw) => fw.word),
+    [foundWords]
+  );
+  const allAnswers = useMemo(
+    () => questionsAndAnswers.map((q) => q.answer),
+    [questionsAndAnswers]
+  );
 
-  useEffect(() => {
-    const allFound = questionsAndAnswers.every((qa) =>
-      foundWordsList.includes(qa.answer)
-    );
+  const { visible: allFoundVisible, setVisible: setAllFoundVisible } =
+    useAllFound(allAnswers, foundWordsList);
 
-    if (allFound) {
-      const timeout = setTimeout(() => {
-        setIsAllFoundModalVisible(true);
-      }, 100);
-
-      return () => clearTimeout(timeout);
-    }
-  }, [foundWordsList, questionsAndAnswers]);
-
-  const [lastHintIndex, setLastHintIndex] = useState(-1);
-  const isHintDisabled =
-    hintCount <= 0 ||
-    (mode === "CROSSWORD_SEARCH" &&
-      revealedAnswers.includes(
-        questionsAndAnswers[activeQuestionIndex].answer
-      )) ||
-    (mode === "WORD_SEARCH" && activeHintWord !== null);
-
-  const onShowHint = () => {
-    if (hintCount <= 0) return;
-
-    if (mode === "CROSSWORD_SEARCH") {
-      const currentQA = questionsAndAnswers[activeQuestionIndex];
-      if (!currentQA) return;
-
-      if (revealedAnswers.includes(currentQA.answer)) {
-        return;
-      }
-
-      showHintForAnswer(currentQA.answer);
-      setHintCount((prev) => prev - 1);
-    } else {
-      const total = questionsAndAnswers.length;
-      for (let offset = 1; offset <= total; offset++) {
-        const nextIndex = (lastHintIndex + offset) % total;
-        const nextAnswer = questionsAndAnswers[nextIndex].answer;
-        if (!foundWordsList.includes(nextAnswer)) {
-          showHintForAnswer(nextAnswer);
-          setLastHintIndex(nextIndex);
-          setHintCount((prev) => prev - 1);
-          return;
-        }
-      }
-    }
-  };
+  const { hintCount, isHintDisabled, onShowHint, clearActiveHint, resetHints } =
+    useHints({
+      mode,
+      questionsAndAnswers,
+      foundWordsList,
+      revealedAnswers,
+      activeQuestionIndex,
+      showHintForAnswer,
+    });
 
   const handleCloseModal = () => {
-    setIsAllFoundModalVisible(false);
+    setAllFoundVisible(false);
     resetGame();
     setActiveQuestionIndex(0);
-    setLastHintIndex(-1);
+    clearActiveHint();
+    resetHints();
+    setTimeUp(false);
   };
+
+  const handleBackPress = () => setConfirmExitVisible(true);
+  const handleExitConfirm = () => router.replace("/");
+  const handleExitCancel = () => setConfirmExitVisible(false);
 
   return (
     <View style={styles.container}>
       <View style={styles.topRow}>
         <View style={styles.leftColumn}>
+          <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+            <ArrowLeft />
+          </TouchableOpacity>
+
           <GameControls
             title={title}
             fontSettings={fontSettings}
-            confirmRestart={confirmRestart}
-            onRetryConfirm={handleCloseModal}
             onShowHint={onShowHint}
-            onBackHome={() => router.replace("/")}
-            hintCount={hintCount}
+            hintCount={hintCount ?? 0}
             isHintDisabled={isHintDisabled}
+            startTimeSeconds={gameData?.timer ?? 0}
+            onTimeUp={() => setTimeUp(true)}
+            key={activeQuestionIndex + (timeUp ? "timeUp" : "running")}
           />
         </View>
 
@@ -119,129 +103,74 @@ export default function SharedGameScreen({
             foundWords={foundWords}
             hintCell={hintCell}
             fontSize={fontSettings.fontSize}
-            panHandlers={panResponder.panHandlers}
+            panHandlers={timeUp ? {} : panResponder.panHandlers}
             layoutRef={layoutRef}
           />
         </View>
       </View>
 
       <View style={styles.itemWrapper}>
-        {mode === "CROSSWORD_SEARCH" ? (
-          <QuestionListSlider
-            questionsAndAnswers={questionsAndAnswers}
-            foundWords={foundWordsList}
-            showQuestion
-            activeIndex={activeQuestionIndex}
-            onChangeIndex={setActiveQuestionIndex}
-            revealedAnswers={revealedAnswers}
-          />
-        ) : (
-          <View
-            style={[
-              styles.wordListWrapper,
-              { flexDirection: "row", flexWrap: "wrap" },
-            ]}
-          >
-            {questionsAndAnswers.map(({ answer }) => (
-              <WordCard
-                key={answer}
-                word={answer}
-                found={foundWordsList.includes(answer)}
-              />
-            ))}
-          </View>
-        )}
+        <CluesPanel
+          mode={mode}
+          questionsAndAnswers={questionsAndAnswers}
+          foundWordsList={foundWordsList}
+          activeIndex={activeQuestionIndex}
+          onChangeIndex={setActiveQuestionIndex}
+          revealedAnswers={revealedAnswers}
+        />
       </View>
 
-      <Modal
-        visible={isAllFoundModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={handleCloseModal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalText}>
-              🎉 Congratulations! You found all words! 🎉
-            </Text>
+      <ConfirmModal
+        visible={confirmExitVisible}
+        message="If you exit now, your progress in this grid will be lost. Are you sure?"
+        confirmText="Yes"
+        cancelText="No"
+        onConfirm={handleExitConfirm}
+        onCancel={handleExitCancel}
+      />
 
-            <TouchableOpacity
-              style={styles.modalButton}
-              onPress={handleCloseModal}
-            >
-              <Text style={styles.modalButtonText}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      {/* All Found MODAL */}
+      <GameEndModal
+        visible={allFoundVisible}
+        title="EXCELLENT!"
+        message="You have found all the words on time!"
+        onConfirm={handleCloseModal}
+        onClose={() => router.replace("/")}
+        confirmIcon={<Restart />}
+        closeIcon={<ArrowRight />}
+      />
+
+      {/* TIME UP MODAL */}
+      <GameEndModal
+        visible={timeUp}
+        title="Time's Up!"
+        message="You can no longer continue the game."
+        onConfirm={handleCloseModal}
+        onClose={() => router.replace("/")}
+        confirmIcon={<Restart />}
+        closeIcon={<ArrowRight />}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    justifyContent: "flex-start",
-  },
-  topRow: {
-    flexDirection: "row",
-    flex: 1,
-    marginBottom: 10,
-  },
-  leftColumn: {
-    width: 300,
-    justifyContent: "center",
-    marginRight: 30,
-  },
-  rightColumn: {
-    flex: 1,
-    marginTop: 20,
-    justifyContent: "center",
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    width: "80%",
-    backgroundColor: "white",
-    padding: 25,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  modalText: {
-    fontSize: 18,
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  modalButton: {
-    backgroundColor: "#007AFF",
-    paddingVertical: 10,
-    paddingHorizontal: 25,
-    borderRadius: 6,
-  },
-  modalButtonText: {
-    color: "white",
-    fontSize: 16,
-  },
+  container: { flex: 1, padding: 20, justifyContent: "flex-start" },
+  topRow: { flexDirection: "row", flex: 1, marginBottom: 10 },
+  leftColumn: { width: 300, justifyContent: "center", marginRight: 30 },
+  rightColumn: { flex: 1, marginTop: 20, justifyContent: "center" },
   itemWrapper: {
     flexDirection: "row",
     justifyContent: "center",
     flexWrap: "wrap",
   },
-  wordListWrapper: {
-    backgroundColor: "#f0f0f0",
-    padding: 10,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  wordRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    flexWrap: "wrap",
+  backButton: {
+    position: "absolute",
+    top: 16,
+    left: 16,
+    zIndex: 10,
+    padding: 8,
+    backgroundColor: "rgba(249, 249, 249, 0.8)",
+    borderRadius: 50,
   },
 });

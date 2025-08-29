@@ -2,16 +2,17 @@ import React, { useRef, useEffect, useState } from "react";
 import { View, Text, StyleSheet, Animated, Easing } from "react-native";
 import { GameBoardProps } from "../types/type";
 
-export default function GameBoard({
-  grid,
-  CELL_SIZE,
-  selectedCells,
-  foundWords,
-  hintCell,
-  fontSize,
-  panHandlers,
-  layoutRef,
-}: GameBoardProps) {
+export default function GameBoard(props: GameBoardProps) {
+  const {
+    grid,
+    CELL_SIZE,
+    selectedCells,
+    foundWords,
+    hintCell,
+    fontSize,
+    panHandlers,
+    layoutRef,
+  } = props;
   const viewRef = useRef<View>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
 

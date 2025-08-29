@@ -1,18 +1,39 @@
-import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import React, { useEffect, useState, useRef } from "react";
+import { View, Text, StyleSheet } from "react-native";
 import FontSizeModal from "./FontSizeModal";
-import ConfirmModal from "./ConfirmModal";
-import { GameControlsProps } from "../types/type";
+import { CustomButton } from "../theme/ButtonCustom";
+import { Magnify } from "../assets/icon/Magnify";
+import FontIcon from "@/assets/icon/FontIcon";
+import Timer from "@/assets/icon/Timer";
+import { Typography } from "@/theme/Font";
+
+type FontSettings = {
+  fontModalVisible: boolean;
+  tempFontSize: number;
+  fontSize: number;
+  setTempFontSize: (n: number) => void;
+  setFontModalVisible: (v: boolean) => void;
+  setFontSize: (n: number) => void;
+};
+
+type GameControlsProps = {
+  title: string;
+  onShowHint: () => void;
+  hintCount: number;
+  isHintDisabled: boolean;
+  fontSettings: FontSettings;
+  startTimeSeconds: number;
+  onTimeUp: () => void;
+};
 
 export default function GameControls({
   title,
   fontSettings,
-  confirmRestart,
   onShowHint,
-  onBackHome,
-  onRetryConfirm,
   hintCount,
   isHintDisabled,
+  startTimeSeconds,
+  onTimeUp,
 }: GameControlsProps) {
   const {
     fontModalVisible,
@@ -22,54 +43,74 @@ export default function GameControls({
     setFontSize,
   } = fontSettings;
 
-  const currentTime = new Date().toLocaleTimeString();
+  const [secondsLeft, setSecondsLeft] = useState(startTimeSeconds);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Reset timer whenever startTimeSeconds changes
+  useEffect(() => {
+    setSecondsLeft(startTimeSeconds);
+  }, [startTimeSeconds]);
+
+  // Start countdown
+  useEffect(() => {
+    if (!startTimeSeconds || startTimeSeconds <= 0) return;
+    setSecondsLeft(startTimeSeconds);
+
+    if (timerRef.current) clearInterval(timerRef.current);
+
+    timerRef.current = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current!);
+          onTimeUp();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [startTimeSeconds, onTimeUp]);
+
+  const formatTime = (sec: number) => {
+    const minutes = Math.floor(sec / 60);
+    const seconds = sec % 60;
+    return `${minutes.toString().padStart(2, "0")}:${seconds
+      .toString()
+      .padStart(2, "0")}`;
+  };
 
   return (
     <View style={styles.container}>
-      <View style={styles.topLeft}>
-        <TouchableOpacity onPress={onBackHome} style={styles.button}>
-          <Text style={styles.buttonText}>Home</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.centerLeft}>
+      <View style={styles.box}>
         <Text style={styles.title}>{title}</Text>
-        <Text style={styles.time}>{currentTime}</Text>
-        <View style={styles.buttonsRow}>
-          <TouchableOpacity
-            onPress={() => setFontModalVisible(true)}
-            style={[styles.button]}
-          >
-            <Text style={styles.buttonText}>Font Size</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={onShowHint}
-            disabled={isHintDisabled}
-            style={[styles.button, isHintDisabled && styles.disabledButton]}
-          >
-            <Text
-              style={[
-                styles.buttonText,
-                isHintDisabled && styles.disabledButtonText,
-              ]}
-            >
-              Hint
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <Text style={{ fontSize: 16 }}>Hints left: {hintCount}</Text>
       </View>
 
-      <ConfirmModal
-        visible={confirmRestart.visible}
-        message="If you exit now, your progress in this grid will be lost. Are you sure?"
-        confirmText="Yes"
-        cancelText="No"
-        onConfirm={onRetryConfirm}
-        onCancel={() => confirmRestart.setVisible(false)}
-      />
+      {startTimeSeconds > 0 && (
+        <View style={styles.box}>
+          <View style={styles.timerRow}>
+            <Timer />
+            <Text style={styles.time}>{formatTime(secondsLeft)}</Text>
+          </View>
+        </View>
+      )}
+
+      <View style={styles.buttonsRow}>
+        <CustomButton
+          onPress={() => setFontModalVisible(true)}
+          type="fontSize"
+          icon={<FontIcon />}
+        />
+        <CustomButton
+          onPress={onShowHint}
+          type="buyHint"
+          icon={<Magnify />}
+          disabled={isHintDisabled}
+          number={hintCount}
+        />
+      </View>
 
       <FontSizeModal
         visible={fontModalVisible}
@@ -86,50 +127,33 @@ export default function GameControls({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    width: "100%",
-    paddingHorizontal: 10,
-    paddingVertical: 20,
-    justifyContent: "center",
-  },
-  topLeft: {
-    position: "absolute",
-    top: 10,
-    left: 10,
-  },
-  centerLeft: {
-    marginTop: 60,
-    alignItems: "flex-start",
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 6,
-    width: "100%",
-  },
-  time: {
-    fontSize: 16,
-    color: "#666",
+  container: { width: "100%", padding: 16 },
+  title: { ...Typography.header25, textAlign: "center" },
+  box: {
+    backgroundColor: "rgba(249, 249, 249, 0.8)",
+    padding: 12,
+    borderRadius: 8,
     marginBottom: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
   },
+  time: { marginTop: 4, ...Typography.header30 },
   buttonsRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    padding: 10,
+    gap: 20,
+    marginTop: 12,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  button: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 4,
-  },
-  buttonText: {
-    color: "blue",
-    fontWeight: "600",
-  },
-  disabledButton: {
-    backgroundColor: "#f0f0f0",
-  },
-  disabledButtonText: {
-    color: "#888",
+  timerRow: {
+    flexDirection: "row",
+    gap: 15,
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+    padding: 16,
   },
 });

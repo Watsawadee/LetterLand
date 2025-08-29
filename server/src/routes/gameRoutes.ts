@@ -9,9 +9,9 @@ import {
 
 const router = express.Router();
 
-router.get("/game", getAllGameController);
-router.get("/:userId", getAllGameByUserIdController);
-router.get("/gamedata/:gameId", getGameDataController);
+router.get("/", getAllGameController);
+router.get("/user/:userId", getAllGameByUserIdController);
+router.get("/:gameId", getGameDataController);
 
 router.post("/:gameId/wordfound", recordFoundWordController);
 router.post("/:gameId/wordfound/batch", batchRecordFoundWordsController);

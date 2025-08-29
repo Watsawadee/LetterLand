@@ -4,6 +4,7 @@ import { getToken } from "@/utils/auth";
 import { Platform } from "react-native";
 import { UserProfileOrError } from "@/libs/type";
 import { UserProfileOrErrorSchema } from "../types/userProfile.schema";
+import api from "./api";
 
 const baseUrl = "http://10.4.56.20:3000"
 // Platform.OS === "android"
@@ -16,8 +17,8 @@ export const getUserProfile = async (): Promise<UserProfileOrError> => {
       throw new Error("No token provided")
     }
 
-    const response = await axios.get<UserProfileOrError>(
-      `${baseUrl}/users/me/profile`,
+    const response = await api.get<UserProfileOrError>(
+      `/users/me/profile`,
       {
         headers: {
           Authorization: `Bearer ${token}`,

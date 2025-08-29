@@ -2,20 +2,10 @@ import { Platform } from "react-native";
 import { WeeklyGameData } from "../types/weeklyGamePlayedProps"
 import { getLoggedInUserId, getToken } from "@/utils/auth";
 import axios from "axios";
+import api from "./api";
 import { GamesPlayedPerWeekOrError, TotalPlaytimeOrError, WordsLearnedOrError } from "@/libs/type";
 import { GamesPlayedPerWeekOrErrorSchema, GamesPlayedPerWeekResponseSchema, TotalPlaytimeOrErrorSchema, WordsLearnedOrErrorSchema } from "../types/dashboard.schema";
 import { ErrorResponseSchema } from "../types/setup.schema";
-const baseUrl = "http://10.4.56.20:3000"
-// Platform.OS === "android"
-//     ? "http://10.0.2.2:3000"
-//     : "http://localhost:3000";
-
-const axiosInstance = axios.create({
-    baseURL: baseUrl,
-    headers: {
-        "Content-Type": "application/json",
-    },
-});
 
 async function getAuthHeader() {
     const token = await getToken();
@@ -28,7 +18,7 @@ async function getAuthHeader() {
 export async function getTotalGameThisWeek(): Promise<WeeklyGameData> {
     const userId = await getLoggedInUserId();
     const config = await getAuthHeader();
-    const res = await axiosInstance.get<WeeklyGameData>(
+    const res = await api.get<WeeklyGameData>(
         `/dashboard/user/${userId}/gameplayedperweek`,
         config
     );
@@ -45,7 +35,7 @@ export async function getUserTotalPlaytime(): Promise<TotalPlaytimeOrError> {
     const userId = await getLoggedInUserId();
     const config = await getAuthHeader();
 
-    const res = await axiosInstance.get<{ totalPlaytime: number }>(
+    const res = await api.get<{ totalPlaytime: number }>(
         `/dashboard/user/${userId}/playtime`,
         config
     );
@@ -56,7 +46,7 @@ export async function getUserTotalPlaytime(): Promise<TotalPlaytimeOrError> {
 export async function getUserWordLearned(): Promise<WordsLearnedOrError> {
     const userId = await getLoggedInUserId();
     const config = await getAuthHeader();
-    const res = await axiosInstance.get<{ wordsLearned: number }>(
+    const res = await api.get<{ wordsLearned: number }>(
         `/dashboard/user/${userId}/wordlearned`,
         config
     );

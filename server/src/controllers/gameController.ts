@@ -45,9 +45,14 @@ export const getGameDataController = async (req: Request, res: Response) => {
     const gameId = Number(req.params.gameId);
     const game = await getGameData(gameId);
 
+    if (!game) {
+      res.status(404).json({ message: "Game not found" });
+      return;
+    }
+
     res.status(200).json({
       message: "Get Game successfully",
-      data: game,
+      data: { game },
     });
   } catch (error) {
     console.error("Game Controller error:", error);

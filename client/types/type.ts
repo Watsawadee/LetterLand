@@ -1,7 +1,5 @@
 import { Dispatch, SetStateAction, RefObject } from "react";
-import {
-  GestureResponderHandlers,
-} from "react-native";
+import { GestureResponderHandlers } from "react-native";
 
 // SharedGameScreen.tsx
 export interface GameProps {
@@ -10,7 +8,7 @@ export interface GameProps {
   CELL_SIZE: number;
   GRID_SIZE: number;
   questionsAndAnswers: QuestionAnswer[];
-  gameData?: GameData;
+  gameData: GameData;
 }
 
 export interface GameData {
@@ -29,19 +27,21 @@ export interface GameData {
 export interface GameTemplate {
   id: number;
   gameTopic: string;
-  gameType: "WORDSEARCH" | "CROSSWORD_SEARCH";
+  gameType: "WORD_SEARCH" | "CROSSWORD_SEARCH";
   difficulty: string;
   isPublic: boolean;
   questions: QuestionAnswer[];
+  imageUrl?: string;
 }
 
 // gameData.ts
 export interface QuestionAnswer {
-  id: number,
-  gameTemplateId: number,
-  name: string,
-  answer: string,
-  hint: string
+  id: number;
+  gameTemplateId: number;
+  name: string;
+  answer: string;
+  hint: string;
+  audioUrl: string | null;
 }
 
 // GameControls.tsx
@@ -108,13 +108,6 @@ export interface FoundWord {
   cells: [number, number][];
 }
 
-// GameSelectionModal.tsx
-export type GameSelectionModalProps = {
-  visible: boolean;
-  onClose: () => void;
-  onSelect: (type: "word" | "crossword") => void;
-};
-
 // QuestionListSlider.tsx
 export type QuestionListSliderProps = {
   questionsAndAnswers: QuestionAnswer[];
@@ -156,4 +149,24 @@ export type Params = {
 export type WordCardProps = {
   word: string;
   found: boolean;
+};
+
+// useHints.ts
+export type UseHintsArgs = {
+  mode: "WORD_SEARCH" | "CROSSWORD_SEARCH";
+  questionsAndAnswers: QuestionAnswer[];
+  foundWordsList: string[];
+  revealedAnswers: string[];
+  activeQuestionIndex: number;
+  showHintForAnswer: (answer: string) => void;
+  initialHints?: number;
+};
+
+export type CluesProps = {
+  mode: "WORD_SEARCH" | "CROSSWORD_SEARCH";
+  questionsAndAnswers: QuestionAnswer[];
+  foundWordsList: string[];
+  revealedAnswers: string[];
+  activeIndex: number;
+  onChangeIndex: (i: number) => void;
 };
