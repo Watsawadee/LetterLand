@@ -3,15 +3,15 @@ import { Platform } from "react-native";
 import { GetWordsOrError, SetupProfileRequest, SetupProfileResponse } from "../libs/type";
 import { GetWordsOrErrorSchema, SetupProfileResponseSchema } from "../types/setup.schema";
 
-const baseUrl =
-  // const baseUrl =
-  // Platform.OS === "android" ? "http://10.0.2.2:3000" : "http://192.168.1.109:3000";
-  // Platform.OS === "android" ? "http://10.0.2.2:3000" : "http://192.168.101.118:8081";
-  Platform.OS === "web"
-    ? "http://localhost:3000"
-    : Platform.OS === "android"
-      ? "http://10.0.2.2:3000"
-      : "http://192.168.101.118:3000";
+const baseUrl = "http://10.4.56.20:3000"
+// const baseUrl =
+// Platform.OS === "android" ? "http://10.0.2.2:3000" : "http://192.168.1.109:3000";
+// Platform.OS === "android" ? "http://10.0.2.2:3000" : "http://192.168.101.118:8081";
+// Platform.OS === "web"
+//   ? "http://localhost:3000"
+//   : Platform.OS === "android"
+//     ? "http://10.0.2.2:3000"
+//     : "http://192.168.101.118:3000";
 // Platform.OS === "android"
 //   ? "http://10.0.2.2:3000"
 //   : "http://192.168.1.109:3000";

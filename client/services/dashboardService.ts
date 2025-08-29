@@ -5,10 +5,10 @@ import axios from "axios";
 import { GamesPlayedPerWeekOrError, TotalPlaytimeOrError, WordsLearnedOrError } from "@/libs/type";
 import { GamesPlayedPerWeekOrErrorSchema, GamesPlayedPerWeekResponseSchema, TotalPlaytimeOrErrorSchema, WordsLearnedOrErrorSchema } from "../types/dashboard.schema";
 import { ErrorResponseSchema } from "../types/setup.schema";
-const baseUrl =
-    Platform.OS === "android"
-        ? "http://10.0.2.2:3000"
-        : "http://localhost:3000";
+const baseUrl = "http://10.4.56.20:3000"
+// Platform.OS === "android"
+//     ? "http://10.0.2.2:3000"
+//     : "http://localhost:3000";
 
 const axiosInstance = axios.create({
     baseURL: baseUrl,

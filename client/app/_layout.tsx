@@ -6,6 +6,7 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useEffect, useState } from "react";
 import { getToken } from "@/utils/auth";
 import { ActivityIndicator } from "react-native";
+import * as SecureStore from "expo-secure-store"
 
 const queryClient = new QueryClient();
 
@@ -17,6 +18,12 @@ export default function Layout() {
 
   const [isChecking, setIsChecking] = useState(true);
   useEffect(() => {
+    if (__DEV__) {
+      // expose router so you can call it from debugger console
+      (globalThis as any).SecureStore = SecureStore;
+      (globalThis as any).router = router;
+      console.log("Router exposed to globalThis");
+    }
     const checkAuth = async () => {
       const token = await getToken();
       const inAuthGroup = segments[0] === "authentication";
@@ -40,7 +47,7 @@ export default function Layout() {
       <PaperProvider>
         <ThemeProvider>
           <Stack />
-          <ReactQueryDevtools initialIsOpen={true} />
+          {/* <ReactQueryDevtools initialIsOpen={true} /> */}
         </ThemeProvider>
       </PaperProvider>
     </QueryClientProvider>

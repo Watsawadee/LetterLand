@@ -5,10 +5,10 @@ import { Platform } from "react-native";
 import { UserProfileOrError } from "@/libs/type";
 import { UserProfileOrErrorSchema } from "../types/userProfile.schema";
 
-const baseUrl =
-  Platform.OS === "android"
-    ? "http://10.0.2.2:3000"
-    : "http://localhost:3000";
+const baseUrl = "http://10.4.56.20:3000"
+// Platform.OS === "android"
+//   ? "http://10.0.2.2:3000"
+//   : "http://localhost:3000";
 export const getUserProfile = async (): Promise<UserProfileOrError> => {
   try {
     let token = await getToken();
