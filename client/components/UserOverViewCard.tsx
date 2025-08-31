@@ -91,8 +91,10 @@ const UserOverviewCard = () => {
           borderWidth: 1,
           marginBottom: 16,
         }}>
-          <View style={{ display: "flex", flexDirection: "column", minWidth: "20%" }} >
-            <Text style={{ fontWeight: "700", color: theme.colors.darkGrey }}>Dashboard</Text>
+          <View style={{ display: "flex", flexDirection: "column", minWidth: "20%" }} onTouchStart={() => {
+            router.push("/Dashboard")
+          }}>
+            <Text style={{ fontWeight: "700", color: theme.colors.darkGrey }} >Dashboard</Text>
 
             <Text variant="bodyMedium" style={{ color: theme.colors.darkGrey }}>This is your current game performance</Text>
             <View style={{ backgroundColor: theme.colors.pink, padding: 6, borderRadius: 10, width: "13%" }}>

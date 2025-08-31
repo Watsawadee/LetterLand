@@ -52,7 +52,7 @@ const UserOverviewPerformance = () => {
         backgroundGradientTo: "#F2F8F9",
 
         decimalPlaces: 0,
-        color: () => `#000`,
+        color: () => theme.colors.blue,
         labelColor: () => `rgba(91, 96, 115)`,
         style: {
             borderRadius: 16,
