@@ -6,8 +6,8 @@ import { Button } from "react-native-paper";
 export default function Home() {
   const router = useRouter();
   const handleLogout = async () => {
-    // await SecureStore.deleteItemAsync("user-token");
-    localStorage.removeItem("user-token");
+    await SecureStore.deleteItemAsync("user-token");
+    // localStorage.removeItem("user-token");
     router.replace("/authentication/login");
   };
   return (

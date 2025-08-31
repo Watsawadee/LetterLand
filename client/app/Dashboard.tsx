@@ -3,11 +3,13 @@ import UserOverviewCard from "../components/UserOverViewCard";
 import { useEffect, useState } from "react";
 import { getLoggedInUserId } from "@/utils/auth";
 import { useUserProfile } from "@/hooks/useGetUserProfile";
-import { View } from "react-native";
+import { View, Dimensions } from "react-native";
 import TotalGameThisWeek from "@/components/UserOverViewPerformance";
 import { Text } from "react-native-paper";
 import UserOverviewPerformance from "@/components/UserOverViewPerformance";
+
 const Dashboard = () => {
+    const screenWidth = Dimensions.get("window").width;
     const { data: profile, isLoading, error } = useUserProfile();
     if (isLoading) return <Text>Loading...</Text>;
     if (error) return <Text>Error loading profile</Text>;
@@ -29,11 +31,16 @@ const Dashboard = () => {
                     position: "absolute",
                     bottom: 0,
                     left: 0,
-                    width: "100%",
+                    width: "110%",
                     height: 1000,
                     zIndex: 0,
                 }} />
-            <View style={{ flexDirection: 'row', width: "100%", justifyContent: "space-around" }}>
+            <View style={{
+                flexDirection: 'row', width: "100%", justifyContent: "space-between", flex: 1,
+                height: "100%",
+                alignItems: "center",
+                padding: 16,
+            }}>
                 <UserOverviewPerformance />
                 <UserOverviewCard />
             </View>

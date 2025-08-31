@@ -68,8 +68,7 @@ const UserOverviewCard = () => {
         borderRadius: 16,
         marginBottom: 16,
         gap: 20,
-        minWidth: "20%",
-        maxWidth: "50%",
+        maxWidth: "100%",
         height: "100%",
       }}
     >

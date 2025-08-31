@@ -32,8 +32,9 @@ const GameTypeCard = ({ question, gameType, selected, onPress }: GameTypeCardPro
           flex: 1,
           justifyContent: "center",
           alignItems: "center",
-          padding: 20,
+          padding: 40,
           width: "auto",
+          height: 100,
           gap: 8,
           backgroundColor: "#D9D9D9",
           borderRadius: 20,
@@ -41,7 +42,7 @@ const GameTypeCard = ({ question, gameType, selected, onPress }: GameTypeCardPro
       >
         <Image
           source={GameTypeSelection}
-          style={{ width: 48, height: 48, resizeMode: "contain" }}
+          style={{ width: 48, height: 50, resizeMode: "contain" }}
         />
         <Text style={{ textAlign: "center", fontSize: 14, fontWeight: "600", color: "#333" }}>
           {question}
