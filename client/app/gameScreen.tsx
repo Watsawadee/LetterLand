@@ -22,45 +22,45 @@ export default function GameScreen() {
   const [imageUri, setImageUri] = useState<string | null>(null);
 
   useEffect(() => {
-  if (!gameId) return;
+    if (!gameId) return;
 
-  (async () => {
-    try {
-      const data: GameData = await getGameData(String(gameId));
-      console.log("Raw json data:", data);
+    (async () => {
+      try {
+        const data: GameData = await getGameData(String(gameId));
+        console.log("Raw json data:", data);
 
-      const questionsWithUppercase = data.gameTemplate.questions.map((q) => ({
-        ...q,
-        answer: q.answer.toUpperCase(),
-      }));
+        const questionsWithUppercase = data.gameTemplate.questions.map((q) => ({
+          ...q,
+          answer: q.answer.toUpperCase(),
+        }));
 
-      const finalData = {
-        ...data,
-        gameTemplate: {
-          ...data.gameTemplate,
-          questions: questionsWithUppercase,
-        },
-      };
+        const finalData = {
+          ...data,
+          gameTemplate: {
+            ...data.gameTemplate,
+            questions: questionsWithUppercase,
+          },
+        };
 
-      setGameData(finalData);
-      setMode(finalData.gameTemplate.gameType as "WORD_SEARCH" | "CROSSWORD_SEARCH");
+        setGameData(finalData);
+        setMode(finalData.gameTemplate.gameType as "WORD_SEARCH" | "CROSSWORD_SEARCH");
 
-      if (finalData.gameTemplate.imageUrl) {
-        try {
-          const imageUrl = await getBGImage(finalData.gameTemplate.imageUrl);
-          setImageUri(imageUrl);
-        } catch (e) {
-          setImageUri(null);
+        if (finalData.gameTemplate.imageUrl) {
+          try {
+            const imageUrl = await getBGImage(finalData.gameTemplate.imageUrl);
+            setImageUri(imageUrl);
+          } catch (e) {
+            setImageUri(null);
+          }
         }
+      } catch (e) {
+        console.error("Failed to load game data:", e);
+        setError("Failed to load game data");
+      } finally {
+        setLoading(false);
       }
-    } catch (e) {
-      console.error("Failed to load game data:", e);
-      setError("Failed to load game data");
-    } finally {
-      setLoading(false);
-    }
-  })();
-}, [gameId]);
+    })();
+  }, [gameId]);
 
 
   if (loading)
@@ -74,7 +74,7 @@ export default function GameScreen() {
   if (error)
     return (
       <View style={styles.center}>
-        <Text>{error}</Text>
+        <Text>{typeof error === "string" ? error : "Unknown error"}</Text>
       </View>
     );
 

@@ -139,7 +139,7 @@ const CreateGameScreen = () => {
             Upload type
           </Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            {["text", "link", "pdf"].map((type) => (
+            {["text", "link", "PDF"].map((type) => (
               <Button
                 key={type}
                 style={{
