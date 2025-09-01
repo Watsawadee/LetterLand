@@ -6,6 +6,7 @@ const router = express.Router();
 const upload = multer();
 
 
-router.post("/gemini", upload.single("file"), createGameFromGemini);
+router.post("/gemini", createGameFromGemini);
+router.post("/gemini/pdf", upload.single("file"), createGameFromGemini);
 
 export default router;

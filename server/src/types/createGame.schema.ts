@@ -7,12 +7,12 @@ export const EnglishLevelSchema = z.enum(EnglishLevel);
 export const MaterialTypeSchema = z.enum(["text", "link", "pdf"]);
 
 export const CreateGameFromGeminiRequestSchema = z.object({
-    userId: z.number(),
+    userId: z.coerce.number(),
     gameType: GameTypeSchema,
     difficulty: EnglishLevelSchema,
-    timer: z.number().nullable().optional(),
+    timer: z.coerce.number().nullable().optional(),
     type: MaterialTypeSchema,
-    isPublic: z.boolean().optional(),
+    isPublic: z.coerce.boolean().optional(),
     inputData: z.string().optional(),
 });
 
