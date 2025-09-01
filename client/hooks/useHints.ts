@@ -47,10 +47,10 @@ export function useHints(args: UseHintsArgs) {
     const fetchHints = async () => {
       try {
         const userData = await getUserData(Number(userId));
-        setHintCount(userData.hint ?? 3);
+        setHintCount(userData.hint ?? 0);
       } catch (err) {
         console.error("Failed to fetch user hint count", err);
-        setHintCount(3);
+        setHintCount(0);
       }
     };
     fetchHints();
@@ -136,7 +136,7 @@ export function useHints(args: UseHintsArgs) {
     try {
       await useHint(Number(userId));
       const userData = await getUserData(Number(userId));
-      setHintCount(userData.hint ?? 3);
+      setHintCount(userData.hint ?? 0);
     } catch (err) {
       console.error("Failed to update hint", err);
     }
@@ -159,10 +159,10 @@ export function useHints(args: UseHintsArgs) {
     if (!userId) return;
     try {
       const userData = await getUserData(Number(userId));
-      setHintCount(userData.hint ?? 3);
+      setHintCount(userData.hint ?? 0);
     } catch (err) {
       console.error("Failed to reset hint count", err);
-      setHintCount(3);
+      setHintCount(0);
     }
     setLastHintIndex(-1);
     setActiveHintWord(null);
