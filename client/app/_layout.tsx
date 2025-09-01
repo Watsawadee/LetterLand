@@ -46,7 +46,7 @@ export default function Layout() {
     <QueryClientProvider client={queryClient}>
       <PaperProvider>
         <ThemeProvider>
-          <Stack />
+          <Stack screenOptions={{ headerShown: false }} />
           {/* <ReactQueryDevtools initialIsOpen={true} /> */}
         </ThemeProvider>
       </PaperProvider>

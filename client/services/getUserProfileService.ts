@@ -28,7 +28,10 @@ export const getUserProfile = async (): Promise<UserProfileOrError> => {
 
     return UserProfileOrErrorSchema.parse(response.data)
   }
-  catch (error) {
-    return { error: "Failed to fetch user profile" };
+  catch (error: any) {
+    console.log(error);
+    return {
+      error
+    };
   }
 };

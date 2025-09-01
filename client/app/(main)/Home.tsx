@@ -1,13 +1,16 @@
 import UserOverviewCard from "../../components/UserOverViewCard";
-import { View } from "react-native";
+import { Platform, View } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { useRouter } from "expo-router";
 import { Button } from "react-native-paper";
 export default function Home() {
   const router = useRouter();
   const handleLogout = async () => {
-    // await SecureStore.deleteItemAsync("user-token");
-    localStorage.removeItem("user-token");
+    if (Platform.OS === "web") {
+      localStorage.removeItem("user-token");
+    } else {
+      await SecureStore.deleteItemAsync("user-token");
+    }
     router.replace("/authentication/login");
   };
   return (

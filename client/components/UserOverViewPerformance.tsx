@@ -52,7 +52,7 @@ const UserOverviewPerformance = () => {
         backgroundGradientTo: "#F2F8F9",
 
         decimalPlaces: 0,
-        color: () => `#000`,
+        color: () => theme.colors.blue,
         labelColor: () => `rgba(91, 96, 115)`,
         style: {
             borderRadius: 16,
@@ -71,7 +71,7 @@ const UserOverviewPerformance = () => {
     // if (loadingPlaytime || loadingWords) return <Text>Loading...</Text>;
 
     return (
-        <View style={{ gap: "2%" }}>
+        <View style={{ gap: "16", width: "50%", maxHeight: "60%" }}>
             <Card style={{ backgroundColor: "#E1F3F6", padding: 20 }}>
                 <Text style={{ color: theme.colors.darkGrey, fontSize: theme.fontSizes.medium, fontWeight: "bold" }}>Total Games This Week</Text>
                 <Text style={{ color: theme.colors.darkGrey, fontSize: theme.fontSizes.small }}>Total game play per week</Text>
@@ -116,68 +116,6 @@ const UserOverviewPerformance = () => {
                             />
                         )
                     }
-
-                    {/* <LineChart
-                        data={chartData}
-                        width={450}
-                        height={200}
-                        chartConfig={chartConfig}
-                        bezier
-                        fromZero={false}
-                        segments={segments}
-                        style={{
-                            borderRadius: 16,
-                            display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center"
-                        }}
-                        withVerticalLines={false}
-                        withHorizontalLines={true}
-                        decorator={({
-                            width,
-                            height,
-                            data,
-                        }: {
-                            width: number;
-                            height: number;
-                            data: number[];
-                        }) => {
-                            const points = chartData.datasets[0].data;
-                            const paddingLeft = 42;
-                            const paddingRight = 64;
-                            const chartHeight = height - 32;
-                            const chartWidth = width - paddingLeft - paddingRight;
-                            const maxValue = Math.max(...points, 1);
-
-                            return (
-                                <Svg>
-                                    {points.map((value, index) => {
-                                        if (value === 0) return null;
-                                        const x =
-                                            paddingLeft +
-                                            (chartWidth / (points.length - 1)) * index;
-                                        const y =
-                                            height -
-                                            (chartHeight * value) / maxValue;
-
-                                        return (
-                                            <SvgText
-                                                key={index}
-                                                x={x}
-                                                y={y - 20}
-                                                fontSize="10"
-                                                fill={theme.colors.darkGrey}
-                                                fontWeight="bold"
-                                                textAnchor="end"
-                                            >
-                                                {value}
-                                            </SvgText>
-                                        );
-                                    })}
-                                </Svg>
-                            );
-                        }}
-                    /> */}
                 </View>
             </Card>
 
