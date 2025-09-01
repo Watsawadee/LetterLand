@@ -9,7 +9,7 @@ import {
 const router = express.Router();
 
 router.get("/", getAllUserController);
-router.get("/user/:userId", getUserByIdController);
+router.get("/:userId", getUserByIdController);
 router.post("/auth/register", createUserController);
 
 router.post("/auth/login", loginUserController);
