@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useUserProfile } from "@/hooks/useGetUserProfile";
 import { View, Dimensions, Switch } from "react-native";
+import * as DocumentPicker from "expo-document-picker";
+
 import {
   Text,
   Button,
@@ -25,6 +27,29 @@ const CreateGameScreen = () => {
   const [uploadType, setUploadType] = useState<"text" | "link" | "pdf">("text");
   const [isPublic, setIsPublic] = useState(false)
   const [input, setInput] = useState("");
+  const [pdfFile, setPdfFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
+  const handleUploadTypeSelect = async (type: "text" | "link" | "pdf") => {
+    if (type === "pdf") {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: "application/pdf",
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+
+      if (!result.canceled && result.assets?.length) {
+        const file = result.assets[0];
+        setPdfFile(file);
+        setInput("");
+        setUploadType("pdf");
+      } else {
+        alert("No PDF selected.");
+      }
+    } else {
+      setUploadType(type);
+      setPdfFile(null);
+    }
+  };
+
 
   const handleToggle = () => {
     setIsPublic(previousState => !previousState);
@@ -41,21 +66,41 @@ const CreateGameScreen = () => {
   }, [user]);
 
   const handleCreate = async () => {
-    if (!user || !("id" in user) || !englishLevel || !input || !gameType) {
+    if (!user || !("id" in user) || !englishLevel || !gameType) {
       alert("Please fill in all fields");
+      return;
+    }
+    if ((uploadType === "text" || uploadType === "link") && !input.trim()) {
+      alert(`Please provide a valid ${uploadType}.`);
+      return;
+    }
+    if (uploadType === "pdf" && !pdfFile) {
+      alert("Please upload a PDF file.");
       return;
     }
     const apiUploadType = uploadType === "pdf" ? "pdf" : uploadType;
     const apiTimer: number | null = timer === "none" ? null : Number(timer);
-
-    createGameMutation.mutate({
+    console.log("🧠 Payload:", {
       userId: user.id,
       difficulty: englishLevel,
       inputData: input,
-      type: apiUploadType,
-      gameType: gameType!,
+      type: uploadType,
+      gameType,
       timer: apiTimer,
       isPublic
+    });
+    console.log("🧾 File:", pdfFile);
+    createGameMutation.mutate({
+      data: {
+        userId: user.id,
+        difficulty: englishLevel,
+        inputData: input,
+        type: apiUploadType,
+        gameType: gameType!,
+        timer: apiTimer,
+        isPublic
+      },
+      file: pdfFile
     });
   };
 
@@ -139,23 +184,26 @@ const CreateGameScreen = () => {
             Upload type
           </Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            {["text", "link", "PDF"].map((type) => (
-              <Button
-                key={type}
-                style={{
-                  marginRight: 8,
-                  marginBottom: 8,
-                  borderRadius: 20,
-                  backgroundColor: uploadType === type ? "#58A7F8" : "#fff",
-                  borderColor: "#ddd",
-                }}
-                onPress={() => setUploadType(type as any)}
-              >
-                <Text style={{ color: uploadType === type ? theme.colors.white : theme.colors.darkGrey, fontWeight: "bold" }}>
-                  {type.charAt(0).toUpperCase() + type.slice(1)}
-                </Text>
-              </Button>
-            ))}
+            {["text", "link", "pdf"].map((type) => {
+              const displayLabel = type === "pdf" ? "PDF" : type.charAt(0).toUpperCase() + type.slice(1);
+              return (
+                <Button
+                  key={type}
+                  style={{
+                    marginRight: 8,
+                    marginBottom: 8,
+                    borderRadius: 20,
+                    backgroundColor: uploadType === type ? "#58A7F8" : "#fff",
+                    borderColor: "#ddd",
+                  }}
+                  onPress={() => handleUploadTypeSelect(type as "text" | "link" | "pdf")}
+                >
+                  <Text style={{ color: uploadType === type ? theme.colors.white : theme.colors.darkGrey, fontWeight: "bold" }}>
+                    {displayLabel}
+                  </Text>
+                </Button>
+              )
+            })}
           </View>
         </View>
         <TextInput
@@ -168,6 +216,7 @@ const CreateGameScreen = () => {
           }}
           value={input}
           onChangeText={setInput}
+          editable={uploadType !== "pdf"}
         />
 
         {/* Create Button */}

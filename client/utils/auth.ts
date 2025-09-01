@@ -17,6 +17,7 @@ export const getLoggedInUserId = async (): Promise<string | null> => {
 
   try {
     const decoded: DecodedToken = jwtDecode(token);
+    console.log(decoded)
     return decoded.userId.toString();
   } catch (err) {
     console.error("Failed to decode token", err);

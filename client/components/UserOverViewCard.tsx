@@ -30,8 +30,7 @@ const UserOverviewCard = () => {
   const { data: user, isLoading } = useUserProfile();
 
   if (!userId || isLoading || !user) return <Text>Loading...</Text>;
-  if ("error" in user) return <Text>Error: {user.error}</Text>;
-
+  if ("error" in user) return <Text>Failed to load user data.</Text>;
 
   const handleSelect = (type: "crossword" | "wordsearch") => {
     setGameType(type);

@@ -15,6 +15,10 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: "ok", message: "Server is healthy" });
+});
+
 app.use("/assets", express.static(path.join(process.cwd(), "assets")));
 
 app.use("/users", userRoutes);
@@ -25,6 +29,7 @@ app.use("/setup", setupRoute);
 app.use("/dashboard", dashboardRoute);
 app.use("/users", userProfileRoute);
 app.use('/games', gameRoutes);
+
 
 app.listen(3000, () => {
   console.log("Server is running on port 3000");
