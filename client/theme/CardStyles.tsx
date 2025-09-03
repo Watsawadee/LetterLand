@@ -6,7 +6,8 @@ export const cardStyles = StyleSheet.create({
   card: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    marginRight: 16,
+    marginRight: 46,
+    marginBottom: 40,
     overflow: 'hidden',
     width: 200,
     elevation: 2,
