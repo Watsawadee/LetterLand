@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useUserProfile } from "@/hooks/useGetUserProfile";
 import { View, Dimensions, Switch } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
+import LoadingPopup from "@/components/LoadingPopupCreateGame";
 
 import {
   Text,
@@ -64,6 +65,10 @@ const CreateGameScreen = () => {
     }
 
   }, [user]);
+
+  const isCreating =
+    (createGameMutation as any).isPending ??
+    (createGameMutation.status === "pending");
 
   const handleCreate = async () => {
     if (!user || !("id" in user) || !englishLevel || !gameType) {
@@ -237,6 +242,12 @@ const CreateGameScreen = () => {
             Create
           </Text>
         </Button>
+        <LoadingPopup
+          visible={isCreating}
+          uploadType={uploadType}     // enables the PDF-specific joke
+        // progress={null}          // omit or pass a 0..1 when you implement real progress
+        // lockBackButton={true}    // default true; set false if you want back button to close it
+        />
       </Card>
     </View >
   );
