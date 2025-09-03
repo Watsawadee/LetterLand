@@ -25,6 +25,6 @@ export interface StartPublicGameResponse {
   finishedAt: string | Date | null;
   isHintUsed: boolean;
   isFinished: boolean;
-  gameCode: number | null;
+  gameCode: string | null;
   timer: number | null;
 }

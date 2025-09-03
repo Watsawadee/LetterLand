@@ -6,6 +6,7 @@ import { CreateGameFromGeminiRequestSchema, CreateGameFromGeminiResponseSchema }
 import { z } from "zod"
 import { genImage } from "../services/genImageService";
 import { generatePronunciation } from "../services/textToSpeechService";
+import { generateGameCode } from "../services/gameCodeGenerator";
 export const createGameFromGemini = async (req: Request, res: Response) => {
   const parsed = CreateGameFromGeminiRequestSchema.safeParse(req.body);
 
@@ -62,12 +63,14 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
       },
     });
 
+    const gameCode = isPublic ? await generateGameCode() : null
     const game = await prisma.game.create({
       data: {
         userId,
         gameTemplateId: gameTemplate.id,
         isHintUsed: false,
         isFinished: false,
+        gameCode,
       },
       include: {
         gameTemplate: {

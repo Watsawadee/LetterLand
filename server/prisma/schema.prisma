@@ -28,6 +28,7 @@ model Achievement {
   name             String
   description      String
   coinReward       Int
+  imageUrl         String?
   userAchievements UserAchievement[]
 }
 
@@ -60,7 +61,7 @@ model Game {
   finishedAt     DateTime?
   isHintUsed     Boolean      @default(false)
   isFinished     Boolean      @default(false)
-  gameCode       Int?
+  gameCode       String?      @unique
   timer          Int?
   gameTemplate   GameTemplate @relation(fields: [gameTemplateId], references: [id])
   user           User         @relation(fields: [userId], references: [id])
