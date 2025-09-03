@@ -145,13 +145,13 @@ export default function WordBankModal({ visible, onClose, apiBase }: Props) {
 }
 
 const COL_LEFT = {
-  top: 95,
-  left: 85,
+  top: 40,
+  left: 70,
   width: 220,
 };
 const COL_RIGHT = {
-  top: 110,
-  right: 95,
+  top: 80,
+  right: 5,
   width: 240,
 };
 
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
 
   footer: {
     position: "absolute",
-    bottom: 22,
+    bottom: 200,
     width: "100%",
     flexDirection: "row",
     justifyContent: "space-between",
@@ -237,6 +237,7 @@ const styles = StyleSheet.create({
   dot: {
     width: 8,
     height: 8,
+    top: 150,
     borderRadius: 4,
     backgroundColor: "#c3c7cf",
   },
