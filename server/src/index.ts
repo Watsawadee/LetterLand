@@ -10,6 +10,10 @@ import cors from "cors";
 import dashboardRoute from "./routes/dashboardRoute";
 import userProfileRoute from "./routes/userProfileRoute"
 import gameRoutes from './routes/gameRoutes';
+import mygameRoutes from './routes/mygameRoute';
+import publicgameRoutes from './routes/publicgameRoute';
+import wordBankRoutes from './routes/wordbankRoute'
+
 dotenv.config();
 const app = express();
 app.use(express.json());
@@ -25,6 +29,9 @@ app.use("/setup", setupRoute);
 app.use("/dashboard", dashboardRoute);
 app.use("/users", userProfileRoute);
 app.use('/games', gameRoutes);
+app.use('/mygame', mygameRoutes);
+app.use("/publicgame", publicgameRoutes);
+app.use("/wordbank", wordBankRoutes)
 
 app.listen(3000, () => {
   console.log("Server is running on port 3000");

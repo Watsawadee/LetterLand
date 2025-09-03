@@ -1,90 +1,244 @@
-// SvgIcon.js
 
-import React from 'react';
-import { Svg, Path, Rect, Defs, ClipPath, SvgProps } from 'react-native-svg';
+// components/WordBankModal.tsx
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  Modal,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
-const SvgIcon = (props: SvgProps) => (
-  <Svg
-    width={574}
-    height={377}
-    viewBox="0 0 574 377"
-    fill="none"
-    {...props}
-  >
-    <Path
-      fill="#F95725"
-      d="M0 48L71.75 1h143.5L287 26.405 358.75 1h143.5L574 48v329h-71.75l-71.75-10.797-81.274-10.798L287 377l-71.75-21.595-71.75 10.798L71.75 377H0V48z"
-    />
-    <Path
-      fill="#D9D9D9"
-      d="M19 35.562 45.038 18.416 71.076 1.27H220l67 23.428L354 1.27h67L503.559 0l26.673 18.416L555 35.562V348h-67l-67-9.957-75.894-9.957-29.053 9.957-14.526 4.979-7.264 2.489-3.263.989-4 .5-4.188-.495-4.187-.994-8.375-2.489-16.75-4.979-33.5-9.957-67 9.957L86 348H19V35.562z"
-    />
-    <Path
-      fill="#fff"
-      d="M33 26.047 52.685 12.706 70.5.5H223l64 22.495L351.5.5H414l89.535-.5 20.32 13.977L541 26.047V324h-63.5l-63.5-9.27-71.929-9.27L287 324l-63.5-18.54-63.5 9.27L96.5 324H33V26.047z"
-    />
-    <Path fill="#B5B5B5" d="M19 35.527 33 26v297.231L19 348zM541 26l14 9.527V348l-14-24.134z" />
-    <Path
-      fill="#5B6073"
-      d="M220.097 327 287 347.513v29.121l-2.25-.315-2.25-.681-4.5-1.362-9-2.725-18-5.448-36-10.898zM287 347.513 344.571 327 349 355.205l-31 10.898-15.5 5.448-7.75 2.725-3.875 1.362-1.938.681-1.937.367z"
-    />
-    <Path fill="#E5E7EB" d="M284 22h5v301h-5z" />
-    {/* You can remove all text paths below if you want a BLANK book only */}
-    <Rect
-      width={25}
-      height={25}
-      x={69.998}
-      y={176.291}
-      fill="#E5E7EB"
-      rx={12.5}
-      transform="rotate(-179.16 69.998 176.291)"
-    />
-    <Rect
-      width={5}
-      height={5}
-      x={279}
-      y={290.072}
-      fill="#5B6073"
-      rx={2.5}
-      transform="rotate(-179.16 279 290.072)"
-    />
-    <Rect
-      width={5}
-      height={5}
-      x={289}
-      y={290.072}
-      fill="#A7A8AC"
-      rx={2.5}
-      transform="rotate(-179.16 289 290.072)"
-    />
-    <Rect
-      width={5}
-      height={5}
-      x={299}
-      y={290.072}
-      fill="#A7A8AC"
-      rx={2.5}
-      transform="rotate(-179.16 299 290.072)"
-    />
-    <Rect
-      width={25}
-      height={25}
-      x={502}
-      y={153.008}
-      fill="#E5E7EB"
-      rx={12.5}
-      transform="rotate(-.018 502 153.008)"
-    />
-    <Path
-      fill="#5B6073"
-      d="M511.058 159.243a1 1 0 0 0 .017 1.413l5.009 4.891-4.89 5.009a1 1 0 0 0 1.431 1.397l5.589-5.725a1 1 0 0 0-.017-1.414l-5.725-5.588a1 1 0 0 0-1.414.017z"
-    />
-    <Defs>
-      <ClipPath id="clip0">
-        <Path fill="#fff" d="M48 172.047h16v-16h-16z" />
-      </ClipPath>
-    </Defs>
-  </Svg>
-);
+import { fetchWordBankPage, type ApiOK } from "@/services/wordbankService";
+import Wordbank from "@/assets/backgroundTheme/wordbankBook";
 
-export default SvgIcon;
+type Props = {
+  visible: boolean;
+  onClose: () => void;
+  /** Override base URL for Android emulator or device if needed */
+  apiBase?: string;
+};
+
+export default function WordBankModal({ visible, onClose, apiBase }: Props) {
+  const [page, setPage] = useState(1); // 1-based
+  const [data, setData] = useState<ApiOK | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  // Reset when opened
+  useEffect(() => {
+    if (visible) {
+      setPage(1);
+      setData(null);
+      setErr(null);
+    }
+  }, [visible]);
+
+  // Fetch current page
+  useEffect(() => {
+    if (!visible) return;
+    let canceled = false;
+
+    (async () => {
+      try {
+        setLoading(true);
+        setErr(null);
+        const body = await fetchWordBankPage(page, apiBase);
+        if (!canceled) setData(body);
+      } catch (e: any) {
+        if (!canceled) setErr(e?.message || "Failed to load word bank");
+      } finally {
+        if (!canceled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      canceled = true;
+    };
+  }, [visible, page, apiBase]);
+
+  const canPrev = useMemo(() => (data ? page > 1 : false), [page, data]);
+  const canNext = useMemo(
+    () => (data ? page < data.totalPages : false),
+    [page, data]
+  );
+
+  const renderSide = (items: ApiOK["left"]) => {
+    if (!items || items.length === 0) {
+      return <Text style={styles.empty}>—</Text>;
+    }
+    return items.map((it) => (
+      <Text key={it.n} style={styles.line}>
+        <Text style={styles.num}>{it.n}. </Text>
+        {it.word}
+      </Text>
+    ));
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.overlay}>
+        {/* Close */}
+        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+          <Text style={styles.closeText}>✕</Text>
+        </TouchableOpacity>
+
+        {/* Book */}
+        <View style={styles.bookWrap}>
+          <Wordbank />
+
+          {/* Left page */}
+          <View style={styles.leftColumn}>
+            <Text style={styles.title}>List of Words</Text>
+            {loading ? (
+              <ActivityIndicator />
+            ) : err ? (
+              <Text style={styles.error}>{err}</Text>
+            ) : data ? (
+              renderSide(data.left)
+            ) : null}
+          </View>
+
+          {/* Right page */}
+          <View style={styles.rightColumn}>
+            {loading ? (
+              <ActivityIndicator />
+            ) : err ? (
+              <Text style={styles.error} />
+            ) : data ? (
+              renderSide(data.right)
+            ) : null}
+          </View>
+
+          {/* Pager */}
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={[styles.navBtn, !canPrev && styles.navBtnDisabled]}
+              onPress={() => canPrev && setPage((p) => p - 1)}
+              disabled={!canPrev}
+            >
+              <Text style={styles.navText}>‹</Text>
+            </TouchableOpacity>
+
+            <View style={styles.dots}>
+              {Array.from({ length: Math.max(data?.totalPages || 1, 1) }).map((_, i) => {
+                const idx = i + 1;
+                const active = idx === page;
+                return <View key={idx} style={[styles.dot, active && styles.dotActive]} />;
+              })}
+            </View>
+
+            <TouchableOpacity
+              style={[styles.navBtn, !canNext && styles.navBtnDisabled]}
+              onPress={() => canNext && setPage((p) => p + 1)}
+              disabled={!canNext}
+            >
+              <Text style={styles.navText}>›</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const COL_LEFT = {
+  top: 95,
+  left: 85,
+  width: 220,
+};
+const COL_RIGHT = {
+  top: 110,
+  right: 95,
+  width: 240,
+};
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 10,
+  },
+  bookWrap: {
+    width: 574,
+    height: 377,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  closeButton: {
+    position: "absolute",
+    top: 40,
+    right: 30,
+    zIndex: 10,
+    backgroundColor: "rgba(255,255,255,0.9)",
+    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+  },
+  closeText: { fontSize: 18, fontWeight: "700", color: "#333" },
+
+  leftColumn: {
+    position: "absolute",
+    ...COL_LEFT,
+  },
+  rightColumn: {
+    position: "absolute",
+    ...COL_RIGHT,
+    alignItems: "flex-start",
+  },
+
+  title: {
+    fontSize: 26,
+    fontWeight: "800",
+    color: "#4a5261",
+    marginBottom: 12,
+  },
+  line: {
+    fontSize: 22,
+    color: "#394150",
+    marginVertical: 4,
+  },
+  num: { fontWeight: "700" },
+  empty: { color: "#9aa0a6", fontSize: 18 },
+
+  error: { color: "#c0392b", fontSize: 14 },
+
+  footer: {
+    position: "absolute",
+    bottom: 22,
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 32,
+    alignItems: "center",
+  },
+  navBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#e9edf3",
+  },
+  navBtnDisabled: {
+    opacity: 0.4,
+  },
+  navText: { fontSize: 24, fontWeight: "700", color: "#5b6073" },
+  dots: {
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#c3c7cf",
+  },
+  dotActive: { backgroundColor: "#5b6073" },
+});
