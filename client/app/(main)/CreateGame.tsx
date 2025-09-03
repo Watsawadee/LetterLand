@@ -16,6 +16,9 @@ import { useCreateGameFromGemini } from "@/hooks/useCreateGeminiGame";
 import { CreateGameFromGeminiRequest } from "../../libs/type";
 import GardenBackground from "@/assets/backgroundTheme/GardenBackground";
 import GardenBackgroundBlueSky from "@/assets/backgroundTheme/GardenBackgroundBlue";
+import PlainTextIcon from "@/assets/icon/plainText";
+import LinkIcon from "@/assets/icon/linkIcon";
+import PdfIcon from "@/assets/icon/pdfIcon";
 
 const CreateGameScreen = () => {
   const router = useRouter();
@@ -213,38 +216,71 @@ const CreateGameScreen = () => {
                     </Button>
                   ))}
                 </View>
-                <View style={{ flexDirection: "row", gap: 8 }}>
+                <View style={{ flexDirection: "column", gap: 8 }}>
                   <Text style={{ fontWeight: "700", color: "#555" }}>Privacy</Text>
-                  <Switch trackColor={{ false: '#3e3e3e', true: '#f5dd4b' }}
-                    thumbColor={isPublic ? "#3e3e3e" : "#f5dd4b"}
-                    onValueChange={handleToggle}
-                    value={isPublic} />
-
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    {["Public Game", "Private Game"].map((label) => {
+                      const value = label === "Private Game";
+                      return (
+                        <Button
+                          key={label}
+                          style={{
+                            marginRight: 8,
+                            marginBottom: 8,
+                            borderRadius: 20,
+                            backgroundColor: isPublic === value ? "#58A7F8" : "#fff",
+                            borderColor: "#ddd",
+                          }}
+                          onPress={() => setIsPublic(value)}
+                        >
+                          <Text
+                            style={{
+                              color: isPublic === value ? theme.colors.white : theme.colors.darkGrey,
+                              fontWeight: "bold",
+                            }}
+                          >
+                            {label}
+                          </Text>
+                        </Button>
+                      );
+                    })}
+                  </View>
                 </View>
 
                 <Text style={{ fontWeight: "700", color: "#555" }}>
                   Upload type
                 </Text>
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                  {["text", "link", "pdf"].map((type) => {
-                    const displayLabel = type === "pdf" ? "PDF" : type.charAt(0).toUpperCase() + type.slice(1);
+                  {[
+                    { key: "text" as const, label: "Text", Icon: PlainTextIcon },
+                    { key: "link" as const, label: "Link", Icon: LinkIcon },
+                    { key: "pdf" as const, label: "PDF", Icon: PdfIcon },
+                  ].map(({ key, label, Icon }) => {
+                    const isActive = uploadType === key;
+
                     return (
                       <Button
-                        key={type}
+                        key={key}
+                        icon={() => (
+                          <Icon
+                            size={20}
+                            fill={isActive ? theme.colors.white : theme.colors.darkGrey}
+                          />
+                        )}
                         style={{
                           marginRight: 8,
                           marginBottom: 8,
                           borderRadius: 20,
-                          backgroundColor: uploadType === type ? "#58A7F8" : "#fff",
+                          backgroundColor: isActive ? "#58A7F8" : "#fff",
                           borderColor: "#ddd",
                         }}
-                        onPress={() => handleUploadTypeSelect(type as "text" | "link" | "pdf")}
+                        onPress={() => handleUploadTypeSelect(key)}
+                        contentStyle={{ flexDirection: "row-reverse" }} // icon on left, label after (optional)
+                        labelStyle={{ fontWeight: "bold", color: isActive ? theme.colors.white : theme.colors.darkGrey }}
                       >
-                        <Text style={{ color: uploadType === type ? theme.colors.white : theme.colors.darkGrey, fontWeight: "bold" }}>
-                          {displayLabel}
-                        </Text>
+                        {label}
                       </Button>
-                    )
+                    );
                   })}
                 </View>
               </View>
