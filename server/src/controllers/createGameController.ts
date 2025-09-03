@@ -70,6 +70,7 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
         gameTemplateId: gameTemplate.id,
         isHintUsed: false,
         isFinished: false,
+        timer: timer ?? null,
         gameCode,
       },
       include: {
