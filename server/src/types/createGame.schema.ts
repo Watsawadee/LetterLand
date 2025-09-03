@@ -14,6 +14,14 @@ export const CreateGameFromGeminiRequestSchema = z.object({
     type: MaterialTypeSchema,
     isPublic: z.coerce.boolean().optional(),
     inputData: z.string().optional(),
+}).superRefine((data, ctx) => {
+    if (data.type !== "pdf" && !data.inputData) {
+        ctx.addIssue({
+            path: ["inputData"],
+            code: "custom",
+            message: `Input is required for upload type "${data.type}"`,
+        });
+    }
 });
 
 export const CreateGameFromGeminiResponseSchema = z.object({
@@ -36,6 +44,7 @@ export const CreateGameFromGeminiResponseSchema = z.object({
                     name: z.string(),
                     answer: z.string(),
                     hint: z.string(),
+                    pronunciationUrl: z.string().optional(),
                 })
             ),
         }),

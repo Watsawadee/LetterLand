@@ -5,6 +5,7 @@ import prisma from "../configs/db";
 import { CreateGameFromGeminiRequestSchema, CreateGameFromGeminiResponseSchema } from "../types/createGame.schema";
 import { z } from "zod"
 import { genImage } from "../services/genImageService";
+import { generatePronunciation } from "../services/textToSpeechService";
 export const createGameFromGemini = async (req: Request, res: Response) => {
   const parsed = CreateGameFromGeminiRequestSchema.safeParse(req.body);
 
@@ -78,28 +79,57 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
     let imageData = null;
     let fileName: string | null = null;
 
-    if (geminiResult.imagePrompt) {
-      const sanitizedTopic = geminiResult.game.gameTopic.toLowerCase().replace(/\s+/g, "_");
-      fileName = `image_${game.id.toString()}_${sanitizedTopic}`;
-      imageData = await genImage(
-        geminiResult.imagePrompt,
-        "realistic",
-        "16:9",
-        "5",
-        game.id.toString(),
-        geminiResult.game.gameTopic
-      );
-      await prisma.gameTemplate.update({
-        where: { id: gameTemplate.id },
-        data: { imageUrl: fileName },
-      });
-    }
+    const answers = geminiResult.game.questions.map((q: any) => q.answer);
+    console.log("answer", answers)
+    const pronunciationResults = await Promise.all(
+      answers.map((answer: string) => generatePronunciation(answer))
+    );
+    await Promise.all(
+      game.gameTemplate.questions.map((q: any, idx: number) =>
+        prisma.question.update({
+          where: { id: q.id },
+          data: { audioUrl: pronunciationResults[idx]?.url },
+        })
+      )
+    );
+
+
+
+    // if (geminiResult.imagePrompt) {
+    //   const sanitizedTopic = geminiResult.game.gameTopic.toLowerCase().replace(/\s+/g, "_");
+    //   fileName = `image_${game.id.toString()}_${sanitizedTopic}`;
+    //   imageData = await genImage(
+    //     geminiResult.imagePrompt,
+    //     "realistic",
+    //     "16:9",
+    //     "5",
+    //     game.id.toString(),
+    //     geminiResult.game.gameTopic
+    //   );
+    //   await prisma.gameTemplate.update({
+    //     where: { id: gameTemplate.id },
+    //     data: { imageUrl: fileName },
+    //   });
+    // }
+
+    const questionsWithPronunciation = game.gameTemplate.questions.map((q: any, idx: number) => ({
+      id: q.id,
+      name: q.name,
+      answer: q.answer,
+      hint: q.hint,
+      pronunciationUrl: pronunciationResults[idx]?.url,
+    }));
+
     const result = CreateGameFromGeminiResponseSchema.safeParse({
       message: "Game created successfully from Gemini",
       game: {
         ...game,
         imagePrompt: geminiResult.imagePrompt,
         image: imageData,
+        gameTemplate: {
+          ...game.gameTemplate,
+          questions: questionsWithPronunciation,
+        },
       },
     });
 
