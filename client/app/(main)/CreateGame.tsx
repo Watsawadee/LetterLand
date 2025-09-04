@@ -28,7 +28,14 @@ const CreateGameScreen = () => {
 
 
   const [englishLevel, setEnglishLevel] = useState<CreateGameFromGeminiRequest["difficulty"]>();
-  type UiTimer = "none" | "1" | "3" | "5";
+  type UiTimer = "none" | "60" | "180" | "300";
+  const TIMER_OPTIONS: UiTimer[] = ["none", "60", "180", "300"];
+
+  const formatTimerLabel = (t: UiTimer) => {
+    if (t === "none") return "None";
+    const mins = Number(t) / 60;
+    return `${mins} ${mins === 1 ? "min" : "mins"}`;
+  };
   const [timer, setTimer] = useState<UiTimer>("none");
   const [uploadType, setUploadType] = useState<"text" | "link" | "pdf">("text");
   const [isPublic, setIsPublic] = useState(false)
@@ -193,57 +200,70 @@ const CreateGameScreen = () => {
                   ))}
                 </View>
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                  {(["none", "1", "3", "5"] as UiTimer[]).map((t) => (
-                    <Button
-                      key={t}
-                      style={{
-                        marginRight: 8,
-                        marginBottom: 8,
-                        borderRadius: 20,
-                        backgroundColor: timer === t ? "#58A7F8" : "#fff",
-                        borderColor: "#ddd",
-                      }}
-                      onPress={() => setTimer(t)}
-                    >
-                      <Text
+                  {TIMER_OPTIONS.map((t) => {
+                    const active = timer === t;
+                    return (
+                      <Button
+                        key={t}
                         style={{
-                          color: timer === t ? theme.colors.white : theme.colors.darkGrey,
-                          fontWeight: "bold",
+                          marginRight: 8,
+                          marginBottom: 8,
+                          borderRadius: 20,
+                          backgroundColor: active ? "#58A7F8" : "#fff",
+                          borderColor: "#ddd",
                         }}
+                        onPress={() => setTimer(t)}
                       >
-                        {t === "none" ? "None" : `${t} mins`}
-                      </Text>
-                    </Button>
-                  ))}
+                        <Text
+                          style={{
+                            color: active ? theme.colors.white : theme.colors.darkGrey,
+                            fontWeight: "bold",
+                          }}
+                        >
+                          {formatTimerLabel(t)}
+                        </Text>
+                      </Button>
+                    );
+                  })}
                 </View>
                 <View style={{ flexDirection: "column", gap: 8 }}>
                   <Text style={{ fontWeight: "700", color: "#555" }}>Privacy</Text>
                   <View style={{ flexDirection: "row", gap: 8 }}>
-                    {["Public Game", "Private Game"].map((label) => {
-                      const value = label === "Private Game";
-                      return (
-                        <Button
-                          key={label}
-                          style={{
-                            marginRight: 8,
-                            marginBottom: 8,
-                            borderRadius: 20,
-                            backgroundColor: isPublic === value ? "#58A7F8" : "#fff",
-                            borderColor: "#ddd",
-                          }}
-                          onPress={() => setIsPublic(value)}
-                        >
-                          <Text
-                            style={{
-                              color: isPublic === value ? theme.colors.white : theme.colors.darkGrey,
-                              fontWeight: "bold",
-                            }}
-                          >
-                            {label}
-                          </Text>
-                        </Button>
-                      );
-                    })}
+                    <Button
+                      style={{
+                        borderRadius: 20,
+                        backgroundColor: isPublic ? "#58A7F8" : "#fff",
+                        borderColor: "#ddd",
+                      }}
+                      onPress={() => setIsPublic(true)}
+                    >
+                      <Text
+                        style={{
+                          color: isPublic ? theme.colors.white : theme.colors.darkGrey,
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Public Game
+                      </Text>
+                    </Button>
+
+                    <Button
+                      style={{
+                        borderRadius: 20,
+                        backgroundColor: !isPublic ? "#58A7F8" : "#fff",
+                        borderColor: "#ddd",
+                      }}
+                      onPress={() => setIsPublic(false)}
+                    >
+                      <Text
+                        style={{
+                          color: !isPublic ? theme.colors.white : theme.colors.darkGrey,
+                          fontWeight: "bold",
+                        }}
+                      >
+                        Private Game
+                      </Text>
+                    </Button>
                   </View>
                 </View>
 
