@@ -27,11 +27,11 @@ const UserOverviewPerformance = () => {
     //For custom segment
     const counts = TotalgamesData?.counts ?? [0, 0, 0, 0, 0, 0, 0];
     const labels = TotalgamesData?.labels ?? ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-    const rawMax = Math.max(...counts);
-    const safeMax = Math.max(rawMax, 1);
+    // const rawMax = Math.max(...counts);
+    // const safeMax = Math.max(rawMax, 1);
 
-    // Segments: show up to 6 lines, but at least 2
-    const segments = Math.min(Math.max(safeMax, 1), 6);
+    // // Segments: show up to 6 lines, but at least 2
+    // const segments = Math.min(Math.max(safeMax, 1), 6);
 
     const chartData = {
         labels,
@@ -77,7 +77,6 @@ const UserOverviewPerformance = () => {
                 <Text style={{ color: theme.colors.darkGrey, fontSize: theme.fontSizes.small }}>Total game play per week</Text>
                 <View style={{
                     backgroundColor: "#F2F8F9", borderRadius: 16,
-                    padding: 10,
                     margin: 12,
                     display: "flex",
                     justifyContent: "center"
@@ -91,7 +90,9 @@ const UserOverviewPerformance = () => {
                                     width: 450,
                                     height: 200,
                                     display: "flex",
-                                    justifyContent: "center"
+                                    flexDirection: "column",
+                                    justifyContent: "center",
+                                    alignItems: "center"
                                 }}>
                                     <ActivityIndicator size={"small"} />
                                 </View>
@@ -104,14 +105,16 @@ const UserOverviewPerformance = () => {
                                 fromZero={true}
                                 yAxisLabel=""
                                 yAxisSuffix=""
-                                showValuesOnTopOfBars
-                                segments={segments}
+                                withHorizontalLabels={false}
+                                withVerticalLabels={false}
+                                showValuesOnTopOfBars={true}
                                 style={{
                                     borderRadius: 16,
                                     display: "flex",
                                     flexDirection: "row",
-                                    alignItems: "flex-start",
-                                    justifyContent: "flex-start"
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    paddingRight: 20
                                 }}
                             />
                         )
