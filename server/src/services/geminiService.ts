@@ -125,6 +125,7 @@ Respond only with the following strict JSON format:
     const synonymMap: { [key: string]: string[] } = {};
     for (const word of words) {
       let synonyms = await getSynonyms(word.toLowerCase());
+      synonyms = synonyms.map(s => s.replace(/\s+/g, ""))
       synonymMap[word] = synonyms;
     }
     console.log("🔹 Retrieved Synonyms:", synonymMap);
@@ -157,7 +158,7 @@ Respond only with the following strict JSON format:
         `Replacing word: "${originalWord}" → "${userWordChoice}" for CEFR Level: ${userCEFR}`
       );
 
-      return { ...q, answer: finalAnswer };
+      return { ...q, answer: finalAnswer.replace(/\s+/g, "") };
     });
 
     console.log("Final Processed Game:", gameData);
