@@ -6,6 +6,7 @@ import { CreateGameFromGeminiRequestSchema, CreateGameFromGeminiResponseSchema }
 import { z } from "zod"
 import { genImage } from "../services/genImageService";
 import { generatePronunciation } from "../services/textToSpeechService";
+import { generateGameCode } from "../services/gameCodeGenerator";
 export const createGameFromGemini = async (req: Request, res: Response) => {
   const parsed = CreateGameFromGeminiRequestSchema.safeParse(req.body);
 
@@ -62,12 +63,15 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
       },
     });
 
+    const gameCode = isPublic ? await generateGameCode() : null
     const game = await prisma.game.create({
       data: {
         userId,
         gameTemplateId: gameTemplate.id,
         isHintUsed: false,
         isFinished: false,
+        timer: timer ?? null,
+        gameCode,
       },
       include: {
         gameTemplate: {
@@ -94,23 +98,23 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
     );
 
 
-
-    // if (geminiResult.imagePrompt) {
-    //   const sanitizedTopic = geminiResult.game.gameTopic.toLowerCase().replace(/\s+/g, "_");
-    //   fileName = `image_${game.id.toString()}_${sanitizedTopic}`;
-    //   imageData = await genImage(
-    //     geminiResult.imagePrompt,
-    //     "realistic",
-    //     "16:9",
-    //     "5",
-    //     game.id.toString(),
-    //     geminiResult.game.gameTopic
-    //   );
-    //   await prisma.gameTemplate.update({
-    //     where: { id: gameTemplate.id },
-    //     data: { imageUrl: fileName },
-    //   });
-    // }
+    //Create Game
+    if (geminiResult.imagePrompt) {
+      const sanitizedTopic = geminiResult.game.gameTopic.toLowerCase().replace(/\s+/g, "_");
+      fileName = `image_${game.id.toString()}_${sanitizedTopic}`;
+      imageData = await genImage(
+        geminiResult.imagePrompt,
+        "realistic",
+        "16:9",
+        "5",
+        game.id.toString(),
+        geminiResult.game.gameTopic
+      );
+      await prisma.gameTemplate.update({
+        where: { id: gameTemplate.id },
+        data: { imageUrl: fileName },
+      });
+    }
 
     const questionsWithPronunciation = game.gameTemplate.questions.map((q: any, idx: number) => ({
       id: q.id,

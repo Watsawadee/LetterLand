@@ -90,6 +90,7 @@ const RegisterScreen = () => {
           value={username}
           onChangeText={setUsername}
           mode="outlined"
+          autoCapitalize="none"
           textColor="black"
           activeOutlineColor="#5B6073"
           style={{ marginBottom: 12, backgroundColor: "transparent" }}
