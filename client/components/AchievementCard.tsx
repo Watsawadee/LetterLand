@@ -1,27 +1,112 @@
-import React from 'react';
-import { View, Text } from 'react-native';
-import { AchievementCardProps } from '../types/achievementTypes';
-import { Typography } from '../theme/Font';
-import { achievementCardStyles as styles } from '../theme/achievement';
+import React, { useMemo, useState } from "react";
+import { View, Text, Image, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
+import type { Achievement } from "@/types/achievementTypes";
+import { AchievementCardStyles as styles } from "@/theme/achievement";
+import { claimAchievementAPI } from "@/services/achievementService";
+import coinImg from "@/assets/images/coin.png";
 
-export const AchievementCard: React.FC<AchievementCardProps> = ({
-  title,
-  description,
-  coin,
-  progress,
-  status,
-}) => {
+type Props = {
+  achievement: Achievement;
+  onClaimed?: (id: number) => void;
+};
+
+export default function AchievementCard({ achievement, onClaimed }: Props) {
+  const pct = useMemo(() => {
+    const denom = Math.max(achievement.maxProgress, 1);
+    const raw = (achievement.progress / denom) * 100;
+    return Math.max(0, Math.min(100, raw));
+  }, [achievement.progress, achievement.maxProgress]);
+
+  const canClaim =
+    achievement.progress >= achievement.maxProgress &&
+    achievement.isCompleted === true &&
+    achievement.isClaimed !== true;
+
+  const alreadyClaimed = achievement.isClaimed === true;
+
+  const [claiming, setClaiming] = useState(false);
+
+  const handleClaim = async () => {
+    if (!canClaim || claiming) return;
+    try {
+      setClaiming(true);
+      const result = await claimAchievementAPI(achievement.id);
+      onClaimed?.(achievement.id);
+      Alert.alert("Claimed!", `You received 🪙 ${result.coinReward}`);
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || e?.message || "Failed to claim";
+      Alert.alert("Oops", msg);
+      console.error("Claim failed:", e?.response?.data || e);
+    } finally {
+      setClaiming(false);
+    }
+  };
+
+  // Hide these when claim is available or already claimed
+  const showProgressAndBadge = !canClaim && !alreadyClaimed;
+
   return (
     <View style={styles.card}>
-      <View style={styles.header}>
-        <Text style={Typography.header13}>{title}</Text>
-        <Text style={Typography.body13}>{description}</Text>
-        <Text style={styles.coin}>🪙 {coin}</Text>
+      <View style={styles.iconWrap}>
+        {achievement.imageUrl ? (
+          <Image source={{ uri: achievement.imageUrl }} style={styles.iconImage} resizeMode="contain" />
+        ) : (
+          <View style={styles.iconFallback}>
+            <Text style={styles.iconFallbackText}>🏅</Text>
+          </View>
+        )}
       </View>
-      <View style={styles.progressBar}>
-        <View style={[styles.progressFill, { width: `${progress}%` }]} />
-      </View>
-      <Text style={styles.status}>{status}</Text>
+
+      <Text style={styles.title}>{achievement.name}</Text>
+      <Text style={styles.description}>{achievement.description}</Text>
+
+      {showProgressAndBadge && (
+        <>
+          {/* coin centered */}
+          <View style={styles.coinRow}>
+            <Image source={coinImg} style={styles.coinIcon} resizeMode="contain" />
+            <Text style={styles.coinText}>{achievement.coinReward}</Text>
+          </View>
+
+          {/* progress bar with label on the right */}
+          <View style={styles.progressRow}>
+            <View style={styles.progressTrack}>
+              <View style={[styles.progressFill, { width: `${pct}%` }]} />
+            </View>
+            <Text style={styles.progressLabel}>
+              {achievement.progress}/{achievement.maxProgress}
+            </Text>
+          </View>
+        </>
+      )}
+
+      {/* When complete & not claimed -> big Claim button */}
+      {canClaim && (
+        <TouchableOpacity
+          style={[styles.claimPill, claiming && { opacity: 0.7 }]}
+          onPress={handleClaim}
+          disabled={claiming}
+        >
+          {claiming ? (
+            <ActivityIndicator size="small" />
+          ) : (
+            <>
+              <Text style={styles.claimTextStrong}>Claim</Text>
+              <View style={styles.claimCoinWrap}>
+                <Image source={coinImg} style={styles.coinIcon} resizeMode="contain" />
+                <Text style={styles.claimCoinValue}>{achievement.coinReward}</Text>
+              </View>
+            </>
+          )}
+        </TouchableOpacity>
+      )}
+
+      {/* After claimed -> show subtle "Claimed" pill (no bar/badge) */}
+      {alreadyClaimed && (
+        <View style={styles.claimedPill}>
+          <Text style={styles.claimedText}>Claimed</Text>
+        </View>
+      )}
     </View>
   );
-};
+}

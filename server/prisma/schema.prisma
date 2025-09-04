@@ -28,6 +28,7 @@ model Achievement {
   name             String
   description      String
   coinReward       Int
+  imageUrl         String?
   userAchievements UserAchievement[]
 }
 
@@ -37,6 +38,7 @@ model UserAchievement {
   achievementId Int
   isCompleted   Boolean     @default(false)
   earnedAt      DateTime    @default(now())
+  isClaimed     Boolean     @default(false)
   achievement   Achievement @relation(fields: [achievementId], references: [id])
   user          User        @relation(fields: [userId], references: [id])
 }
@@ -60,10 +62,11 @@ model Game {
   finishedAt     DateTime?
   isHintUsed     Boolean      @default(false)
   isFinished     Boolean      @default(false)
-  gameCode       Int?
+  gameCode       String?      @unique
   timer          Int?
   gameTemplate   GameTemplate @relation(fields: [gameTemplateId], references: [id])
   user           User         @relation(fields: [userId], references: [id])
+  WordFound      WordFound[]
 }
 
 model Question {
@@ -83,6 +86,8 @@ model WordFound {
   questionId Int
   word       String
   foundAt    DateTime @default(now())
+  gameId     Int
+  Game       Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
   question   Question @relation(fields: [questionId], references: [id])
   user       User     @relation(fields: [userId], references: [id])
 }

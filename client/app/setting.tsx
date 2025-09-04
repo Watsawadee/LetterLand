@@ -12,7 +12,7 @@ export default function SettingsScreen() {
       <Text style={{ fontSize }}>Font Size: {fontSize}</Text>
       <Slider minimumValue={12} maximumValue={40} step={1} value={fontSize} onValueChange={setFontSize} />
       <Button title="Set Primary Color: Blue" onPress={() => setPrimaryColor('blue')} />
-      <Button title="← Back to Home" onPress={() => router.replace("/")} />
+      <Button title="← Back to Home" onPress={() => router.replace("/Home")} />
     </View>
   );
 }

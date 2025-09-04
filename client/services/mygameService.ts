@@ -14,11 +14,8 @@ export async function getUserGames(
   if (!token || !userId) throw new Error("Not logged in");
 
   const url = `/mygame/user/${userId}/mygame`;
-  const baseURL =
-    Platform.OS === "web" ? "http://localhost:3000" : api.defaults.baseURL;
 
   const res: AxiosResponse<GetUserGamesResponse> = await api.get(url, {
-    baseURL,
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -27,6 +24,6 @@ export async function getUserGames(
 
 // Helper function to construct the full image URL
 export async function getCardBGImage(imageUrl: string): Promise<string> {
-  const baseUrl = "http://10.4.56.20:3000/images/image/"; // Your base URL
-  return `${baseUrl}${imageUrl}.png`;  // Append the file extension to form the full URL
+  const baseUrl = "http://10.4.56.20:3000/images/image/"; 
+  return `${baseUrl}${imageUrl}.png`;  
 }

@@ -59,6 +59,7 @@ export const recordFoundWord = async ({
   try {
     const found = await prisma.wordFound.create({
       data: {
+        gameId,
         userId,
         questionId,
         word,
