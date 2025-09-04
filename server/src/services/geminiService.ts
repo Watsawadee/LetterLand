@@ -65,6 +65,7 @@ Your task:
   - C1, C2: 12 characters
 - If a suitable answer cannot be found within the limit, use a shorter synonym or a simpler word.
 Also include an **imagePrompt** — a creative description for generating an image that represents the crossword’s topic. It should work for AI image generation tools.
+- Do not repeat the same word (case-sensitive) for more than one clue.
 
 Respond only with the following strict JSON format:
 \`\`\`json
