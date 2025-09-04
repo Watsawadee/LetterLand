@@ -22,6 +22,9 @@ export function useHints(args: UseHintsArgs) {
   const [activeHintWord, setActiveHintWord] = useState<string | null>(null);
   const [requiredFindWord, setRequiredFindWord] = useState<string | null>(null);
 
+  // Track which answers have already been hinted (CROSSWORD_SEARCH)
+  const [hintedAnswers, setHintedAnswers] = useState<Set<string>>(new Set());
+
   const [userId, setUserId] = useState<string | null>(null);
 
   const foundSet = useMemo(
@@ -91,7 +94,8 @@ export function useHints(args: UseHintsArgs) {
     if (mode === "CROSSWORD_SEARCH") {
       const current = questionsAndAnswers[activeQuestionIndex];
       if (!current) return true;
-      return noHintsLeft || mustFindPrev;
+      const alreadyHinted = hintedAnswers.has(norm(current.answer));
+      return noHintsLeft || mustFindPrev || alreadyHinted;
     }
 
     return noHintsLeft || mustFindPrev;
@@ -101,11 +105,12 @@ export function useHints(args: UseHintsArgs) {
     requiredFindWord,
     questionsAndAnswers,
     activeQuestionIndex,
+    hintedAnswers,
   ]);
 
   const onShowHint = useCallback(async () => {
-    if (!hintCount || hintCount <= 0 || !userId) return;
-
+    if (!userId) return;
+    if (!hintCount || hintCount <= 0) return;
     if (requiredFindWord && !isWordSatisfied(requiredFindWord)) return;
 
     let nextAnswer: string | null = null;
@@ -113,7 +118,18 @@ export function useHints(args: UseHintsArgs) {
     if (mode === "CROSSWORD_SEARCH") {
       const current = questionsAndAnswers[activeQuestionIndex];
       if (!current) return;
+
+      const ansNorm = norm(current.answer);
+      if (hintedAnswers.has(ansNorm)) return;
+
       nextAnswer = current.answer;
+
+      // mark this question as hinted
+      setHintedAnswers((prev) => {
+        const next = new Set(prev);
+        next.add(ansNorm);
+        return next;
+      });
     } else {
       const total = questionsAndAnswers.length;
       for (let offset = 1; offset <= total; offset++) {
@@ -151,6 +167,7 @@ export function useHints(args: UseHintsArgs) {
     lastHintIndex,
     foundSet,
     userId,
+    hintedAnswers,
   ]);
 
   const clearActiveHint = useCallback(() => setActiveHintWord(null), []);
@@ -167,6 +184,7 @@ export function useHints(args: UseHintsArgs) {
     setLastHintIndex(-1);
     setActiveHintWord(null);
     setRequiredFindWord(null);
+    setHintedAnswers(new Set());
   }, [userId]);
 
   return {

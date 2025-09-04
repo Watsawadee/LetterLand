@@ -65,6 +65,7 @@ model Game {
   timer          Int?
   gameTemplate   GameTemplate @relation(fields: [gameTemplateId], references: [id])
   user           User         @relation(fields: [userId], references: [id])
+  WordFound      WordFound[]
 }
 
 model Question {
@@ -84,6 +85,8 @@ model WordFound {
   questionId Int
   word       String
   foundAt    DateTime @default(now())
+  gameId     Int
+  Game       Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
   question   Question @relation(fields: [questionId], references: [id])
   user       User     @relation(fields: [userId], references: [id])
 }

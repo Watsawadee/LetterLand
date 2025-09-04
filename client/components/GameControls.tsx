@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import FontSizeModal from "./FontSizeModal";
 import { CustomButton } from "../theme/ButtonCustom";
@@ -6,6 +6,7 @@ import { Magnify } from "../assets/icon/Magnify";
 import FontIcon from "@/assets/icon/FontIcon";
 import Timer from "@/assets/icon/Timer";
 import { Typography } from "@/theme/Font";
+import { useTime } from "@/hooks/useTime";
 
 type FontSettings = {
   fontModalVisible: boolean;
@@ -19,11 +20,13 @@ type FontSettings = {
 type GameControlsProps = {
   title: string;
   onShowHint: () => void;
-  hintCount: number;
+  hintCount: number | null;
   isHintDisabled: boolean;
   fontSettings: FontSettings;
   startTimeSeconds: number;
   onTimeUp: () => void;
+  paused?: boolean;
+  resetKey?: unknown;
 };
 
 export default function GameControls({
@@ -34,6 +37,8 @@ export default function GameControls({
   isHintDisabled,
   startTimeSeconds,
   onTimeUp,
+  paused = false,
+  resetKey,
 }: GameControlsProps) {
   const {
     fontModalVisible,
@@ -43,36 +48,12 @@ export default function GameControls({
     setFontSize,
   } = fontSettings;
 
-  const [secondsLeft, setSecondsLeft] = useState(startTimeSeconds);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Reset timer whenever startTimeSeconds changes
-  useEffect(() => {
-    setSecondsLeft(startTimeSeconds);
-  }, [startTimeSeconds]);
-
-  // Start countdown
-  useEffect(() => {
-    if (!startTimeSeconds || startTimeSeconds <= 0) return;
-    setSecondsLeft(startTimeSeconds);
-
-    if (timerRef.current) clearInterval(timerRef.current);
-
-    timerRef.current = setInterval(() => {
-      setSecondsLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current!);
-          onTimeUp();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [startTimeSeconds, onTimeUp]);
+  const { secondsLeft } = useTime({
+    startTimeSeconds,
+    paused,
+    onTimeUp,
+    resetSignal: resetKey,
+  });
 
   const formatTime = (sec: number) => {
     const minutes = Math.floor(sec / 60);
@@ -103,13 +84,18 @@ export default function GameControls({
           type="fontSize"
           icon={<FontIcon />}
         />
-        <CustomButton
-          onPress={onShowHint}
-          type="buyHint"
-          icon={<Magnify />}
-          disabled={isHintDisabled}
-          number={hintCount}
-        />
+
+        {/* Hint button (gray-out via opacity) */}
+        <View style={isHintDisabled ? styles.disabledWrap : undefined}>
+          <CustomButton
+            onPress={onShowHint}
+            type="buyHint"
+            icon={<Magnify />}
+            disabled={isHintDisabled}
+            number={hintCount ?? 0}
+          />
+        </View>
+
       </View>
 
       <FontSizeModal
@@ -143,10 +129,11 @@ const styles = StyleSheet.create({
   time: { marginTop: 4, ...Typography.header30 },
   buttonsRow: {
     flexDirection: "row",
-    gap: 20,
+    gap: 16,
     marginTop: 12,
     justifyContent: "center",
     alignItems: "center",
+    flexWrap: "wrap",
   },
   timerRow: {
     flexDirection: "row",
@@ -155,5 +142,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: "100%",
     padding: 16,
+  },
+  disabledWrap: {
+    opacity: 0.4,
+  },
+  hintCaption: {
+    fontSize: 12,
+    opacity: 0.7,
+    marginTop: 4,
+    width: "100%",
+    textAlign: "center",
   },
 });

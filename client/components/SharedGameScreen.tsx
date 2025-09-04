@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from "react";
-import { View, StyleSheet, TouchableOpacity } from "react-native";
+import React, { useMemo, useState, useRef, useEffect } from "react";
+import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
 import GameControls from "./GameControls";
 import GameBoard from "./GameBoard";
 import CluesPanel from "./CluesPanel";
@@ -13,6 +13,9 @@ import { useAllFound } from "../hooks/useAllFound";
 import ArrowLeft from "@/assets/icon/ArrowLeft";
 import Restart from "../assets/icon/Restart";
 import ArrowRight from "@/assets/icon/ArrowRight";
+import WordLearnedModal from "./WordLearnedModal";
+import { fetchGamePronunciations } from "@/services/pronunciationService";
+import { saveFoundWordsOnce } from "@/services/gameService";
 
 export default function SharedGameScreen({
   mode,
@@ -25,7 +28,16 @@ export default function SharedGameScreen({
   const router = useRouter();
   const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
   const [confirmExitVisible, setConfirmExitVisible] = useState(false);
+  const [wordModalVisible, setWordModalVisible] = useState(false);
   const [timeUp, setTimeUp] = useState(false);
+
+  const [roundKey, setRoundKey] = useState(0);
+
+  useEffect(() => {
+    if (!gameData?.id) return;
+    fetchGamePronunciations(gameData.id).catch(() => {});
+  }, [gameData?.id]);
+  const hasPostedRef = useRef(false);
 
   const {
     grid,
@@ -62,18 +74,63 @@ export default function SharedGameScreen({
       showHintForAnswer,
     });
 
-  const handleCloseModal = () => {
+  const hardResetRound = () => {
     setAllFoundVisible(false);
     resetGame();
     setActiveQuestionIndex(0);
     clearActiveHint();
     resetHints();
     setTimeUp(false);
+    hasPostedRef.current = false;
+    setRoundKey((k) => k + 1);
+  };
+
+  const handleCloseModal = () => {
+    hardResetRound();
   };
 
   const handleBackPress = () => setConfirmExitVisible(true);
-  const handleExitConfirm = () => router.replace("/");
+  const handleExitConfirm = () => router.replace("/Home");
   const handleExitCancel = () => setConfirmExitVisible(false);
+
+  const openWordModal = async () => {
+    await saveFoundWordsOnce(
+      hasPostedRef,
+      gameData?.id,
+      foundWordsList,
+      questionsAndAnswers
+    ).catch(() => {});
+    setWordModalVisible(true);
+    setTimeUp(false);
+    setAllFoundVisible(false);
+  };
+
+  useEffect(() => {
+    hasPostedRef.current = false;
+  }, [gameData?.id]);
+
+  useEffect(() => {
+    if (!(allFoundVisible || timeUp)) return;
+
+    saveFoundWordsOnce(
+      hasPostedRef,
+      gameData?.id,
+      foundWordsList,
+      questionsAndAnswers
+    ).catch((err: any) => {
+      console.warn("[wordfound] post failed:", err);
+    });
+  }, [
+    allFoundVisible,
+    timeUp,
+    gameData?.id,
+    foundWordsList,
+    questionsAndAnswers,
+  ]);
+
+  useEffect(() => {
+    hasPostedRef.current = false;
+  }, [gameData?.id]);
 
   return (
     <View style={styles.container}>
@@ -88,10 +145,10 @@ export default function SharedGameScreen({
             fontSettings={fontSettings}
             onShowHint={onShowHint}
             hintCount={hintCount ?? 0}
-            isHintDisabled={isHintDisabled}
             startTimeSeconds={gameData?.timer ?? 0}
             onTimeUp={() => setTimeUp(true)}
-            key={activeQuestionIndex + (timeUp ? "timeUp" : "running")}
+            paused={allFoundVisible || timeUp}
+            resetKey={roundKey}
           />
         </View>
 
@@ -129,26 +186,33 @@ export default function SharedGameScreen({
         onCancel={handleExitCancel}
       />
 
-      {/* All Found MODAL */}
-      <GameEndModal
-        visible={allFoundVisible}
-        title="EXCELLENT!"
-        message="You have found all the words on time!"
-        onConfirm={handleCloseModal}
-        onClose={() => router.replace("/")}
-        confirmIcon={<Restart />}
-        closeIcon={<ArrowRight />}
-      />
-
-      {/* TIME UP MODAL */}
-      <GameEndModal
-        visible={timeUp}
-        title="Time's Up!"
-        message="You can no longer continue the game."
-        onConfirm={handleCloseModal}
-        onClose={() => router.replace("/")}
-        confirmIcon={<Restart />}
-        closeIcon={<ArrowRight />}
+      {!wordModalVisible && (
+        <>
+          <GameEndModal
+            visible={allFoundVisible}
+            title="EXCELLENT!"
+            message="You have found all the words on time!"
+            onConfirm={hardResetRound}
+            onClose={openWordModal}
+            confirmIcon={<Restart />}
+            closeIcon={<ArrowRight />}
+          />
+          <GameEndModal
+            visible={timeUp}
+            title="Time's Up!"
+            message="You can no longer continue the game."
+            onConfirm={hardResetRound}
+            onClose={openWordModal}
+            confirmIcon={<Restart />}
+            closeIcon={<ArrowRight />}
+          />
+        </>
+      )}
+      <WordLearnedModal
+        visible={wordModalVisible}
+        onClose={() => router.replace("/Home")}
+        gameId={gameData?.id ?? 0}
+        words={foundWordsList}
       />
     </View>
   );
