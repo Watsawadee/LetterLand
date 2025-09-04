@@ -98,7 +98,7 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
     );
 
 
-
+    //Create Game
     if (geminiResult.imagePrompt) {
       const sanitizedTopic = geminiResult.game.gameTopic.toLowerCase().replace(/\s+/g, "_");
       fileName = `image_${game.id.toString()}_${sanitizedTopic}`;
