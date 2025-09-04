@@ -7,9 +7,10 @@ function norm(s: string) {
   return s.trim().toUpperCase();
 }
 
-export function useHints(args: UseHintsArgs) {
+export function useHints(args: UseHintsArgs & { gameId?: number | string }) {
   const {
     mode,
+    gameId,
     questionsAndAnswers,
     foundWordsList,
     revealedAnswers,
@@ -22,7 +23,6 @@ export function useHints(args: UseHintsArgs) {
   const [activeHintWord, setActiveHintWord] = useState<string | null>(null);
   const [requiredFindWord, setRequiredFindWord] = useState<string | null>(null);
 
-  // Track which answers have already been hinted (CROSSWORD_SEARCH)
   const [hintedAnswers, setHintedAnswers] = useState<Set<string>>(new Set());
 
   const [userId, setUserId] = useState<string | null>(null);
@@ -46,7 +46,6 @@ export function useHints(args: UseHintsArgs) {
 
   useEffect(() => {
     if (!userId) return;
-
     const fetchHints = async () => {
       try {
         const userData = await getUserData(Number(userId));
@@ -124,7 +123,6 @@ export function useHints(args: UseHintsArgs) {
 
       nextAnswer = current.answer;
 
-      // mark this question as hinted
       setHintedAnswers((prev) => {
         const next = new Set(prev);
         next.add(ansNorm);
@@ -150,7 +148,8 @@ export function useHints(args: UseHintsArgs) {
     showHintForAnswer(nextAnswer);
 
     try {
-      await useHint(Number(userId));
+      await useHint(Number(userId), gameId);
+
       const userData = await getUserData(Number(userId));
       setHintCount(userData.hint ?? 0);
     } catch (err) {
@@ -168,6 +167,7 @@ export function useHints(args: UseHintsArgs) {
     foundSet,
     userId,
     hintedAnswers,
+    gameId,
   ]);
 
   const clearActiveHint = useCallback(() => setActiveHintWord(null), []);

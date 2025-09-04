@@ -31,6 +31,7 @@ type Props = {
   onClose: () => void;
   gameId: number | string;
   words: string[];
+  timeUsedSeconds?: number;
 };
 
 const asArray = <T,>(v: any): T[] =>
@@ -49,6 +50,7 @@ export default function WordLearnedModal({
   onClose,
   gameId,
   words,
+  timeUsedSeconds,
 }: Props) {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -81,9 +83,7 @@ export default function WordLearnedModal({
 
         const seen = new Set<string>();
         const unique = words.filter((w) => {
-          const k = String(w?.word ?? "")
-            .trim()
-            .toLowerCase();
+          const k = String(w?.word ?? "").trim().toLowerCase();
           if (!k || seen.has(k)) return false;
           seen.add(k);
           return true;
@@ -123,10 +123,17 @@ export default function WordLearnedModal({
     return map;
   }, [pronunciations]);
 
+  function formatDuration(totalSec?: number) {
+    if (typeof totalSec !== "number") return "";
+    const sec = Math.max(0, Math.floor(totalSec));
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return m > 0 ? `${m}m ${s}s` : `${s}s`;
+  }
+
   async function play(item?: PronunciationItem) {
     if (!item?.dataUrl) return;
 
-    // stop previous
     try {
       if (soundRef.current) {
         try {
@@ -148,7 +155,6 @@ export default function WordLearnedModal({
         return;
       }
 
-      // Native: write base64 to file then play
       const base64 = (item.dataUrl.split(",")[1] || "").trim();
       const fileName = item.fileName || `${item.answer}.mp3`;
       const fileUri = (FileSystem.cacheDirectory || "") + `pron-${fileName}`;
@@ -175,9 +181,7 @@ export default function WordLearnedModal({
       )
     )
     .map(({ word }) => {
-      const key = String(word ?? "")
-        .trim()
-        .toLowerCase();
+      const key = String(word ?? "").trim().toLowerCase();
       return { word: String(word ?? ""), item: byWord.get(key) };
     });
 
@@ -191,6 +195,14 @@ export default function WordLearnedModal({
       <View style={styles.overlay}>
         <View style={styles.modal}>
           <Text style={styles.title}>Word Learned</Text>
+
+          <Text style={styles.subTitle}>
+            {`Words learned: ${words?.length ?? 0}${
+              typeof timeUsedSeconds === "number"
+                ? `  •  Time used: ${formatDuration(timeUsedSeconds)}`
+                : ""
+            }`}
+          </Text>
 
           {loading ? (
             <View style={styles.center}>
@@ -264,7 +276,13 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "800",
     textAlign: "center",
-    marginBottom: 8,
+    marginBottom: 4,
+  },
+  subTitle: {
+    fontSize: 14,
+    color: "#6b7280",
+    textAlign: "center",
+    marginBottom: 10,
   },
   center: {
     alignItems: "center",

@@ -6,8 +6,12 @@ import {
   getCorrectAnswerById,
   batchRecordFoundWords,
   getAllWordFound,
+  completeGame,
 } from "../services/gameService";
 import { Request, Response } from "express";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
 
 export const getAllGameController = async (req: Request, res: Response) => {
   try {
@@ -177,5 +181,61 @@ export const batchRecordFoundWordsController = async (
   } catch (err) {
     console.error("Batch record error:", err);
     res.status(500).json({ message: "Batch record failed" });
+  }
+};
+
+export const completeGameController = async (req: Request, res: Response) => {
+  try {
+    const gameId = Number(req.params.gameId);
+    const {
+      userId,
+      completed,
+      finishedOnTime,
+      isHintUsed,
+      timeUsedSeconds,
+    } = (req.body ?? {}) as {
+      userId?: number;
+      completed?: boolean;
+      finishedOnTime?: boolean;
+      isHintUsed?: boolean;
+      timeUsedSeconds?: number;
+    };
+
+    const result = await completeGame({
+      gameId,
+      userId: Number(userId),
+      completed,
+      finishedOnTime,
+      isHintUsed,
+      timeUsedSeconds,
+    });
+
+    if (result.alreadyFinished && !result.updatedGame) {
+      const user = await prisma.user.findUnique({
+        where: { id: Number(userId) },
+        select: { id: true, coin: true, total_playtime: true },
+      });
+
+      res.status(200).json({
+        message: "Game already completed",
+        data: {
+          id: gameId,
+          userId: Number(userId),
+          isFinished: true,
+          user,
+        },
+        coinsAwarded: 0,
+      });
+      return;
+    }
+
+    res.status(200).json({
+      message: "Complete Game recorded",
+      data: result.updatedGame,
+      coinsAwarded: result.coinsAwarded,
+    });
+  } catch (err) {
+    console.error("Error in complete Game Controller:", err);
+    res.status(500).json({ message: "Internal server error" });
   }
 };

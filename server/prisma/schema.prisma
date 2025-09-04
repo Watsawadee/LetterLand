@@ -38,6 +38,7 @@ model UserAchievement {
   achievementId Int
   isCompleted   Boolean     @default(false)
   earnedAt      DateTime    @default(now())
+  isClaimed     Boolean     @default(false)
   achievement   Achievement @relation(fields: [achievementId], references: [id])
   user          User        @relation(fields: [userId], references: [id])
 }

@@ -31,9 +31,25 @@ export const getBGImage = async (imgName: string) => {
   }
 };
 
-export const useHint = async (userId: string | number) => {
-  const response = await api.post(`/users/${userId}/usehint`);
-  return response.data.hint;
+// export const useHint = async (userId: string | number) => {
+//   const response = await api.post(`/users/${userId}/usehint`);
+//   return response.data.hint;
+// };
+
+export const useHint = async (userId: number, gameId?: number | string) => {
+  await api.post(`/users/${userId}/useHint`);
+
+  if (gameId != null) {
+    try {
+      await completeGame({
+        gameId,
+        hintUsed: true,
+      });
+    } catch (e) {
+      console.warn("Failed to mark isHintUsed on game:", e);
+    }
+  }
+  return true;
 };
 
 export type BoolRef = { current: boolean };
@@ -55,8 +71,7 @@ export async function saveFoundWordsOnce(
 
     const map = new Map<string, number>();
     for (const q of qa ?? []) {
-      const key = String(q?.answer ?? "")
-        .trim();
+      const key = String(q?.answer ?? "").trim();
       const id = Number(q?.id);
       if (key && Number.isFinite(id)) map.set(key, id);
     }
@@ -74,7 +89,7 @@ export async function saveFoundWordsOnce(
     }>;
 
     if (!payload.length) {
-      guardRef.current = false; 
+      guardRef.current = false;
       return 0;
     }
 
@@ -92,3 +107,35 @@ export async function saveFoundWordsOnce(
     throw e;
   }
 }
+
+export const completeGame = async ({
+  gameId,
+  completed,
+  finishedOnTime,
+  wordsLearned,
+  timeUsedSeconds,
+  hintUsed,
+}: {
+  gameId: number | string;
+  completed?: boolean;
+  finishedOnTime?: boolean;
+  wordsLearned?: number;
+  timeUsedSeconds?: number;
+  hintUsed?: boolean;
+}) => {
+  const userId = await getLoggedInUserId();
+  if (!userId) throw new Error("Not logged in");
+
+  const body: any = {
+    userId: Number(userId),
+  };
+  if (typeof completed === "boolean") body.completed = completed;
+  if (typeof finishedOnTime === "boolean") body.finishedOnTime = finishedOnTime;
+  if (typeof wordsLearned === "number") body.wordsLearned = wordsLearned;
+  if (typeof timeUsedSeconds === "number")
+    body.timeUsedSeconds = timeUsedSeconds;
+  if (hintUsed) body.isHintUsed = true;
+
+  const { data } = await api.post(`/games/${gameId}/complete`, body);
+  return data;
+};
