@@ -7,9 +7,10 @@ function norm(s: string) {
   return s.trim().toUpperCase();
 }
 
-export function useHints(args: UseHintsArgs) {
+export function useHints(args: UseHintsArgs & { gameId?: number | string }) {
   const {
     mode,
+    gameId,
     questionsAndAnswers,
     foundWordsList,
     revealedAnswers,
@@ -21,6 +22,8 @@ export function useHints(args: UseHintsArgs) {
   const [lastHintIndex, setLastHintIndex] = useState(-1);
   const [activeHintWord, setActiveHintWord] = useState<string | null>(null);
   const [requiredFindWord, setRequiredFindWord] = useState<string | null>(null);
+
+  const [hintedAnswers, setHintedAnswers] = useState<Set<string>>(new Set());
 
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -43,7 +46,6 @@ export function useHints(args: UseHintsArgs) {
 
   useEffect(() => {
     if (!userId) return;
-
     const fetchHints = async () => {
       try {
         const userData = await getUserData(Number(userId));
@@ -91,7 +93,8 @@ export function useHints(args: UseHintsArgs) {
     if (mode === "CROSSWORD_SEARCH") {
       const current = questionsAndAnswers[activeQuestionIndex];
       if (!current) return true;
-      return noHintsLeft || mustFindPrev;
+      const alreadyHinted = hintedAnswers.has(norm(current.answer));
+      return noHintsLeft || mustFindPrev || alreadyHinted;
     }
 
     return noHintsLeft || mustFindPrev;
@@ -101,11 +104,12 @@ export function useHints(args: UseHintsArgs) {
     requiredFindWord,
     questionsAndAnswers,
     activeQuestionIndex,
+    hintedAnswers,
   ]);
 
   const onShowHint = useCallback(async () => {
-    if (!hintCount || hintCount <= 0 || !userId) return;
-
+    if (!userId) return;
+    if (!hintCount || hintCount <= 0) return;
     if (requiredFindWord && !isWordSatisfied(requiredFindWord)) return;
 
     let nextAnswer: string | null = null;
@@ -113,7 +117,17 @@ export function useHints(args: UseHintsArgs) {
     if (mode === "CROSSWORD_SEARCH") {
       const current = questionsAndAnswers[activeQuestionIndex];
       if (!current) return;
+
+      const ansNorm = norm(current.answer);
+      if (hintedAnswers.has(ansNorm)) return;
+
       nextAnswer = current.answer;
+
+      setHintedAnswers((prev) => {
+        const next = new Set(prev);
+        next.add(ansNorm);
+        return next;
+      });
     } else {
       const total = questionsAndAnswers.length;
       for (let offset = 1; offset <= total; offset++) {
@@ -134,7 +148,8 @@ export function useHints(args: UseHintsArgs) {
     showHintForAnswer(nextAnswer);
 
     try {
-      await useHint(Number(userId));
+      await useHint(Number(userId), gameId);
+
       const userData = await getUserData(Number(userId));
       setHintCount(userData.hint ?? 0);
     } catch (err) {
@@ -151,6 +166,8 @@ export function useHints(args: UseHintsArgs) {
     lastHintIndex,
     foundSet,
     userId,
+    hintedAnswers,
+    gameId,
   ]);
 
   const clearActiveHint = useCallback(() => setActiveHintWord(null), []);
@@ -167,6 +184,7 @@ export function useHints(args: UseHintsArgs) {
     setLastHintIndex(-1);
     setActiveHintWord(null);
     setRequiredFindWord(null);
+    setHintedAnswers(new Set());
   }, [userId]);
 
   return {

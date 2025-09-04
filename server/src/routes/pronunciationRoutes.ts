@@ -3,7 +3,7 @@ const { pronunciation, getAudio } = require('../controllers/pronunciationControl
 
 const router = express.Router();
 
-router.get('/audio/:fileName', getAudio);
+router.get('/audio/:gameId', getAudio);
 router.post('/pronunciation', pronunciation);
 
 export default router;
