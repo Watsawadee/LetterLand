@@ -1,7 +1,7 @@
 import prisma from "../configs/db";
 import { Request, Response } from "express";
 import { AuthenticatedRequest } from "../types/authenticatedRequest";
-import { startOfWeek, endOfWeek, eachDayOfInterval, format } from "date-fns";
+import { startOfWeek, endOfWeek, eachDayOfInterval, format, addWeeks } from "date-fns";
 import {
   TotalPlaytimeResponseSchema,
   WordsLearnedResponseSchema,
@@ -103,9 +103,15 @@ export const getUserGamesPlayedPerWeek = async (
     return;
   }
   try {
+    const offSet = Number(req.query.offset ?? 0);
+    if (Number.isNaN(offSet)) {
+      res.status(400).json({ error: "Invalid offset" });
+      return;
+    }
+    const base = addWeeks(new Date(), offSet);
+    const start = startOfWeek(base, { weekStartsOn: 0 });
+    const end = endOfWeek(base, { weekStartsOn: 0 });
 
-    const start = startOfWeek(new Date(), { weekStartsOn: 0 });
-    const end = endOfWeek(new Date(), { weekStartsOn: 0 });
     const games = await prisma.game.findMany({
       where: {
         userId,
@@ -128,16 +134,26 @@ export const getUserGamesPlayedPerWeek = async (
     });
 
     games.forEach((game: { startedAt: Date }) => {
-      const label = format(game.startedAt, "E").slice(0, 2);
+      const label = format(game.startedAt, "EEE").slice(0, 2);
       if (result[label] !== undefined) result[label]++;
     });
 
-    const labels = days.map(day => format(day, "E").slice(0, 2));
-    const counts = labels.map(label => result[label] || 0);
-    const response = GamesPlayedPerWeekResponseSchema.parse({
+    const labels = days.map(day => format(day, "EEE").slice(0, 2));
+    const bucket: Record<string, number> = Object.fromEntries(labels.map(l => [l, 0]));
+
+    for (const g of games) {
+      const key = format(g.startedAt, "EEE").slice(0, 2);
+      if (key in bucket) bucket[key] += 1;
+    }
+    const counts = labels.map(l => bucket[l] ?? 0);
+    const payload = {
       labels,
       counts,
-    });
+      range: { start: start.toISOString(), end: end.toISOString() },
+      weekLabel: `${format(start, "MMM d")} – ${format(end, "MMM d, yyyy")}`,
+      offSet,
+    };
+    const response = GamesPlayedPerWeekResponseSchema.parse(payload);
     res.status(200).json(response);
   } catch (error) {
     console.log(error);

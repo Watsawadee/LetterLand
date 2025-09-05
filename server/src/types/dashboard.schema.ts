@@ -10,8 +10,14 @@ export const WordsLearnedResponseSchema = z.object({
 });
 
 export const GamesPlayedPerWeekResponseSchema = z.object({
-    labels: z.array(z.string()),  // ["Su", "Mo", ...]
-    counts: z.array(z.number()),  // [2, 0, 1, ...]
+    labels: z.array(z.string()),
+    counts: z.array(z.number()),
+    range: z.object({
+        start: z.string(),
+        end: z.string(),
+    }),
+    weekLabel: z.string(),
+    offSet: z.number(),
 });
 
 export const TotalPlaytimeOrErrorSchema = z.union([

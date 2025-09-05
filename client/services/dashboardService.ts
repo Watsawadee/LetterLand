@@ -15,11 +15,11 @@ async function getAuthHeader() {
         },
     };
 }
-export async function getTotalGameThisWeek(): Promise<WeeklyGameData> {
+export async function getTotalGameThisWeek(offSet = 0): Promise<WeeklyGameData> {
     const userId = await getLoggedInUserId();
     const config = await getAuthHeader();
     const res = await api.get<WeeklyGameData>(
-        `/dashboard/user/${userId}/gameplayedperweek`,
+        `/dashboard/user/${userId}/gameplayedperweek?offset=${offSet}`,
         config
     );
     const ok = GamesPlayedPerWeekResponseSchema.safeParse(res.data);
