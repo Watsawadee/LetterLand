@@ -12,7 +12,7 @@ import { Dimensions } from "react-native";
 import Carousel, { Pagination, ICarouselInstance } from "react-native-reanimated-carousel";
 import { useSharedValue } from "react-native-reanimated";
 
-const MAX_WEEKS = 3;
+const MAX_WEEKS = 5;
 const UserOverviewPerformance = () => {
     const [carouselIndex, setCarouselIndex] = useState(0);
     const [forceLoading, setForceLoading] = useState(true);
@@ -92,7 +92,7 @@ const UserOverviewPerformance = () => {
                         tickValues={[0, 1, 2, 3, 4, 5, 6]}
                         tickFormat={(t) => labels[t]}
                         style={{
-                            tickLabels: { fontSize: 10, fill: "#5B6073" },
+                            tickLabels: { fontSize: 15, fill: "#5B6073" },
                             axis: { stroke: "transparent" },
                             ticks: { stroke: "transparent" },
                             grid: { stroke: "transparent" },
@@ -103,7 +103,7 @@ const UserOverviewPerformance = () => {
                         barWidth={25}
                         style={{
                             data: { fill: theme.colors.blue, borderRadius: 6 },
-                            labels: { fill: "#5B6073", fontSize: 10, fontWeight: 600 },
+                            labels: { fill: "#5B6073", fontSize: 20, fontWeight: 600 },
                         }}
                         labels={({ datum }) => datum.y === 0 ? "" : `${datum.y}`}
                         labelComponent={<VictoryLabel dy={-8} textAnchor="middle" />}
@@ -129,7 +129,6 @@ const UserOverviewPerformance = () => {
                     height={CHART_H + 60}
                     data={Array.from({ length: MAX_WEEKS }, (_, i) => i)}
                     renderItem={renderChart}
-                    loop
                     autoPlay={false}
                     style={{ alignSelf: "center" }}
                     mode="parallax"
