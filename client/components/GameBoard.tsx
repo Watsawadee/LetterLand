@@ -1,6 +1,7 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect } from "react";
 import { View, Text, StyleSheet, Animated, Easing } from "react-native";
 import { GameBoardProps } from "../types/type";
+import { Typography } from "@/theme/Font";
 
 export default function GameBoard(props: GameBoardProps) {
   const {
@@ -13,18 +14,47 @@ export default function GameBoard(props: GameBoardProps) {
     panHandlers,
     layoutRef,
   } = props;
+
   const viewRef = useRef<View>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  const PALETTE = [
+    "#A0E7E5", // teal
+    "#B4F8C8", // mint
+    "#FBE7C6", // sand
+    "#FFAEBC", // pink
+    "#C8B6FF", // lavender
+    "#FFD6A5", // peach
+    "#BDE0FE", // sky
+    "#D3F8E2", // pale green
+    "#FFCFD2", // rose
+    "#F1EAFF", // lilac
+  ];
+
+  const colorFromWord = (word: string) => {
+    let hash = 0;
+    for (let i = 0; i < word.length; i++) {
+      hash = (hash * 31 + word.charCodeAt(i)) >>> 0;
+    }
+    return PALETTE[hash % PALETTE.length];
+  };
+
+  const getCoveringWord = (r: number, c: number) => {
+    for (let i = foundWords.length - 1; i >= 0; i--) {
+      const w = foundWords[i];
+      if (w.cells.some(([rr, cc]) => rr === r && cc === c)) return w;
+    }
+    return undefined;
+  };
 
   useEffect(() => {
     const measure = () => {
       if (viewRef.current) {
-        viewRef.current.measureInWindow((x, y, width, height) => {
+        viewRef.current.measureInWindow((x, y) => {
           layoutRef.current = { x, y };
         });
       }
     };
-
     setTimeout(measure, 0);
   }, []);
 
@@ -61,42 +91,39 @@ export default function GameBoard(props: GameBoardProps) {
               ([r, c]) => r === rowIndex && c === colIndex
             );
 
-            const isCorrectCell = foundWords.some((word) =>
-              word.cells.some(([r, c]) => r === rowIndex && c === colIndex)
-            );
+            const coveringWord = getCoveringWord(rowIndex, colIndex);
+            const isCorrectCell = !!coveringWord;
+            const wordColor = coveringWord
+              ? colorFromWord(coveringWord.word)
+              : undefined;
 
             const isHint =
-              hintCell?.[0] === rowIndex &&
-              hintCell?.[1] === colIndex &&
-              !isCorrectCell &&
-              !isSelected;
+              hintCell?.[0] === rowIndex && hintCell?.[1] === colIndex;
+
+            const isHintVisible = isHint && !isSelected && !isCorrectCell;
 
             const cellStyles = [
               styles.cell,
               { width: CELL_SIZE, height: CELL_SIZE },
-              isCorrectCell && !isSelected && styles.correctCell,
+              isCorrectCell && !isSelected && wordColor
+                ? { backgroundColor: wordColor }
+                : null,
               isSelected && styles.selectedCell,
             ];
 
-            if (isHint) {
-              return (
-                <Animated.View
-                  key={colIndex}
-                  style={[
-                    cellStyles,
-                    styles.hintCell,
-                    { transform: [{ scale: pulseAnim }] },
-                  ]}
-                >
-                  <View style={styles.charWrapper}>
-                    <Text style={[styles.char, { fontSize }]}>{char}</Text>
-                  </View>
-                </Animated.View>
-              );
-            }
-
             return (
               <View key={colIndex} style={cellStyles}>
+                {isHintVisible && (
+                  <Animated.View
+                    pointerEvents="none"
+                    style={[
+                      StyleSheet.absoluteFill,
+                      styles.hintCell,
+                      { transform: [{ scale: pulseAnim }] },
+                    ]}
+                  />
+                )}
+
                 <View style={styles.charWrapper}>
                   <Text style={[styles.char, { fontSize }]}>{char}</Text>
                 </View>
@@ -110,12 +137,8 @@ export default function GameBoard(props: GameBoardProps) {
 }
 
 const styles = StyleSheet.create({
-  grid: {
-    marginBottom: 20,
-  },
-  row: {
-    flexDirection: "row",
-  },
+  grid: { marginBottom: 20 },
+  row: { flexDirection: "row" },
   cell: {
     backgroundColor: "#fff",
     justifyContent: "center",
@@ -123,13 +146,10 @@ const styles = StyleSheet.create({
     margin: 2,
     borderRadius: 4,
     padding: 6,
+    position: "relative",
+    overflow: "hidden",
   },
-  selectedCell: {
-    backgroundColor: "#add8e6",
-  },
-  correctCell: {
-    backgroundColor: "#90ee90",
-  },
+  selectedCell: { backgroundColor: "#add8e6" },
   hintCell: {
     backgroundColor: "#ffff99",
   },
@@ -139,8 +159,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   char: {
-    fontSize: 18,
-    textAlign: "center",
+    ...Typography.popupbody25,
     textAlignVertical: "center",
+    zIndex: 1,
   },
 });

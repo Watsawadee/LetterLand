@@ -1,8 +1,12 @@
 import * as React from "react";
 import Svg, { G, Path, SvgProps } from "react-native-svg";
 
-const Timer = (props: SvgProps) => (
-  <Svg width={50} height={50} viewBox="0 0 64 64" {...props}>
+interface TimerProps extends SvgProps {
+  size?: number;
+}
+
+const Timer = ({ size = 50, ...props }: TimerProps) => (
+  <Svg width={size} height={size} viewBox="0 0 64 64" {...props}>
     <Path
       fill="#c2986b"
       d="M6.128 61.66c-.215-.293.406-2.372.532-2.521c3.271-3.808 3.391-16.06 3.324-17.806c-.164-4.03 1.972-8.106 3.774-7.225c1.74.85 3.104 9.23 3.439 10.907c.827 4.101.503 9.01-.825 12.898c-1.402 4.117-6.821 8.295-10.244 3.747m51.847 0c.214-.293-.406-2.372-.533-2.521c-3.271-3.808-3.39-16.06-3.323-17.806c.163-4.03-1.973-8.106-3.775-7.225c-1.739.85-3.103 9.23-3.438 10.907c-.827 4.101-.503 9.01.825 12.898c1.401 4.117 6.82 8.295 10.244 3.747"

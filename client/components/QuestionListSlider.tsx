@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { QuestionListSliderProps } from "../types/type";
 import { Typography } from "@/theme/Font";
+import { Color } from "@/theme/Color";
 
 export default function QuestionListSlider({
   questionsAndAnswers,
@@ -95,10 +96,10 @@ export default function QuestionListSlider({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 5,
+    marginBottom: 2,
     minWidth: "100%",
-    backgroundColor: "rgba(249, 249, 249, 0.8)",
-    padding: 10,
+    backgroundColor: "rgba(249, 249, 249, 0.88)",
+    padding: 9,
     borderRadius: 10,
   },
   questionText: {
@@ -107,11 +108,8 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     ...Typography.header20,
   },
-  found: {
-    color: "green",
-  },
   answerText: {
-    color: "green",
+    color: "#548D60",
     marginTop: 5,
     textAlign: "center",
     ...Typography.header20,
@@ -128,8 +126,8 @@ const styles = StyleSheet.create({
     opacity: 0.3,
   },
   arrow: {
-    fontSize: 24,
-    color: "blue",
+    fontSize: 30,
+    color: Color.black,
   },
   questionInfo: {
     flex: 1,
@@ -145,7 +143,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 6,
-    backgroundColor: "lightgray",
+    backgroundColor: "#F9F7F2",
     marginHorizontal: 7,
   },
   hiddenAnswer: {
@@ -154,7 +152,7 @@ const styles = StyleSheet.create({
   hintText: {
     marginTop: 8,
     fontStyle: "italic",
-    color: "#555",
+    color: Color.grey,
     textAlign: "center",
     fontSize: 14,
   },

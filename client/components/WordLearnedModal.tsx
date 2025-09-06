@@ -13,6 +13,11 @@ import {
   fetchGamePronunciations,
   PronunciationItem,
 } from "@/services/pronunciationService";
+import { Color } from "@/theme/Color";
+import { Typography } from "@/theme/Font";
+import Home from "@/assets/icon/Home";
+import Play from "@/assets/icon/Play";
+import Stop from "@/assets/icon/Stop";
 
 function cap(s: string) {
   if (!s) return s;
@@ -31,7 +36,6 @@ type Props = {
   onClose: () => void;
   gameId: number | string;
   words: string[];
-  timeUsedSeconds?: number;
 };
 
 const asArray = <T,>(v: any): T[] =>
@@ -50,7 +54,6 @@ export default function WordLearnedModal({
   onClose,
   gameId,
   words,
-  timeUsedSeconds,
 }: Props) {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -83,7 +86,9 @@ export default function WordLearnedModal({
 
         const seen = new Set<string>();
         const unique = words.filter((w) => {
-          const k = String(w?.word ?? "").trim().toLowerCase();
+          const k = String(w?.word ?? "")
+            .trim()
+            .toLowerCase();
           if (!k || seen.has(k)) return false;
           seen.add(k);
           return true;
@@ -122,14 +127,6 @@ export default function WordLearnedModal({
     }
     return map;
   }, [pronunciations]);
-
-  function formatDuration(totalSec?: number) {
-    if (typeof totalSec !== "number") return "";
-    const sec = Math.max(0, Math.floor(totalSec));
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return m > 0 ? `${m}m ${s}s` : `${s}s`;
-  }
 
   async function play(item?: PronunciationItem) {
     if (!item?.dataUrl) return;
@@ -181,7 +178,9 @@ export default function WordLearnedModal({
       )
     )
     .map(({ word }) => {
-      const key = String(word ?? "").trim().toLowerCase();
+      const key = String(word ?? "")
+        .trim()
+        .toLowerCase();
       return { word: String(word ?? ""), item: byWord.get(key) };
     });
 
@@ -195,14 +194,6 @@ export default function WordLearnedModal({
       <View style={styles.overlay}>
         <View style={styles.modal}>
           <Text style={styles.title}>Word Learned</Text>
-
-          <Text style={styles.subTitle}>
-            {`Words learned: ${words?.length ?? 0}${
-              typeof timeUsedSeconds === "number"
-                ? `  •  Time used: ${formatDuration(timeUsedSeconds)}`
-                : ""
-            }`}
-          </Text>
 
           {loading ? (
             <View style={styles.center}>
@@ -224,23 +215,32 @@ export default function WordLearnedModal({
                 const index = i + 1;
                 return (
                   <View key={word} style={styles.row}>
-                    <View style={styles.indexBox}>
-                      <Text style={styles.indexText}>{index}</Text>
-                    </View>
-                    <Pressable
-                      onPress={() => canPlay && play(item)}
-                      disabled={!canPlay}
-                      style={[
-                        styles.soundBtn,
-                        !canPlay && styles.soundBtnDisabled,
-                      ]}
+                    <Text style={styles.indexText}>{index}.</Text>
+
+                    <View
+                      style={[styles.chip, !canPlay && styles.chipDisabled]}
                     >
-                      <Text style={styles.soundEmoji}>
-                        {active ? "⏸" : "🔊"}
+                      <Pressable
+                        onPress={() => canPlay && play(item)}
+                        disabled={!canPlay}
+                        style={[
+                          styles.soundBtn,
+                          !canPlay && styles.soundBtnDisabled,
+                        ]}
+                      >
+                        <Text style={styles.soundEmoji}>
+                          {active ? <Stop/> : <Play/>}
+                        </Text>
+                      </Pressable>
+
+                      <Text style={styles.word} numberOfLines={1}>
+                        {cap(word)}
                       </Text>
-                    </Pressable>
-                    <Text style={styles.word}>{cap(word)}</Text>
-                    {!canPlay && <Text style={styles.missing}>(no audio)</Text>}
+
+                      {!canPlay && (
+                        <Text style={styles.missing}>(no audio)</Text>
+                      )}
+                    </View>
                   </View>
                 );
               })}
@@ -248,7 +248,7 @@ export default function WordLearnedModal({
           )}
 
           <View style={styles.footer}>
-            <CustomButton type="small" onPress={onClose} label="Home" />
+            <CustomButton type="small" onPress={onClose} icon={<Home />} />
           </View>
         </View>
       </View>
@@ -265,24 +265,20 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   modal: {
-    width: 560,
+    width: "50%",
     maxWidth: "95%",
     maxHeight: "85%",
-    backgroundColor: "#fff",
-    borderRadius: 16,
+    backgroundColor: Color.lightblue,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    borderRadius: 20,
     padding: 16,
+    alignItems: "center",
   },
   title: {
-    fontSize: 22,
-    fontWeight: "800",
+    ...Typography.header30,
     textAlign: "center",
-    marginBottom: 4,
-  },
-  subTitle: {
-    fontSize: 14,
-    color: "#6b7280",
-    textAlign: "center",
-    marginBottom: 10,
+    marginVertical: 10,
   },
   center: {
     alignItems: "center",
@@ -290,37 +286,55 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   error: { color: "#c0392b" },
-  list: { paddingVertical: 8 },
+
+  list: { paddingVertical: 8, width: "100%" },
+
   row: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#eee",
+    width: "100%",
+    paddingHorizontal: 12,
+    marginVertical: 6,
   },
+
+  indexText: {
+    ...Typography.header25,
+    width: 50,
+    textAlign: "right",
+    marginRight: 12,
+    backgroundColor: Color.grey,
+  },
+
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Color.white,
+    borderRadius: 99,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    flex: 1,
+    minHeight: 48,
+  },
+  chipDisabled: {
+    opacity: 0.8,
+  },
+
   soundBtn: {
-    width: 36,
-    height: 36,
+    width: 39,
+    height: 39,
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#eef2f7",
-    marginRight: 10,
+    marginRight: 12,
   },
-  soundBtnDisabled: { opacity: 0.4 },
-  soundEmoji: { fontSize: 18 },
-  word: { fontSize: 18, fontWeight: "600", color: "#25303b" },
+  soundBtnDisabled: { opacity: 0.5 },
+
+  soundEmoji: { fontSize: 30 },
+
+  word: { ...Typography.header25, flexShrink: 1 },
+
   missing: { marginLeft: 8, fontSize: 12, color: "#a3a8af" },
+
   footer: { marginTop: 8, alignItems: "center" },
-  indexBox: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#f1f5f9",
-    marginRight: 10,
-  },
-  indexText: { fontSize: 14, fontWeight: "700", color: "#4b5563" },
 });
