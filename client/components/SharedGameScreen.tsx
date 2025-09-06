@@ -15,10 +15,7 @@ import Restart from "../assets/icon/Restart";
 import ArrowRight from "@/assets/icon/ArrowRight";
 import WordLearnedModal from "./WordLearnedModal";
 import { fetchGamePronunciations } from "@/services/pronunciationService";
-import {
-  saveFoundWordsOnce,
-  completeGame,
-} from "@/services/gameService";
+import { saveFoundWordsOnce, completeGame } from "@/services/gameService";
 
 export default function SharedGameScreen({
   mode,
@@ -85,13 +82,7 @@ export default function SharedGameScreen({
       showHintForAnswer,
     });
 
-  function formatDuration(totalSec: number) {
-    const sec = Math.max(0, Math.floor(totalSec || 0));
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    if (m <= 0) return `${s}s`;
-    return `${m}m ${s}s`;
-  }
+  const hasTimer = !!(gameData?.timer && gameData.timer > 0);
 
   const hardResetRound = () => {
     setAllFoundVisible(false);
@@ -186,10 +177,10 @@ export default function SharedGameScreen({
       gameData?.id,
       foundWordsList,
       questionsAndAnswers
-    ).catch((err: any) => console.warn("[wordfound] post failed:", err));
+    ).catch((err) => console.error("[wordfound] post failed:", err));
 
     postCompletionOnce().catch((err) =>
-      console.warn("[completeGame] post failed:", err)
+      console.error("[completeGame] post failed:", err)
     );
   }, [
     allFoundVisible,
@@ -204,24 +195,6 @@ export default function SharedGameScreen({
   }, [roundKey]);
 
   const wordsLearnedCount = foundWordsList.length;
-
-  const winMessage = [
-    "You have found all the words on time!",
-    awardedCoins != null ? `+${awardedCoins} coins` : null,
-    `Words learned: ${wordsLearnedCount}`,
-    usedSeconds != null ? `Time used: ${formatDuration(usedSeconds)}` : null,
-  ]
-    .filter(Boolean)
-    .join("\n");
-
-  const timeUpMessage = [
-    "You can no longer continue the game.",
-    awardedCoins != null ? `+${awardedCoins} coins` : null,
-    `Words learned: ${wordsLearnedCount}`,
-    usedSeconds != null ? `Time used: ${formatDuration(usedSeconds)}` : null,
-  ]
-    .filter(Boolean)
-    .join("\n");
 
   return (
     <View style={styles.container}>
@@ -238,7 +211,9 @@ export default function SharedGameScreen({
             hintCount={hintCount ?? 0}
             isHintDisabled={isHintDisabled}
             startTimeSeconds={gameData?.timer ?? 0}
-            onTimeUp={() => setTimeUp(true)}
+            onTimeUp={() => {
+              if (hasTimer) setTimeUp(true);
+            }}
             paused={allFoundVisible || timeUp}
             resetKey={roundKey}
           />
@@ -280,23 +255,28 @@ export default function SharedGameScreen({
 
       {!wordModalVisible && (
         <>
+          {/* SUCCESS modal */}
           <GameEndModal
             visible={allFoundVisible}
-            title="EXCELLENT!"
-            message={winMessage}
-            onConfirm={hardResetRound}
-            onClose={openWordModal}
-            confirmIcon={<Restart />}
-            closeIcon={<ArrowRight />}
+            variant="success"
+            hasTimer={hasTimer}
+            timeUsedSeconds={usedSeconds ?? undefined}
+            coinsEarned={awardedCoins ?? undefined}
+            wordsLearned={wordsLearnedCount}
+            onRestart={hardResetRound}
+            onContinue={openWordModal}
+            restartIcon={<Restart />}
+            continueIcon={<ArrowRight />}
           />
+
+          {/* TIMEOUT / NOT COMPLETED modal (only meaningful with timer) */}
           <GameEndModal
-            visible={timeUp}
-            title="Time's Up!"
-            message={timeUpMessage}
-            onConfirm={hardResetRound}
-            onClose={openWordModal}
-            confirmIcon={<Restart />}
-            closeIcon={<ArrowRight />}
+            visible={timeUp && hasTimer}
+            variant="timeout"
+            onRestart={hardResetRound}
+            onContinue={openWordModal}
+            restartIcon={<Restart />}
+            continueIcon={<ArrowRight />}
           />
         </>
       )}
@@ -306,7 +286,6 @@ export default function SharedGameScreen({
         onClose={() => router.replace("/Home")}
         gameId={gameData?.id ?? 0}
         words={foundWordsList}
-        timeUsedSeconds={usedSeconds ?? undefined}
       />
     </View>
   );
@@ -314,13 +293,14 @@ export default function SharedGameScreen({
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, justifyContent: "flex-start" },
-  topRow: { flexDirection: "row", flex: 1, marginBottom: 10 },
+  topRow: { flexDirection: "row", flex: 1, paddingBottom: 20},
   leftColumn: { width: 300, justifyContent: "center", marginRight: 30 },
   rightColumn: { flex: 1, marginTop: 20, justifyContent: "center" },
   itemWrapper: {
     flexDirection: "row",
     justifyContent: "center",
     flexWrap: "wrap",
+    alignSelf: "stretch",
   },
   backButton: {
     position: "absolute",
@@ -328,7 +308,7 @@ const styles = StyleSheet.create({
     left: 16,
     zIndex: 10,
     padding: 8,
-    backgroundColor: "rgba(249, 249, 249, 0.8)",
+    backgroundColor: "#F9F7F2",
     borderRadius: 50,
   },
 });

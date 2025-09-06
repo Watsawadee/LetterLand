@@ -1,12 +1,8 @@
 import React from "react";
-import {
-  Modal,
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-} from "react-native";
+import { Modal, View, Text, Pressable, StyleSheet } from "react-native";
 import { ConfirmModalProps } from "../types/type";
+import { Color } from "../theme/Color";
+import { Typography } from "@/theme/Font";
 
 export default function ConfirmModal({
   visible = false,
@@ -14,8 +10,8 @@ export default function ConfirmModal({
   message,
   onConfirm,
   onCancel,
-  confirmText = "OK",
-  cancelText = "Cancel",
+  confirmText = "Yes",
+  cancelText = "No",
 }: ConfirmModalProps) {
   return (
     <Modal
@@ -26,18 +22,24 @@ export default function ConfirmModal({
     >
       <View style={styles.backdrop}>
         <View style={styles.container}>
-          {title && <Text style={styles.title}>{title}</Text>}
-          {message && <Text style={styles.message}>{message}</Text>}
+          {!!title && <Text style={styles.title}>{title}</Text>}
+          {!!message && <Text style={styles.message}>{message}</Text>}
 
           <View style={styles.buttons}>
-            <Pressable onPress={onCancel} style={[styles.button]}>
-              <Text style={[styles.buttonText, { color: "blue" }]}>
+            <Pressable
+              onPress={onCancel}
+              style={[styles.button, styles.leftBtn]}
+            >
+              <Text style={[styles.buttonText, styles.leftText]}>
                 {cancelText}
               </Text>
             </Pressable>
 
-            <Pressable onPress={onConfirm} style={[styles.button, styles.confirm]}>
-              <Text style={[styles.buttonText, { color: "white" }]}>
+            <Pressable
+              onPress={onConfirm}
+              style={[styles.button, styles.rightBtn]}
+            >
+              <Text style={[styles.buttonText, styles.rightText]}>
                 {confirmText}
               </Text>
             </Pressable>
@@ -51,25 +53,66 @@ export default function ConfirmModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(0,0,0,0.45)",
     justifyContent: "center",
     alignItems: "center",
+    padding: 24,
   },
   container: {
-    width: 300,
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 20,
+    width: 500,
+    maxWidth: "90%",
+    backgroundColor: Color.lightblue,
+    borderRadius: 18,
+    paddingVertical: 22,
+    paddingHorizontal: 20,
+    shadowColor: Color.black,
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
   },
-  title: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
-  message: { fontSize: 16, marginBottom: 20 },
-  buttons: { flexDirection: "row", justifyContent: "flex-end" },
+  title: {
+    textAlign: "center",
+    marginBottom: 6,
+  },
+  message: {
+    ...Typography.popupbody20,
+    color: Color.gray,
+    textAlign: "center",
+    marginBottom: 18,
+  },
+  buttons: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 14,
+  },
   button: {
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    marginLeft: 10,
-    borderRadius: 6,
+    minWidth: 104,
+    paddingVertical: 12,
+    paddingHorizontal: 35,
+    borderRadius: 16,
+    alignItems: "center",
   },
-  buttonText: { fontSize: 16 },
-  confirm: { backgroundColor: "blue" },
+  leftBtn: {
+    backgroundColor: Color.white,
+    borderWidth: 1,
+    borderColor: Color.lightblue,
+    borderRadius: 12,
+    shadowColor: Color.gray,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+  },
+  leftText: {
+    color: Color.gray,
+    ...Typography.popupbody20,
+  },
+  rightBtn: {
+    backgroundColor: Color.blue,
+  },
+  rightText: {
+    color: Color.white,
+    ...Typography.popupbody20,
+  },
+  buttonText: {},
 });
