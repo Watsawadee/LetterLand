@@ -2,11 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { getTotalGameThisWeek, getUserTotalPlaytime, getUserWordLearned } from "@/services/dashboardService";
 import { WeeklyGameData } from "@/types/weeklyGamePlayedProps";
 
-export const useTotalGamesThisWeek = () => {
+export const useTotalGamesThisWeek = (offSet: number) => {
     return (
         useQuery<WeeklyGameData>({
-            queryKey: ["games played this week"],
-            queryFn: () => getTotalGameThisWeek(),
+            queryKey: ["games played this week", offSet],
+            queryFn: () => getTotalGameThisWeek(offSet),
             staleTime: 1000 * 60 * 5,
             retry: false,
             refetchOnWindowFocus: false,

@@ -28,6 +28,16 @@ export default function Layout() {
       const token = await getToken();
       const inAuthGroup = segments[0] === "authentication";
 
+      if (pathName === "/") {
+        if (token) {
+          router.replace("/Home");
+        } else {
+          router.replace("/authentication/login");
+        }
+        setIsChecking(false);
+        return;
+      }
+
       if (!token && !inAuthGroup && pathName !== "/authentication/login") {
         router.replace("/authentication/login");
       } else if (token && inAuthGroup && pathName !== "/Home") {

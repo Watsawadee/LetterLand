@@ -42,12 +42,12 @@ const asArray = <T,>(v: any): T[] =>
   Array.isArray(v)
     ? v
     : Array.isArray(v?.data?.game)
-    ? v.data.game
-    : Array.isArray(v?.results)
-    ? v.results
-    : Array.isArray(v?.items)
-    ? v.items
-    : [];
+      ? v.data.game
+      : Array.isArray(v?.results)
+        ? v.results
+        : Array.isArray(v?.items)
+          ? v.items
+          : [];
 
 export default function WordLearnedModal({
   visible,
@@ -112,7 +112,7 @@ export default function WordLearnedModal({
     return () => {
       try {
         soundRef.current?.unloadAsync();
-      } catch {}
+      } catch { }
       soundRef.current = null;
     };
   }, []);
@@ -135,13 +135,13 @@ export default function WordLearnedModal({
       if (soundRef.current) {
         try {
           await soundRef.current.stopAsync();
-        } catch {}
+        } catch { }
         try {
           await soundRef.current.unloadAsync();
-        } catch {}
+        } catch { }
         soundRef.current = null;
       }
-    } catch {}
+    } catch { }
 
     try {
       if (Platform.OS === "web") {
@@ -229,7 +229,7 @@ export default function WordLearnedModal({
                         ]}
                       >
                         <Text style={styles.soundEmoji}>
-                          {active ? <Stop/> : <Play/>}
+                          {active ? <Stop /> : <Play />}
                         </Text>
                       </Pressable>
 

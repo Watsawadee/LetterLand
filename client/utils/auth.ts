@@ -10,6 +10,13 @@ export const getToken = async (): Promise<string | null> => {
     return await SecureStore.getItemAsync("user-token");
   }
 };
+export const setToken = async (token: string): Promise<void> => {
+  if (Platform.OS === "web") {
+    localStorage.setItem("user-token", token);
+  } else {
+    await SecureStore.setItemAsync("user-token", token);
+  }
+};
 
 export const getLoggedInUserId = async (): Promise<string | null> => {
   const token = await getToken();
@@ -36,3 +43,5 @@ export const getDecodedToken = async (): Promise<DecodedToken | null> => {
     return null;
   }
 };
+
+

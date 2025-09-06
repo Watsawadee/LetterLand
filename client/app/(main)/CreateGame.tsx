@@ -11,7 +11,6 @@ import {
   TextInput,
   Card,
 } from "react-native-paper";
-import { theme } from "@/theme";
 import { useCreateGameFromGemini } from "@/hooks/useCreateGeminiGame";
 import { CreateGameFromGeminiRequest } from "../../libs/type";
 import GardenBackground from "@/assets/backgroundTheme/GardenBackground";
@@ -19,6 +18,7 @@ import GardenBackgroundBlueSky from "@/assets/backgroundTheme/GardenBackgroundBl
 import PlainTextIcon from "@/assets/icon/plainText";
 import LinkIcon from "@/assets/icon/linkIcon";
 import PdfIcon from "@/assets/icon/pdfIcon";
+import { Color } from "@/theme/Color";
 
 const CreateGameScreen = () => {
   const router = useRouter();
@@ -78,6 +78,17 @@ const CreateGameScreen = () => {
 
   }, [user]);
 
+
+  //Map CEFR level to its color
+  const levelColors: Record<string, string> = {
+    A1: Color.A1,
+    A2: Color.A2,
+    B1: Color.B1,
+    B2: Color.B2,
+    C1: Color.C1,
+    C2: Color.C2,
+  };
+
   const isCreating =
     (createGameMutation as any).isPending ??
     (createGameMutation.status === "pending");
@@ -118,7 +129,15 @@ const CreateGameScreen = () => {
         isPublic
       },
       file: pdfFile
-    });
+    },
+      {
+        onSuccess: (game) => {
+          const id = String(game.id);
+          router.replace({ pathname: "/gameScreen", params: { gameId: id } });
+        },
+      }
+    );
+
   };
 
   if (isError) {
@@ -178,7 +197,7 @@ const CreateGameScreen = () => {
               <Text variant="titleLarge" style={{ fontWeight: "800", color: "#333" }}>
                 Create Puzzle
               </Text>
-              <View style={{ gap: 8 }}>
+              <View style={{ gap: 10 }}>
                 <Text style={{ fontWeight: "700", color: "#555" }}>English Level</Text>
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                   {["A1", "A2", "B1", "B2", "C1", "C2"].map((level) => (
@@ -189,42 +208,46 @@ const CreateGameScreen = () => {
                         marginRight: 8,
                         marginBottom: 8,
                         borderRadius: 20,
-                        borderColor: englishLevel === level ? "#EF476F" : "#ddd",
-                        backgroundColor: englishLevel === level ? "#EF476F" : "#fff",
+                        borderColor: englishLevel === level ? levelColors[level] : "#ddd",
+                        backgroundColor: englishLevel === level ? levelColors[level] : "#fff",
                       }}
                     >
-                      <Text style={{ color: englishLevel === level ? theme.colors.white : theme.colors.darkGrey, fontWeight: "bold" }}>
+                      <Text style={{ color: englishLevel === level ? Color.white : Color.gray, fontWeight: "bold" }}>
                         {level}
                       </Text>
                     </Button>
                   ))}
                 </View>
-                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                  {TIMER_OPTIONS.map((t) => {
-                    const active = timer === t;
-                    return (
-                      <Button
-                        key={t}
-                        style={{
-                          marginRight: 8,
-                          marginBottom: 8,
-                          borderRadius: 20,
-                          backgroundColor: active ? "#58A7F8" : "#fff",
-                          borderColor: "#ddd",
-                        }}
-                        onPress={() => setTimer(t)}
-                      >
-                        <Text
+
+                <View style={{ flexDirection: "column", gap: 8 }}>
+                  <Text style={{ fontWeight: "700", color: "#555" }}>Timer</Text>
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                    {TIMER_OPTIONS.map((t) => {
+                      const active = timer === t;
+                      return (
+                        <Button
+                          key={t}
                           style={{
-                            color: active ? theme.colors.white : theme.colors.darkGrey,
-                            fontWeight: "bold",
+                            marginRight: 8,
+                            marginBottom: 8,
+                            borderRadius: 20,
+                            backgroundColor: active ? "#58A7F8" : "#fff",
+                            borderColor: "#ddd",
                           }}
+                          onPress={() => setTimer(t)}
                         >
-                          {formatTimerLabel(t)}
-                        </Text>
-                      </Button>
-                    );
-                  })}
+                          <Text
+                            style={{
+                              color: active ? Color.white : Color.gray,
+                              fontWeight: "bold",
+                            }}
+                          >
+                            {formatTimerLabel(t)}
+                          </Text>
+                        </Button>
+                      );
+                    })}
+                  </View>
                 </View>
                 <View style={{ flexDirection: "column", gap: 8 }}>
                   <Text style={{ fontWeight: "700", color: "#555" }}>Privacy</Text>
@@ -239,7 +262,7 @@ const CreateGameScreen = () => {
                     >
                       <Text
                         style={{
-                          color: isPublic ? theme.colors.white : theme.colors.darkGrey,
+                          color: isPublic ? Color.white : Color.gray,
                           fontWeight: "bold",
                         }}
                       >
@@ -257,7 +280,7 @@ const CreateGameScreen = () => {
                     >
                       <Text
                         style={{
-                          color: !isPublic ? theme.colors.white : theme.colors.darkGrey,
+                          color: !isPublic ? Color.white : Color.gray,
                           fontWeight: "bold",
                         }}
                       >
@@ -267,41 +290,44 @@ const CreateGameScreen = () => {
                   </View>
                 </View>
 
-                <Text style={{ fontWeight: "700", color: "#555" }}>
-                  Upload type
-                </Text>
-                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                  {[
-                    { key: "text" as const, label: "Text", Icon: PlainTextIcon },
-                    { key: "link" as const, label: "Link", Icon: LinkIcon },
-                    { key: "pdf" as const, label: "PDF", Icon: PdfIcon },
-                  ].map(({ key, label, Icon }) => {
-                    const isActive = uploadType === key;
+                <View style={{ flexDirection: "column", gap: 8 }}>
+                  <Text style={{ fontWeight: "700", color: "#555" }}>
+                    Upload type
+                  </Text>
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                    {[
+                      { key: "text" as const, label: "Text", Icon: PlainTextIcon },
+                      { key: "link" as const, label: "Link", Icon: LinkIcon },
+                      { key: "pdf" as const, label: "PDF", Icon: PdfIcon },
+                    ].map(({ key, label, Icon }) => {
+                      const isActive = uploadType === key;
 
-                    return (
-                      <Button
-                        key={key}
-                        icon={() => (
-                          <Icon
-                            size={20}
-                            fill={isActive ? theme.colors.white : theme.colors.darkGrey}
-                          />
-                        )}
-                        style={{
-                          marginRight: 8,
-                          marginBottom: 8,
-                          borderRadius: 20,
-                          backgroundColor: isActive ? "#58A7F8" : "#fff",
-                          borderColor: "#ddd",
-                        }}
-                        onPress={() => handleUploadTypeSelect(key)}
-                        contentStyle={{ flexDirection: "row-reverse" }} // icon on left, label after (optional)
-                        labelStyle={{ fontWeight: "bold", color: isActive ? theme.colors.white : theme.colors.darkGrey }}
-                      >
-                        {label}
-                      </Button>
-                    );
-                  })}
+                      return (
+                        <Button
+                          key={key}
+                          icon={() => (
+                            <Icon
+                              size={20}
+                              fill={isActive ? Color.white : Color.gray}
+                            />
+                          )}
+                          style={{
+                            marginRight: 8,
+                            marginBottom: 8,
+                            borderRadius: 20,
+                            backgroundColor: isActive ? "#58A7F8" : "#fff",
+                            borderColor: "#ddd",
+                          }}
+                          onPress={() => handleUploadTypeSelect(key)}
+                          contentStyle={{ flexDirection: "row-reverse" }} // icon on left, label after (optional)
+                          labelStyle={{ fontWeight: "bold", color: isActive ? Color.white : Color.gray }}
+                        >
+                          {label}
+                        </Button>
+
+                      );
+                    })}
+                  </View>
                 </View>
               </View>
 
@@ -311,16 +337,19 @@ const CreateGameScreen = () => {
                 style={{
                   marginBottom: 12,
                   backgroundColor: "#FFF",
-                  borderRadius: 12,
+                  borderRadius: 20,
                   marginTop: 16,
+                  minHeight: 125,
                 }}
                 value={input}
                 onChangeText={setInput}
                 editable={uploadType !== "pdf"}
                 mode="outlined"
+                outlineColor="#5B6073"
                 autoCapitalize="none"
                 textColor="black"
-                activeOutlineColor="#5B6073"
+                activeOutlineColor={Color.blue}
+
               />
               <Button
                 mode="contained"
@@ -328,7 +357,7 @@ const CreateGameScreen = () => {
                 loading={createGameMutation.status === "pending"}
                 disabled={createGameMutation.status === "pending"}
                 style={{
-                  backgroundColor: "#007AFF",
+                  backgroundColor: Color.blue,
                   borderRadius: 20,
                   alignSelf: "center",
                   marginTop: 16,

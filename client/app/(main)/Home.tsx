@@ -18,15 +18,17 @@ import mascot from "@/assets/images/mascot.png";
 import Book from "@/assets/icon/Book";
 import AchievementsRow from "../../components/AchievementRow";
 import { fetchUserCoins } from "@/services/achievementService";
+import { useUserProfile } from "@/hooks/useGetUserProfile";
+import { getDecodedToken } from "@/utils/auth";
 
 export default function Home() {
   const router = useRouter();
   const [showBook, setShowBook] = useState(false);
+  const [username, setUsername] = useState<string | null>(null);
+
   const { width } = useWindowDimensions();
   const isWide = width >= 1024;
-  const token = undefined;
   const [coins, setCoins] = useState(0);
-
   // Load the user’s current coins once at mount
   useEffect(() => {
     const loadCoins = async () => {
@@ -38,6 +40,14 @@ export default function Home() {
       }
     };
     loadCoins();
+  }, []);
+  useEffect(() => {
+    const fetchUsername = async () => {
+      const decoded = await getDecodedToken();
+      setUsername(decoded?.username ?? null);
+    };
+
+    fetchUsername();
   }, []);
 
   return (
@@ -63,10 +73,10 @@ export default function Home() {
               />
               <View>
                 <Text style={[Typography.header25, { marginBottom: 4 }]}>
-                  Hello Watsawadee Saeyong
+                  Hello {username}
                 </Text>
                 <Text style={[Typography.body20, { opacity: 0.8 }]}>
-                  How are you? Long time no see LEK
+                  How are you? Long time no see {username}
                 </Text>
               </View>
             </View>
@@ -89,19 +99,19 @@ export default function Home() {
 
           {/* ⬇️ ACHIEVEMENT SECTION (live data) */}
           <AchievementsRow
-  onCoinsUpdated={(newBalance) => {
-    setCoins(newBalance); // your local/global coin setter
-  }}
-/>
+            onCoinsUpdated={(newBalance) => {
+              setCoins(newBalance); // your local/global coin setter
+            }}
+          />
 
           {/* Recent game title row */}
           <View style={styles.sectionHeader}>
-  <Text style={Typography.header25}>Recent game</Text>
-  
-  <TouchableOpacity onPress={() => router.push("/Myboard")}>
-    <Text style={[Typography.body14, styles.link]}>view all</Text>
-  </TouchableOpacity>
-</View>
+            <Text style={Typography.header25}>Recent game</Text>
+
+            <TouchableOpacity onPress={() => router.push("/Myboard")}>
+              <Text style={[Typography.body14, styles.link]}>view all</Text>
+            </TouchableOpacity>
+          </View>
 
           {/* Your games row */}
           <MyGamesRow title=" " scrollDirection="horizontal" />
@@ -109,7 +119,7 @@ export default function Home() {
 
         {/* RIGHT SIDEBAR */}
         <View style={styles.rightPanel}>
-        <UserOverviewCard coins={coins} />
+          <UserOverviewCard coins={coins} />
         </View>
       </View>
     </View>

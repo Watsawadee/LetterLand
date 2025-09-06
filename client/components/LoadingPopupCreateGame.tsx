@@ -1,4 +1,4 @@
-import { theme } from "@/theme";
+import { Color } from "@/theme/Color";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Modal, View, Text, ActivityIndicator, BackHandler, StyleSheet } from "react-native";
 import { ProgressBar } from "react-native-paper";
@@ -96,7 +96,7 @@ const LoadingPopup = ({ visible, uploadType, progress, lockBackButton = true }: 
                 <View style={styles.card}>
                     <View style={styles.progressWrap}>
                         <ProgressBar progress={value}
-                            color={theme.colors.blue}
+                            color={Color.blue}
                         />
                         <Text style={styles.percent}>{percent}% • Generating your puzzle…</Text>
                     </View>

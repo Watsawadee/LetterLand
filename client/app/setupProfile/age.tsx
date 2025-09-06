@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Card, Text, TextInput, Button } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { getLoggedInUserId } from "@/utils/auth";
+import GardenBackground from "@/assets/backgroundTheme/GardenBackground";
 export default function AgeScreen() {
   const [age, setAge] = useState("");
   const router = useRouter();
@@ -32,6 +33,19 @@ export default function AgeScreen() {
         padding: 24,
       }}
     >
+      <GardenBackground
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          width: "100%",
+          height: 1000,
+          zIndex: 0,
+        }}
+      />
+
+
 
       <Card
         style={{
@@ -56,7 +70,9 @@ export default function AgeScreen() {
           value={age}
           onChangeText={setAge}
           mode="outlined"
-          style={{ marginBottom: 16 }}
+          textColor="black"
+          activeOutlineColor="#5B6073"
+          style={{ marginBottom: 12, backgroundColor: "transparent" }}
         />
 
         <Button

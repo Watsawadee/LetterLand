@@ -4,6 +4,8 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { getWords, setupProfile } from "../../services/setupUser";
 import { ActivityIndicator, Button, Card, Text } from "react-native-paper";
 import { getLoggedInUserId } from "@/utils/auth";
+import GardenBackground from "@/assets/backgroundTheme/GardenBackground";
+import { Color } from "@/theme/Color";
 const VocabEvalScreen = () => {
   const { age } = useLocalSearchParams<{
     age: string;
@@ -91,13 +93,26 @@ const VocabEvalScreen = () => {
         padding: 16,
       }}
     >
+      <GardenBackground
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          width: "100%",
+          height: 1000,
+          zIndex: 0,
+        }}
+      />
       <Card
         style={{
           padding: 24,
           width: "90%",
-          maxWidth: "50%",
+          maxWidth: "80%",
           borderRadius: 16,
           gap: 16,
+          backgroundColor: "transparent",
+
         }}
       >
         <Text
@@ -124,9 +139,13 @@ const VocabEvalScreen = () => {
               key={index}
               style={{
                 margin: 4,
-                backgroundColor: selectedWords.includes(word) ? "#FF7E1D" : "white",
-                borderColor: "#FF7E1D",
+                backgroundColor: selectedWords.includes(word) ? "#58A7F8" : "white",
+                borderColor: "#58A7F8",
                 borderRadius: 12,
+              }}
+              labelStyle={{
+                color: selectedWords.includes(word) ? "white" : "#58A7F8",
+                fontWeight: "600",
               }}
               onPress={() => handleWordToggle(word)}
             >
@@ -139,11 +158,10 @@ const VocabEvalScreen = () => {
           mode="contained"
           onPress={handleSubmit}
           style={{
-            backgroundColor: "#007AFF",
+            backgroundColor: "#58A7F8",
             borderRadius: 10,
             marginTop: 20,
             alignSelf: "center",
-            paddingHorizontal: 16,
           }}
         >
           <Text style={{ color: "white", fontWeight: "800", fontSize: 16 }}>

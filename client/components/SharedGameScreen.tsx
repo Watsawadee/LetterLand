@@ -43,7 +43,7 @@ export default function SharedGameScreen({
 
   useEffect(() => {
     if (!gameData?.id) return;
-    fetchGamePronunciations(gameData.id).catch(() => {});
+    fetchGamePronunciations(gameData.id).catch(() => { });
   }, [gameData?.id]);
 
   const {
@@ -149,10 +149,10 @@ export default function SharedGameScreen({
         foundWordsList,
         questionsAndAnswers
       );
-    } catch {}
+    } catch { }
     try {
       await postCompletionOnce();
-    } catch {}
+    } catch { }
 
     setWordModalVisible(true);
     setTimeUp(false);
@@ -293,7 +293,7 @@ export default function SharedGameScreen({
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, justifyContent: "flex-start" },
-  topRow: { flexDirection: "row", flex: 1, paddingBottom: 20},
+  topRow: { flexDirection: "row", flex: 1, paddingBottom: 20 },
   leftColumn: { width: 300, justifyContent: "center", marginRight: 30 },
   rightColumn: { flex: 1, marginTop: 20, justifyContent: "center" },
   itemWrapper: {

@@ -9,6 +9,7 @@ import { ErrorResponseSchema, GetWordsOrErrorSchema, GetWordsResponseSchema, Oxf
 import { UserProfileOrErrorSchema, UserProfileResponseSchema } from "./userProfile.schema";
 import { GamesPlayedPerWeekOrErrorSchema, TotalPlaytimeOrErrorSchema, WordsLearnedOrErrorSchema } from "./dashboard.schema";
 import { CreateGameFromGeminiRequestSchema, CreateGameFromGeminiResponseSchema, EnglishLevelSchema, GameTypeSchema, MaterialTypeSchema } from "./createGame.schema";
+import { UpdateUserProfileResponse, UpdateUserSettingSchema } from "./setting.schema";
 export type LoginRequest = z.infer<typeof LoginRequestSchema>;
 export type LoginResponse = z.infer<typeof LoginResponseSchema>;
 export type RegisterRequest = z.infer<typeof RegisterRequestSchema>;
@@ -43,3 +44,8 @@ export type EnglishLevel = z.infer<typeof EnglishLevelSchema>;
 
 export type CreateGameFromGeminiRequest = z.infer<typeof CreateGameFromGeminiRequestSchema>;
 export type CreateGameFromGeminiResponse = z.infer<typeof CreateGameFromGeminiResponseSchema>;
+
+
+//User Setting
+export type UpdateUserProfileInput = z.infer<typeof UpdateUserSettingSchema>;
+export type UpdateUserProfileResponse = z.infer<typeof UpdateUserProfileResponse>

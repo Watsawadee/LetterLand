@@ -7,14 +7,14 @@ import { useUserProfile } from "@/hooks/useGetUserProfile";
 import coinIcon from "../assets/images/coin.png"
 import Explore from "../assets/images/Explore.png"
 import { Button, Card, Dialog, Portal, Text } from "react-native-paper";
-import { theme } from "@/theme";
+import mascot from "@/assets/images/mascot.png";
 import SettingIcon from "@/assets/icon/settingIcon";
+import { Color } from "@/theme/Color";
+import { Typography } from "@/theme/Font";
 
 type Props = {
   coins?: number;
 };
-
-
 const UserOverviewCard = ({ coins }: Props) => {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
@@ -72,124 +72,140 @@ const UserOverviewCard = ({ coins }: Props) => {
         borderRadius: 16,
         marginBottom: 16,
         gap: 20,
-        maxWidth: "100%",
+        minWidth: "30%",
         height: "100%",
       }}
     >
-
-        <View style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", alignContent: "center", gap: 5 }}>
-          <View style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-            <Text
-              variant="titleMedium" style={{ fontWeight: "700", color: theme.colors.darkGrey, display: "flex", alignContent: "flex-start" }}
+      <View style={{ display: "flex", flexDirection: "column", gap: "30%" }}>
+        <View style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <View style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", alignContent: "center", gap: 5 }}>
+            <View style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+              <Text
+                variant="titleMedium" style={{ fontWeight: "700", color: Color.gray, display: "flex", alignContent: "flex-start" }}
+              >
+                {user.username}
+              </Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                <Image source={coinIcon} style={{ width: 30, height: 30, }} />
+                <Text style={{ color: Color.gray }}>{typeof coins === "number" ? coins : user.coin}</Text>
+              </View>
+            </View>
+            <Button
+              onPress={() => router.push("/setting")}
+              contentStyle={{ padding: 0 }}
+              style={{ width: undefined, minWidth: 0, padding: 0, borderRadius: 50 }}
+              theme={{ roundness: 1 }}
+              rippleColor="transparent"
+              compact
+              icon={({ size }) => (
+                <SettingIcon width={size} height={size} fill={Color.gray} />
+              )}
             >
-              {user.username}
-            </Text>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-              <Image source={coinIcon} style={{ width: 30, height: 30, }} />
-              <Text style={{ color: theme.colors.darkGrey }}>{typeof coins === "number" ? coins : user.coin}</Text>
-            </View>
-          </View>
-          <Button
-            onPress={() => router.push("/setting")}
-            contentStyle={{ padding: 0 }}
-            style={{ width: undefined, minWidth: 0, padding: 0, borderRadius: 50 }}
-            theme={{ roundness: 1 }}
-            rippleColor="transparent"
-            compact
-            icon={({ size }) => (
-              <SettingIcon width={size} height={size} fill={theme.colors.darkGrey} />
-            )}
-          >
-            {""}
-          </Button>
-
-        </View>
-        <View style={{
-          alignItems: "center",
-          gap: 8,
-          padding: 20,
-          borderColor: "#5B6073",
-          borderRadius: 20,
-          borderWidth: 1,
-          marginBottom: 16,
-        }}>
-          <View style={{ display: "flex", flexDirection: "column", minWidth: "20%" }} onTouchStart={() => {
-            router.push("/Dashboard")
-          }}>
-            <Text style={{ fontWeight: "700", color: theme.colors.darkGrey }} >Dashboard</Text>
-
-            <Text variant="bodyMedium" style={{ color: theme.colors.darkGrey }}>This is your current game performance</Text>
-            <View style={{ backgroundColor: theme.colors.pink, padding: 6, borderRadius: 10, width: "13%" }}>
-              <Text style={{ fontWeight: "500", color: theme.colors.darkGrey, textAlign: "center" }}>{user.englishLevel}</Text>
-            </View>
-          </View>
-        </View>
-        <View style={{ alignItems: "center", gap: "6", minWidth: "20%" }}>
-
-          <View style={{
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 8,
-            marginBottom: 12,
-            padding: 20,
-            borderColor: "#5B6073",
-            borderRadius: 20,
-            borderWidth: 1,
-          }}>
-            <View style={{ display: "flex", flexDirection: "row" }}>
-              <Image source={Explore} style={{ width: 35, height: 30 }} />
-
-              <Text style={{ fontWeight: "700", color: theme.colors.darkGrey, display: "flex", flexDirection: "column", justifyContent: "center" }}>Solve puzzles created by others</Text>
-            </View>
-            <Button mode="contained" style={{ backgroundColor: theme.colors.green }} onPress={() => { router.replace("/Publicboard") }}>
-              <Text style={{ color: theme.colors.darkGrey, fontWeight: "bold" }}>Explore other game</Text>
+              {""}
             </Button>
           </View>
+          <View style={{ alignItems: "center" }}>
+            {/*Dashboard*/}
+            <View style={{
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 8,
+              marginBottom: 12,
+              padding: 20,
+              borderColor: "#5B6073",
+              borderRadius: 20,
+              borderWidth: 1,
+              width: "100%"
+            }}>
+              <View style={{ display: "flex", flexDirection: "column", minWidth: "20%" }} onTouchStart={() => {
+                router.push("/Dashboard")
+              }}>
+                <Text style={{ fontWeight: "700", color: Color.gray }} >Dashboard</Text>
+
+                <Text variant="bodyMedium" style={{ color: Color.gray }}>This is your current game performance</Text>
+                <View style={{ backgroundColor: Color.pink, padding: 6, borderRadius: 10, width: "13%" }}>
+                  <Text style={{ fontWeight: "500", color: Color.gray, textAlign: "center" }}>{user.englishLevel}</Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={{
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 8,
+              marginBottom: 12,
+              padding: 20,
+              borderColor: "#5B6073",
+              borderRadius: 20,
+              borderWidth: 1,
+            }}>
+              <View style={{ display: "flex", flexDirection: "row" }}>
+                <Image source={Explore} style={{ width: 35, height: 30 }} />
+
+                <Text style={{ fontWeight: "700", color: Color.gray, display: "flex", flexDirection: "column", justifyContent: "center" }}>Solve puzzles created by others</Text>
+              </View>
+              <Button mode="contained" style={{ backgroundColor: Color.green }} onPress={() => { router.replace("/Publicboard") }}>
+                <Text style={{ color: Color.white, fontWeight: "bold" }}>Explore other game</Text>
+              </Button>
+            </View>
+          </View>
+        </View>
+
+        <View style={{ display: "flex", flexDirection: "row", justifyContent: "space-around", alignItems: "center" }}>
+          <Button
+            mode="contained"
+            style={{
+              backgroundColor: Color.blue,
+              borderRadius: 25,
+              marginTop: 12,
+              alignItems: "center"
+            }}
+            contentStyle={{
+              height: 80,
+            }}
+            onPress={() => {
+              setDialogVisible(true);
+            }}
+          >
+            <Text style={{
+              color: "white", fontWeight: "bold",
+              fontSize: 20
+            }}>Create Puzzle</Text>
+          </Button>
+
+          <Portal>
+            <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)} style={{ backgroundColor: Color.white, width: "50%", display: "flex", alignSelf: 'center' }}>
+              <Dialog.Title style={{ fontWeight: "800", color: Color.gray }}>Game Types Selection</Dialog.Title>
+              <Dialog.Content>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: 16,
+                    marginTop: 12,
+                  }}
+                >
+                  {gameOptions.map(({ type, question, label }) => (
+                    <GameTypeCard
+                      key={type}
+                      question={question}
+                      gameType={label}
+                      selected={gameType === type}
+                      onPress={() => handleSelect(type)}
+                    />
+                  ))}
+                </View>
+              </Dialog.Content>
+            </Dialog>
+          </Portal >
+          <Image
+            source={mascot}
+            style={{ width: 90, height: 100, borderRadius: 25, transform: [{ rotateY: "360deg" }] }}
+            resizeMode="contain"
+          />
         </View>
       </View>
-
-
-      <Button
-        mode="contained"
-        style={{
-          backgroundColor: theme.colors.blue,
-          borderRadius: 12,
-          marginTop: 12,
-        }}
-        onPress={() => {
-          setDialogVisible(true);
-        }}
-      >
-        <Text style={{ color: "white", fontWeight: "bold" }}>Create Puzzle</Text>
-      </Button>
-
-      <Portal>
-        <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)} style={{ backgroundColor: theme.colors.white, width: "50%", display: "flex", alignSelf: 'center' }}>
-          <Dialog.Title style={{ fontWeight: "800", color: theme.colors.darkGrey }}>Game Types Selection</Dialog.Title>
-          <Dialog.Content>
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "center",
-                alignItems: "center",
-                gap: 16,
-                marginTop: 12,
-              }}
-            >
-              {gameOptions.map(({ type, question, label }) => (
-                <GameTypeCard
-                  key={type}
-                  question={question}
-                  gameType={label}
-                  selected={gameType === type}
-                  onPress={() => handleSelect(type)}
-                />
-              ))}
-            </View>
-          </Dialog.Content>
-        </Dialog>
-      </Portal >
-
     </Card >
   );
 };
