@@ -86,16 +86,19 @@ export default function GameControls({
         />
 
         {/* Hint button (gray-out via opacity) */}
-        <View style={isHintDisabled ? styles.disabledWrap : undefined}>
+        <View>
           <CustomButton
             onPress={onShowHint}
-            type="buyHint"
-            icon={<Magnify />}
+            type={isHintDisabled ? "useHint" : "buyHint"}
+            icon={
+              <View style={{ opacity: isHintDisabled ? 0.5 : 1 }}>
+                <Magnify />
+              </View>
+            }
             disabled={isHintDisabled}
             number={hintCount ?? 0}
           />
         </View>
-
       </View>
 
       <FontSizeModal
@@ -142,9 +145,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: "100%",
     padding: 16,
-  },
-  disabledWrap: {
-    opacity: 0.4,
   },
   hintCaption: {
     fontSize: 12,
