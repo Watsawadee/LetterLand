@@ -79,13 +79,13 @@ const UserOverviewCard = () => {
           <View style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", alignContent: "center", gap: 5 }}>
             <View style={{ display: "flex", flexDirection: "column", gap: 5 }}>
               <Text
-                variant="titleMedium" style={{ fontWeight: "700", color: Color.darkGrey, display: "flex", alignContent: "flex-start" }}
+                variant="titleMedium" style={{ fontWeight: "700", color: Color.gray, display: "flex", alignContent: "flex-start" }}
               >
                 {user.username}
               </Text>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
                 <Image source={coinIcon} style={{ width: 30, height: 30, }} />
-                <Text style={{ color: Color.darkGrey }}>{user.coin}</Text>
+                <Text style={{ color: Color.gray }}>{user.coin}</Text>
               </View>
             </View>
             <Button
@@ -96,7 +96,7 @@ const UserOverviewCard = () => {
               rippleColor="transparent"
               compact
               icon={({ size }) => (
-                <SettingIcon width={size} height={size} fill={Color.darkGrey} />
+                <SettingIcon width={size} height={size} fill={Color.gray} />
               )}
             >
               {""}
@@ -118,11 +118,11 @@ const UserOverviewCard = () => {
               <View style={{ display: "flex", flexDirection: "column", minWidth: "20%" }} onTouchStart={() => {
                 router.push("/Dashboard")
               }}>
-                <Text style={{ fontWeight: "700", color: Color.darkGrey }} >Dashboard</Text>
+                <Text style={{ fontWeight: "700", color: Color.gray }} >Dashboard</Text>
 
-                <Text variant="bodyMedium" style={{ color: Color.darkGrey }}>This is your current game performance</Text>
+                <Text variant="bodyMedium" style={{ color: Color.gray }}>This is your current game performance</Text>
                 <View style={{ backgroundColor: Color.pink, padding: 6, borderRadius: 10, width: "13%" }}>
-                  <Text style={{ fontWeight: "500", color: Color.darkGrey, textAlign: "center" }}>{user.englishLevel}</Text>
+                  <Text style={{ fontWeight: "500", color: Color.gray, textAlign: "center" }}>{user.englishLevel}</Text>
                 </View>
               </View>
             </View>
@@ -140,7 +140,7 @@ const UserOverviewCard = () => {
               <View style={{ display: "flex", flexDirection: "row" }}>
                 <Image source={Explore} style={{ width: 35, height: 30 }} />
 
-                <Text style={{ fontWeight: "700", color: Color.darkGrey, display: "flex", flexDirection: "column", justifyContent: "center" }}>Solve puzzles created by others</Text>
+                <Text style={{ fontWeight: "700", color: Color.gray, display: "flex", flexDirection: "column", justifyContent: "center" }}>Solve puzzles created by others</Text>
               </View>
               <Button mode="contained" style={{ backgroundColor: Color.green }} onPress={() => { router.replace("/Public") }}>
                 <Text style={{ color: Color.white, fontWeight: "bold" }}>Explore other game</Text>
@@ -173,7 +173,7 @@ const UserOverviewCard = () => {
 
           <Portal>
             <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)} style={{ backgroundColor: Color.white, width: "50%", display: "flex", alignSelf: 'center' }}>
-              <Dialog.Title style={{ fontWeight: "800", color: Color.darkGrey }}>Game Types Selection</Dialog.Title>
+              <Dialog.Title style={{ fontWeight: "800", color: Color.gray }}>Game Types Selection</Dialog.Title>
               <Dialog.Content>
                 <View
                   style={{

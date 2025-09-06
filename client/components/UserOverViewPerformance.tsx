@@ -41,7 +41,7 @@ const UserOverviewPerformance = () => {
         if (chartError) {
             return (
                 <View style={{ width: CHART_W, height: CHART_H, justifyContent: "center", alignItems: "center" }}>
-                    <Text style={{ color: Color.darkGrey }}>❌ Failed to load chart</Text>
+                    <Text style={{ color: Color.gray }}>❌ Failed to load chart</Text>
                 </View>
             );
         }
@@ -67,8 +67,8 @@ const UserOverviewPerformance = () => {
                 <Card.Title
                     title="Games Played"
                     subtitle={weekLabel}
-                    titleStyle={{ color: Color.darkGrey, fontWeight: "bold", fontSize: 25, textAlign: "center" }}
-                    subtitleStyle={{ color: Color.darkGrey, textAlign: "center" }}
+                    titleStyle={{ color: Color.gray, fontWeight: "bold", fontSize: 25, textAlign: "center" }}
+                    subtitleStyle={{ color: Color.gray, textAlign: "center" }}
                     style={{ alignItems: "center", paddingBottom: 0 }}
                 />
 
@@ -124,7 +124,7 @@ const UserOverviewPerformance = () => {
     return (
         <View style={{ width: "50%", height: "100%", gap: 20 }}>
             <Card style={{ backgroundColor: "#E1F3F6", padding: 20 }}>
-                <Text style={{ color: Color.darkGrey, fontSize: 20, fontWeight: "bold" }}>Dashboard and Analysis</Text>
+                <Text style={{ color: Color.gray, fontSize: 20, fontWeight: "bold" }}>Dashboard and Analysis</Text>
                 <Carousel
                     width={CHART_W}
                     height={CHART_H + 60}
@@ -159,7 +159,7 @@ const UserOverviewPerformance = () => {
                             <Text style={{ fontWeight: "bold" }}>
                                 Words Learned
                             </Text>
-                            <Text style={{ color: Color.darkGrey }}>{wordsLearned && "error" in wordsLearned
+                            <Text style={{ color: Color.gray }}>{wordsLearned && "error" in wordsLearned
                                 ? "Error"
                                 : wordsLearned && "wordsLearned" in wordsLearned
                                     ? `${wordsLearned.wordsLearned} Word(s)`
@@ -174,7 +174,7 @@ const UserOverviewPerformance = () => {
                             <Text style={{ fontWeight: "bold" }}>
                                 Total Playtime
                             </Text>
-                            <Text style={{ color: Color.darkGrey }}> {totalPlaytime && "error" in totalPlaytime
+                            <Text style={{ color: Color.gray }}> {totalPlaytime && "error" in totalPlaytime
                                 ? "Error"
                                 : totalPlaytime && "totalPlaytime" in totalPlaytime
                                     ? `${totalPlaytime.totalPlaytime} Hour(s)`

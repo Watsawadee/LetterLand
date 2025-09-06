@@ -13,6 +13,7 @@ import gameRoutes from './routes/gameRoutes';
 import mygameRoutes from './routes/mygameRoute';
 import publicgameRoutes from './routes/publicgameRoute';
 import wordBankRoutes from './routes/wordbankRoute'
+import settingRoutes from './routes/settingRoutes'
 
 dotenv.config();
 const app = express();
@@ -35,7 +36,8 @@ app.use("/users", userProfileRoute);
 app.use('/games', gameRoutes);
 app.use('/mygame', mygameRoutes);
 app.use("/publicgame", publicgameRoutes);
-app.use("/wordbank", wordBankRoutes)
+app.use("/wordbank", wordBankRoutes);
+app.use("/setting", settingRoutes)
 
 
 app.listen(3000, () => {

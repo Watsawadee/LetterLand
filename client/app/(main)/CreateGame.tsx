@@ -212,7 +212,7 @@ const CreateGameScreen = () => {
                         backgroundColor: englishLevel === level ? levelColors[level] : "#fff",
                       }}
                     >
-                      <Text style={{ color: englishLevel === level ? Color.white : Color.darkGrey, fontWeight: "bold" }}>
+                      <Text style={{ color: englishLevel === level ? Color.white : Color.gray, fontWeight: "bold" }}>
                         {level}
                       </Text>
                     </Button>
@@ -238,7 +238,7 @@ const CreateGameScreen = () => {
                         >
                           <Text
                             style={{
-                              color: active ? Color.white : Color.darkGrey,
+                              color: active ? Color.white : Color.gray,
                               fontWeight: "bold",
                             }}
                           >
@@ -262,7 +262,7 @@ const CreateGameScreen = () => {
                     >
                       <Text
                         style={{
-                          color: isPublic ? Color.white : Color.darkGrey,
+                          color: isPublic ? Color.white : Color.gray,
                           fontWeight: "bold",
                         }}
                       >
@@ -280,7 +280,7 @@ const CreateGameScreen = () => {
                     >
                       <Text
                         style={{
-                          color: !isPublic ? Color.white : Color.darkGrey,
+                          color: !isPublic ? Color.white : Color.gray,
                           fontWeight: "bold",
                         }}
                       >
@@ -308,7 +308,7 @@ const CreateGameScreen = () => {
                           icon={() => (
                             <Icon
                               size={20}
-                              fill={isActive ? Color.white : Color.darkGrey}
+                              fill={isActive ? Color.white : Color.gray}
                             />
                           )}
                           style={{
@@ -320,7 +320,7 @@ const CreateGameScreen = () => {
                           }}
                           onPress={() => handleUploadTypeSelect(key)}
                           contentStyle={{ flexDirection: "row-reverse" }} // icon on left, label after (optional)
-                          labelStyle={{ fontWeight: "bold", color: isActive ? Color.white : Color.darkGrey }}
+                          labelStyle={{ fontWeight: "bold", color: isActive ? Color.white : Color.gray }}
                         >
                           {label}
                         </Button>
