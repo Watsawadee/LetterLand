@@ -118,7 +118,15 @@ const CreateGameScreen = () => {
         isPublic
       },
       file: pdfFile
-    });
+    },
+      {
+        onSuccess: (game) => {
+          const id = String(game.id);
+          router.replace({ pathname: "/gameScreen", params: { gameId: id } });
+        },
+      }
+    );
+
   };
 
   if (isError) {

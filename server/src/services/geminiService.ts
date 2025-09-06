@@ -152,13 +152,14 @@ Respond only with the following strict JSON format:
       const maxLen = gridLengths[userCEFR];
       const finalAnswer =
         userWordChoice.length > maxLen ? originalWord : userWordChoice;
-
-
+      const sanitizedAnswer = finalAnswer
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "");
       console.log(
         `Replacing word: "${originalWord}" → "${userWordChoice}" for CEFR Level: ${userCEFR}`
       );
 
-      return { ...q, answer: finalAnswer.replace(/\s+/g, "") };
+      return { ...q, answer: sanitizedAnswer };
     });
 
     console.log("Final Processed Game:", gameData);

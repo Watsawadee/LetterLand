@@ -72,7 +72,7 @@ export default function SharedGameScreen({
   };
 
   const handleBackPress = () => setConfirmExitVisible(true);
-  const handleExitConfirm = () => router.replace("/");
+  const handleExitConfirm = () => router.replace("/Home");
   const handleExitCancel = () => setConfirmExitVisible(false);
 
   return (
@@ -135,7 +135,7 @@ export default function SharedGameScreen({
         title="EXCELLENT!"
         message="You have found all the words on time!"
         onConfirm={handleCloseModal}
-        onClose={() => router.replace("/")}
+        onClose={() => router.replace("/Home")}
         confirmIcon={<Restart />}
         closeIcon={<ArrowRight />}
       />
@@ -146,7 +146,7 @@ export default function SharedGameScreen({
         title="Time's Up!"
         message="You can no longer continue the game."
         onConfirm={handleCloseModal}
-        onClose={() => router.replace("/")}
+        onClose={() => router.replace("/Home")}
         confirmIcon={<Restart />}
         closeIcon={<ArrowRight />}
       />
