@@ -5,7 +5,7 @@ import { getWords, setupProfile } from "../../services/setupUser";
 import { ActivityIndicator, Button, Card, Text } from "react-native-paper";
 import { getLoggedInUserId } from "@/utils/auth";
 import GardenBackground from "@/assets/backgroundTheme/GardenBackground";
-import { theme } from "@/theme";
+import { Color } from "@/theme/Color";
 const VocabEvalScreen = () => {
   const { age } = useLocalSearchParams<{
     age: string;

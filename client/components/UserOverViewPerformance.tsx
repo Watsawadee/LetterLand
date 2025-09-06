@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react"
 import { View, Text, ScrollView } from "react-native"
 import { useTotalGamesThisWeek, useUserTotalPlaytime, useUserWordLearned } from "@/hooks/useDashboard";
 import Swiper from "react-native-swiper";
-import { theme } from "@/theme";
+import { Color } from "@/theme/Color";
 import { Card } from "react-native-paper";
 import { ActivityIndicator } from "react-native";
 import Clock from "@/assets/icon/Clock";
@@ -11,6 +11,7 @@ import { VictoryAxis, VictoryBar, VictoryChart, VictoryLabel, VictoryTheme } fro
 import { Dimensions } from "react-native";
 import Carousel, { Pagination, ICarouselInstance } from "react-native-reanimated-carousel";
 import { useSharedValue } from "react-native-reanimated";
+import { Typography } from "@/theme/Font";
 
 const MAX_WEEKS = 5;
 const UserOverviewPerformance = () => {
@@ -40,7 +41,7 @@ const UserOverviewPerformance = () => {
         if (chartError) {
             return (
                 <View style={{ width: CHART_W, height: CHART_H, justifyContent: "center", alignItems: "center" }}>
-                    <Text style={{ color: theme.colors.darkGrey }}>❌ Failed to load chart</Text>
+                    <Text style={{ color: Color.darkGrey }}>❌ Failed to load chart</Text>
                 </View>
             );
         }
@@ -66,8 +67,8 @@ const UserOverviewPerformance = () => {
                 <Card.Title
                     title="Games Played"
                     subtitle={weekLabel}
-                    titleStyle={{ color: theme.colors.darkGrey, fontWeight: "bold", fontSize: 25, textAlign: "center" }}
-                    subtitleStyle={{ color: theme.colors.darkGrey, textAlign: "center" }}
+                    titleStyle={{ color: Color.darkGrey, fontWeight: "bold", fontSize: 25, textAlign: "center" }}
+                    subtitleStyle={{ color: Color.darkGrey, textAlign: "center" }}
                     style={{ alignItems: "center", paddingBottom: 0 }}
                 />
 
@@ -102,7 +103,7 @@ const UserOverviewPerformance = () => {
                         data={counts.map((y, i) => ({ x: i, y }))}
                         barWidth={25}
                         style={{
-                            data: { fill: theme.colors.blue, borderRadius: 6 },
+                            data: { fill: Color.blue, borderRadius: 6 },
                             labels: { fill: "#5B6073", fontSize: 20, fontWeight: 600 },
                         }}
                         labels={({ datum }) => datum.y === 0 ? "" : `${datum.y}`}
@@ -123,7 +124,7 @@ const UserOverviewPerformance = () => {
     return (
         <View style={{ width: "50%", height: "100%", gap: 20 }}>
             <Card style={{ backgroundColor: "#E1F3F6", padding: 20 }}>
-                <Text style={{ color: theme.colors.darkGrey, fontSize: theme.fontSizes.medium, fontWeight: "bold" }}>Dashboard and Analysis</Text>
+                <Text style={{ color: Color.darkGrey, fontSize: 20, fontWeight: "bold" }}>Dashboard and Analysis</Text>
                 <Carousel
                     width={CHART_W}
                     height={CHART_H + 60}
@@ -146,7 +147,7 @@ const UserOverviewPerformance = () => {
                     data={data}
                     containerStyle={{ paddingTop: 8, gap: 6 }}
                     dotStyle={{ width: 8, height: 8, borderRadius: 999, backgroundColor: "#C7D3D9" }}
-                    activeDotStyle={{ width: 8, height: 8, borderRadius: 999, backgroundColor: theme.colors.blue }}
+                    activeDotStyle={{ width: 8, height: 8, borderRadius: 999, backgroundColor: Color.blue }}
                     onPress={onPressPagination}
                 />
             </Card >
@@ -158,7 +159,7 @@ const UserOverviewPerformance = () => {
                             <Text style={{ fontWeight: "bold" }}>
                                 Words Learned
                             </Text>
-                            <Text style={{ color: theme.colors.darkGrey }}>{wordsLearned && "error" in wordsLearned
+                            <Text style={{ color: Color.darkGrey }}>{wordsLearned && "error" in wordsLearned
                                 ? "Error"
                                 : wordsLearned && "wordsLearned" in wordsLearned
                                     ? `${wordsLearned.wordsLearned} Word(s)`
@@ -173,7 +174,7 @@ const UserOverviewPerformance = () => {
                             <Text style={{ fontWeight: "bold" }}>
                                 Total Playtime
                             </Text>
-                            <Text style={{ color: theme.colors.darkGrey }}> {totalPlaytime && "error" in totalPlaytime
+                            <Text style={{ color: Color.darkGrey }}> {totalPlaytime && "error" in totalPlaytime
                                 ? "Error"
                                 : totalPlaytime && "totalPlaytime" in totalPlaytime
                                     ? `${totalPlaytime.totalPlaytime} Hour(s)`
