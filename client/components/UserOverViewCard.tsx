@@ -8,6 +8,7 @@ import coinIcon from "../assets/images/coin.png"
 import Explore from "../assets/images/Explore.png"
 import { Button, Card, Dialog, Portal, Text } from "react-native-paper";
 import { theme } from "@/theme";
+import SettingIcon from "@/assets/icon/settingIcon";
 
 type Props = {
   coins?: number;
@@ -75,15 +76,33 @@ const UserOverviewCard = ({ coins }: Props) => {
         height: "100%",
       }}
     >
-      <View style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-        <Text
-          variant="titleMedium" style={{ fontWeight: "700", color: theme.colors.darkGrey, display: "flex", alignContent: "flex-start" }}
-        >
-          {user.username}
-        </Text>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-          <Image source={coinIcon} style={{ width: 30, height: 30, }} />
-          <Text style={{ color: theme.colors.darkGrey }}>{typeof coins === "number" ? coins : user.coin}</Text>
+
+        <View style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", alignContent: "center", gap: 5 }}>
+          <View style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            <Text
+              variant="titleMedium" style={{ fontWeight: "700", color: theme.colors.darkGrey, display: "flex", alignContent: "flex-start" }}
+            >
+              {user.username}
+            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <Image source={coinIcon} style={{ width: 30, height: 30, }} />
+              <Text style={{ color: theme.colors.darkGrey }}>{typeof coins === "number" ? coins : user.coin}</Text>
+            </View>
+          </View>
+          <Button
+            onPress={() => router.push("/setting")}
+            contentStyle={{ padding: 0 }}
+            style={{ width: undefined, minWidth: 0, padding: 0, borderRadius: 50 }}
+            theme={{ roundness: 1 }}
+            rippleColor="transparent"
+            compact
+            icon={({ size }) => (
+              <SettingIcon width={size} height={size} fill={theme.colors.darkGrey} />
+            )}
+          >
+            {""}
+          </Button>
+
         </View>
         <View style={{
           alignItems: "center",

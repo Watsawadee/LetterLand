@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
 import { View, StyleSheet, TouchableOpacity } from "react-native";
 import GameControls from "./GameControls";
 import GameBoard from "./GameBoard";
@@ -13,6 +13,12 @@ import { useAllFound } from "../hooks/useAllFound";
 import ArrowLeft from "@/assets/icon/ArrowLeft";
 import Restart from "../assets/icon/Restart";
 import ArrowRight from "@/assets/icon/ArrowRight";
+import WordLearnedModal from "./WordLearnedModal";
+import { fetchGamePronunciations } from "@/services/pronunciationService";
+import {
+  saveFoundWordsOnce,
+  completeGame,
+} from "@/services/gameService";
 
 export default function SharedGameScreen({
   mode,
@@ -23,9 +29,25 @@ export default function SharedGameScreen({
   gameData,
 }: GameProps) {
   const router = useRouter();
+
   const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
   const [confirmExitVisible, setConfirmExitVisible] = useState(false);
+  const [wordModalVisible, setWordModalVisible] = useState(false);
   const [timeUp, setTimeUp] = useState(false);
+
+  const [awardedCoins, setAwardedCoins] = useState<number | null>(null);
+  const [usedSeconds, setUsedSeconds] = useState<number | null>(null);
+
+  const [roundKey, setRoundKey] = useState(0);
+  const startedAtRef = useRef<number>(Date.now());
+
+  const hasPostedWordsRef = useRef(false);
+  const hasPostedCompleteRef = useRef(false);
+
+  useEffect(() => {
+    if (!gameData?.id) return;
+    fetchGamePronunciations(gameData.id).catch(() => {});
+  }, [gameData?.id]);
 
   const {
     grid,
@@ -55,6 +77,7 @@ export default function SharedGameScreen({
   const { hintCount, isHintDisabled, onShowHint, clearActiveHint, resetHints } =
     useHints({
       mode,
+      gameId: gameData?.id,
       questionsAndAnswers,
       foundWordsList,
       revealedAnswers,
@@ -62,18 +85,143 @@ export default function SharedGameScreen({
       showHintForAnswer,
     });
 
-  const handleCloseModal = () => {
+  function formatDuration(totalSec: number) {
+    const sec = Math.max(0, Math.floor(totalSec || 0));
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    if (m <= 0) return `${s}s`;
+    return `${m}m ${s}s`;
+  }
+
+  const hardResetRound = () => {
     setAllFoundVisible(false);
     resetGame();
     setActiveQuestionIndex(0);
     clearActiveHint();
     resetHints();
     setTimeUp(false);
+    setAwardedCoins(null);
+    setUsedSeconds(null);
+    hasPostedWordsRef.current = false;
+    hasPostedCompleteRef.current = false;
+    startedAtRef.current = Date.now();
+    setRoundKey((k) => k + 1);
   };
 
   const handleBackPress = () => setConfirmExitVisible(true);
-  const handleExitConfirm = () => router.replace("/");
+  const handleExitConfirm = () => router.replace("/Home");
   const handleExitCancel = () => setConfirmExitVisible(false);
+
+  const captureTimeUsedOnce = () => {
+    if (usedSeconds != null) return;
+    const elapsed = Math.floor((Date.now() - startedAtRef.current) / 1000);
+    const cap =
+      typeof gameData?.timer === "number" && gameData.timer > 0
+        ? Math.min(elapsed, gameData.timer)
+        : elapsed;
+    setUsedSeconds(cap);
+  };
+
+  const postCompletionOnce = async (opts?: { force?: boolean }) => {
+    if (hasPostedCompleteRef.current && !opts?.force) return;
+    const gameId = gameData?.id;
+    if (!gameId) return;
+
+    const completed = !!allFoundVisible;
+    const finishedOnTime = completed && !timeUp;
+
+    captureTimeUsedOnce();
+    const wordsLearned = foundWordsList.length;
+
+    try {
+      const res = await completeGame({
+        gameId,
+        completed,
+        finishedOnTime,
+        wordsLearned,
+        timeUsedSeconds: usedSeconds ?? 0,
+      });
+      if (typeof res?.coinsAwarded === "number") {
+        setAwardedCoins(res.coinsAwarded);
+      }
+      hasPostedCompleteRef.current = true;
+    } catch (e) {
+      console.warn("[completeGame] post failed:", e);
+    }
+  };
+
+  const openWordModal = async () => {
+    try {
+      await saveFoundWordsOnce(
+        hasPostedWordsRef,
+        gameData?.id,
+        foundWordsList,
+        questionsAndAnswers
+      );
+    } catch {}
+    try {
+      await postCompletionOnce();
+    } catch {}
+
+    setWordModalVisible(true);
+    setTimeUp(false);
+    setAllFoundVisible(false);
+  };
+
+  useEffect(() => {
+    hasPostedWordsRef.current = false;
+    hasPostedCompleteRef.current = false;
+    setAwardedCoins(null);
+    setUsedSeconds(null);
+    startedAtRef.current = Date.now();
+  }, [gameData?.id]);
+
+  useEffect(() => {
+    if (!(allFoundVisible || timeUp)) return;
+
+    captureTimeUsedOnce();
+
+    saveFoundWordsOnce(
+      hasPostedWordsRef,
+      gameData?.id,
+      foundWordsList,
+      questionsAndAnswers
+    ).catch((err: any) => console.warn("[wordfound] post failed:", err));
+
+    postCompletionOnce().catch((err) =>
+      console.warn("[completeGame] post failed:", err)
+    );
+  }, [
+    allFoundVisible,
+    timeUp,
+    gameData?.id,
+    foundWordsList,
+    questionsAndAnswers,
+  ]);
+
+  useEffect(() => {
+    startedAtRef.current = Date.now();
+  }, [roundKey]);
+
+  const wordsLearnedCount = foundWordsList.length;
+
+  const winMessage = [
+    "You have found all the words on time!",
+    awardedCoins != null ? `+${awardedCoins} coins` : null,
+    `Words learned: ${wordsLearnedCount}`,
+    usedSeconds != null ? `Time used: ${formatDuration(usedSeconds)}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const timeUpMessage = [
+    "You can no longer continue the game.",
+    awardedCoins != null ? `+${awardedCoins} coins` : null,
+    `Words learned: ${wordsLearnedCount}`,
+    usedSeconds != null ? `Time used: ${formatDuration(usedSeconds)}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
 
   return (
     <View style={styles.container}>
@@ -91,7 +239,8 @@ export default function SharedGameScreen({
             isHintDisabled={isHintDisabled}
             startTimeSeconds={gameData?.timer ?? 0}
             onTimeUp={() => setTimeUp(true)}
-            key={activeQuestionIndex + (timeUp ? "timeUp" : "running")}
+            paused={allFoundVisible || timeUp}
+            resetKey={roundKey}
           />
         </View>
 
@@ -129,26 +278,35 @@ export default function SharedGameScreen({
         onCancel={handleExitCancel}
       />
 
-      {/* All Found MODAL */}
-      <GameEndModal
-        visible={allFoundVisible}
-        title="EXCELLENT!"
-        message="You have found all the words on time!"
-        onConfirm={handleCloseModal}
-        onClose={() => router.replace("/")}
-        confirmIcon={<Restart />}
-        closeIcon={<ArrowRight />}
-      />
+      {!wordModalVisible && (
+        <>
+          <GameEndModal
+            visible={allFoundVisible}
+            title="EXCELLENT!"
+            message={winMessage}
+            onConfirm={hardResetRound}
+            onClose={openWordModal}
+            confirmIcon={<Restart />}
+            closeIcon={<ArrowRight />}
+          />
+          <GameEndModal
+            visible={timeUp}
+            title="Time's Up!"
+            message={timeUpMessage}
+            onConfirm={hardResetRound}
+            onClose={openWordModal}
+            confirmIcon={<Restart />}
+            closeIcon={<ArrowRight />}
+          />
+        </>
+      )}
 
-      {/* TIME UP MODAL */}
-      <GameEndModal
-        visible={timeUp}
-        title="Time's Up!"
-        message="You can no longer continue the game."
-        onConfirm={handleCloseModal}
-        onClose={() => router.replace("/")}
-        confirmIcon={<Restart />}
-        closeIcon={<ArrowRight />}
+      <WordLearnedModal
+        visible={wordModalVisible}
+        onClose={() => router.replace("/Home")}
+        gameId={gameData?.id ?? 0}
+        words={foundWordsList}
+        timeUsedSeconds={usedSeconds ?? undefined}
       />
     </View>
   );

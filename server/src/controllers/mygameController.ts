@@ -33,6 +33,7 @@ export const getUserGames = async (
   });
 
   const items: GetUserGamesResponse["items"] = games.map((g :any) => ({
+
     id: g.id,
     isFinished: g.isFinished,
     isHintUsed: g.isHintUsed,
