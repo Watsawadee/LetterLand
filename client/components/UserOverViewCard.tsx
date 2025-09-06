@@ -10,8 +10,12 @@ import { Button, Card, Dialog, Portal, Text } from "react-native-paper";
 import { theme } from "@/theme";
 import SettingIcon from "@/assets/icon/settingIcon";
 
+type Props = {
+  coins?: number;
+};
 
-const UserOverviewCard = () => {
+
+const UserOverviewCard = ({ coins }: Props) => {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
   const [gameType, setGameType] = useState<"crossword" | "wordsearch" | null>(
@@ -72,7 +76,7 @@ const UserOverviewCard = () => {
         height: "100%",
       }}
     >
-      <View style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+
         <View style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", alignContent: "center", gap: 5 }}>
           <View style={{ display: "flex", flexDirection: "column", gap: 5 }}>
             <Text
@@ -82,7 +86,7 @@ const UserOverviewCard = () => {
             </Text>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
               <Image source={coinIcon} style={{ width: 30, height: 30, }} />
-              <Text style={{ color: theme.colors.darkGrey }}>{user.coin}</Text>
+              <Text style={{ color: theme.colors.darkGrey }}>{typeof coins === "number" ? coins : user.coin}</Text>
             </View>
           </View>
           <Button
@@ -98,7 +102,6 @@ const UserOverviewCard = () => {
           >
             {""}
           </Button>
-
 
         </View>
         <View style={{
@@ -138,7 +141,7 @@ const UserOverviewCard = () => {
 
               <Text style={{ fontWeight: "700", color: theme.colors.darkGrey, display: "flex", flexDirection: "column", justifyContent: "center" }}>Solve puzzles created by others</Text>
             </View>
-            <Button mode="contained" style={{ backgroundColor: theme.colors.green }} onPress={() => { router.replace("/Public") }}>
+            <Button mode="contained" style={{ backgroundColor: theme.colors.green }} onPress={() => { router.replace("/Publicboard") }}>
               <Text style={{ color: theme.colors.darkGrey, fontWeight: "bold" }}>Explore other game</Text>
             </Button>
           </View>

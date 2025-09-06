@@ -56,11 +56,13 @@ export const getGameData = async (gameId: number) => {
 
 export const getAllWordFound = async (gameId: number) => {
   try {
+
     const wordFound = prisma.wordFound.findMany({
       where: { gameId },
       include: {
         question: true,
         // user: { select: { id: true, username: true } }, // if you need it
+
       },
       orderBy: { foundAt: "asc" },
     });

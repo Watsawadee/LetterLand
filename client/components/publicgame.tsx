@@ -37,11 +37,12 @@ export default function PublicGames({ title = "Public Games", limit = 10, offset
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [items, setItems] = useState<PublicGameItem[]>([]);
-  
+    
+    // Remove pagination parameters temporarily for testing
     const fetchPublic = useCallback(async () => {
       try {
         setLoading(true);
-        const list = await getPublicGames(limit, offset);
+        const list = await getPublicGames();  // No limit and offset here
   
         const withImages = await Promise.all(
           list.map(async (g: PublicGameItem) => {
@@ -56,7 +57,7 @@ export default function PublicGames({ title = "Public Games", limit = 10, offset
             return g;
           })
         );
-  
+    
         setItems(withImages);
       } catch (err: any) {
         console.error("[PublicGamesRow] load failed:", err?.response?.data || err?.message || err);
@@ -64,17 +65,20 @@ export default function PublicGames({ title = "Public Games", limit = 10, offset
       } finally {
         setLoading(false);
       }
-    }, [limit, offset]);
-  
+    }, []);
+    
     useEffect(() => { fetchPublic(); }, [fetchPublic]);
   
     const cards: CardProps[] = items.map((g: PublicGameItem) => ({
-      id: g.id, // templateId
-      title: g.title,
-      subtitle: g.gameType,
-      level: g.difficulty,
-      image: g.imageUrl,
-    }));
+        id: g.id, 
+        title: g.title,
+        subtitle: g.gameType,
+        level: g.difficulty,
+        image: g.imageUrl,
+      }));
+      
+      console.log("Cards to display:", cards);  // Log cards to check if all are mapped correctly
+      
   
     const handlePress = async (templateId: number) => {
       try {
@@ -98,6 +102,7 @@ export default function PublicGames({ title = "Public Games", limit = 10, offset
             keyExtractor={(item) => String(item.id)}
             renderItem={({ item }) => <MyCard {...item} onPress={() => handlePress(item.id)} />}
             showsVerticalScrollIndicator={false}
+            columnWrapperStyle={{ justifyContent: "space-between", marginBottom: 16 }}
           />
         ) : (
           <Text style={{ color: "gray", textAlign: "center", marginTop: 10 }}>No public games found.</Text>

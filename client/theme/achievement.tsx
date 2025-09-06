@@ -1,35 +1,141 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet } from "react-native";
+import { Color } from "./Color";
 
-export const achievementCardStyles = StyleSheet.create({
+export const AchievementCardStyles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: "white",
     borderRadius: 16,
-    padding: 12,
-    width: 180,
-    marginRight: 16,
+    padding: 16,
+    width: 220,
+    height: 253,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    marginRight: 20,
+  },
+
+  // top icon
+  iconWrap: { alignSelf: "center", marginBottom: 12 },
+  iconImage: { width: 165, height: 72, borderRadius: 16 },
+  iconFallback: {
+    width: 72,
+    height: 72,
+    borderRadius: 16,
+    backgroundColor: "#FFF3E0",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconFallbackText: { fontSize: 34 },
+
+  // title + description
+  title: {
+    fontSize: 18,
+    fontWeight: "700",
+    textAlign: "center",
+    color: "#333",
+  },
+  description: {
+    marginTop: 7,
+    fontSize: 13,
+    color: "#666",
+    textAlign: "center",
+    lineHeight: 18,
+  },
+
+  // coin row (centered)
+  coinRow: {
+    marginTop: 20,
+    marginBottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  coinIcon: {
+    width: 22,
+    height: 22,
+    marginRight: 4,
+  },
+  coinText: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#F4A300",
+  },
+
+  // progress bar
+  progressRow: {
+    marginTop: 13,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  progressTrack: {
+    flex: 1,
+    height: 16,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 999,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.20,
+    shadowRadius: 3,
     elevation: 2,
   },
-  header: {
-    marginBottom: 8,
-  },
-  coin: {
-    fontSize: 12,
-    color: '#f6b100',
-    marginTop: 4,
-  },
-  progressBar: {
-    height: 6,
-    backgroundColor: '#eee',
-    borderRadius: 4,
-  },
   progressFill: {
-    height: 6,
-    backgroundColor: '#ec82c0',
-    borderRadius: 4,
+    height: "100%",
+    backgroundColor: "#E86EA3",
+    borderRadius: 999,
   },
-  status: {
-    fontSize: 12,
-    textAlign: 'right',
-    marginTop: 4,
+  progressLabel: {
+    marginLeft: 12,
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#2F3441",
+  },
+
+  // claim button
+  claimPill: {
+    marginTop: 25,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 9999,
+    alignSelf: "center",
+    backgroundColor: Color.blue,
+    flexDirection: "row",
+    alignItems: "center",
+    shadowColor: "#2F80ED",
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  claimTextStrong: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "800",
+  },
+  claimCoinWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginLeft: 10,
+  },
+  claimCoinValue: {
+    color: Color.white,
+    fontSize: 18,
+    fontWeight: "700",
+  },
+
+  // claimed pill
+  claimedPill: {
+    marginTop: 25,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 9999,
+    alignSelf: "center",
+    backgroundColor: "#E6E8EC",
+  },
+  claimedText: {
+    color: "#6B7280",
+    fontWeight: "700",
   },
 });

@@ -1,4 +1,3 @@
-import { Platform } from "react-native";
 import { getLoggedInUserId, getToken } from "@/utils/auth";
 import api from "./api";
 import axios, { AxiosResponse } from "axios";
@@ -19,12 +18,10 @@ export async function fetchWordBankPage(page: number, apiBase?: string): Promise
   const userId = await getLoggedInUserId();
   if (!token || !userId) throw new Error("Not logged in");
 
-  const baseURL = apiBase || (Platform.OS === "android" ? "http://10.0.2.2:3000" : "http://localhost:3000");
 
   try {
     // 👇 Tell axios what type to expect in data
     const res: AxiosResponse<ApiOK> = await api.get(`/wordbank/user/${userId}/wordbank`, {
-      baseURL,
       params: { page: Math.max(1, page) },
       headers: { Authorization:`Bearer ${token}` },
     });
