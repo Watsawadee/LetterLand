@@ -5,7 +5,7 @@ import { Achievement, AchievementResponse } from "@/types/achievementTypes";
 
 // Build GDrive-proxied image URL
 export const buildAchievementImageUrl = (fileName: string) =>
-  `${api.defaults.baseURL?.replace(/\/$/, "")}/achievement/image/${encodeURIComponent(fileName)}`;
+  `${api.defaults.baseURL?.replace(/\/$/, "")}/achievement/achievementimage/${encodeURIComponent(fileName)}`;
 
 /** Sync server-side UA rows so isCompleted is correct before we read */
 export async function syncAchievementProgress(): Promise<void> {

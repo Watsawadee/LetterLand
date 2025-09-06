@@ -12,7 +12,7 @@ import { authenticatedUser } from "../middleware/authMiddleware";
 const router = Router();
 
 router.get("/", authenticatedUser, getUserAchievements);
-router.get("/image/:fileName", getAchievementImage);
+router.get("/achievementimage/:fileName", getAchievementImage);
 router.get("/coins", authenticatedUser, getUserCoins);
 router.post("/:achievementId/claim", authenticatedUser, claimAchievement);
 router.post("/check", authenticatedUser, triggerAchievementCheck);

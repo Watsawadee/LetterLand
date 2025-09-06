@@ -5,7 +5,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  FlatList,
   useWindowDimensions,
 } from "react-native";
 import GardenBackgroundBlueSky from "@/assets/backgroundTheme/GardenBackgroundBlue";
@@ -17,8 +16,6 @@ import UserOverviewCard from "@/components/UserOverViewCard";
 import { Image } from "react-native";
 import mascot from "@/assets/images/mascot.png";
 import Book from "@/assets/icon/Book";
-
-// ⬇️ NEW
 import AchievementsRow from "../../components/AchievementRow";
 
 export default function Home() {
@@ -27,8 +24,6 @@ export default function Home() {
   const { width } = useWindowDimensions();
   const isWide = width >= 1024;
 
-  // If you have an auth token from context/secure store, pass it here:
-  // const token = useAuthTokenFromContext();
   const token = undefined;
 
   return (
@@ -83,12 +78,15 @@ export default function Home() {
 
           {/* Recent game title row */}
           <View style={styles.sectionHeader}>
-            <Text style={Typography.header25}>Recent game</Text>
-            <Text style={[Typography.body14, styles.link]}>view all</Text>
-          </View>
+  <Text style={Typography.header25}>Recent game</Text>
+  
+  <TouchableOpacity onPress={() => router.push("/Myboard")}>
+    <Text style={[Typography.body14, styles.link]}>view all</Text>
+  </TouchableOpacity>
+</View>
 
           {/* Your games row */}
-          <MyGamesRow title=" " />
+          <MyGamesRow title=" " scrollDirection="horizontal" />
         </View>
 
         {/* RIGHT SIDEBAR */}
@@ -108,7 +106,7 @@ const styles = StyleSheet.create({
     position: "absolute", bottom: 0, left: 0, width: "100%", height: 1000, zIndex: 0,
   },
   page: {
-    flex: 1, width: "100%", maxWidth: 1500, paddingHorizontal: 0,
+    flex: 1, width: "100%", maxWidth: 1300, paddingHorizontal: 0,
     paddingTop: 16, paddingBottom: 24, flexDirection: "row",
   },
   leftPanel: { flex: 2.5, borderRadius: 20, padding: 16 },

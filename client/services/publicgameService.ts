@@ -10,7 +10,7 @@ import {
 } from "@/types/publicgametypes";
 
 export async function getPublicGames(
-  limit = 10,
+  limit = 40,
   offset = 0
 ): Promise<PublicGameItem[]> {
   const token = await getToken();

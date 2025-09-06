@@ -1,4 +1,5 @@
 import { StyleSheet } from "react-native";
+import { Color } from "./Color";
 
 export const AchievementCardStyles = StyleSheet.create({
   card: {
@@ -6,16 +7,19 @@ export const AchievementCardStyles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     width: 220,
+    height: 253,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    marginRight: 20,
+    
   },
 
   // top icon
   iconWrap: { alignSelf: "center", marginBottom: 12 },
-  iconImage: { width: 72, height: 72, borderRadius: 16 },
+  iconImage: { width: 165, height: 72, borderRadius: 16 },
   iconFallback: {
     width: 72,
     height: 72,
@@ -34,7 +38,7 @@ export const AchievementCardStyles = StyleSheet.create({
     color: "#333",
   },
   description: {
-    marginTop: 6,
+    marginTop: 7,
     fontSize: 13,
     color: "#666",
     textAlign: "center",
@@ -43,27 +47,29 @@ export const AchievementCardStyles = StyleSheet.create({
 
   // coin row (centered)
   coinRow: {
-    marginTop: 6,
+    marginTop: 20,
     marginBottom: 10,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
   },
   coinIcon: {
-    width: 18,
-    height: 18,
+    width: 22,
+    height: 22,
     marginRight: 4,
   },
   coinText: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: "700",
     color: "#F4A300",
   },
 
   // progress bar
   progressRow: {
+    marginTop: 13,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
   },
   progressTrack: {
     flex: 1,
@@ -91,12 +97,12 @@ export const AchievementCardStyles = StyleSheet.create({
 
   // claim button
   claimPill: {
-    marginTop: 14,
+    marginTop: 25,
     paddingVertical: 12,
     paddingHorizontal: 18,
     borderRadius: 9999,
     alignSelf: "center",
-    backgroundColor: "#2F80ED",
+    backgroundColor: Color.blue,
     flexDirection: "row",
     alignItems: "center",
     shadowColor: "#2F80ED",
@@ -115,7 +121,7 @@ export const AchievementCardStyles = StyleSheet.create({
     marginLeft: 10,
   },
   claimCoinValue: {
-    color: "white",
+    color: Color.white,
     fontSize: 18,
     fontWeight: "700",
   },

@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from "react";
 import { View, Text, Image, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
-import type { Achievement } from "@/types/achievementTypes";
 import { AchievementCardStyles as styles } from "@/theme/achievement";
 import { claimAchievementAPI } from "@/services/achievementService";
 import coinImg from "@/assets/images/coin.png";
+import { Achievement } from "@/types/achievementTypes";
 
 type Props = {
   achievement: Achievement;
@@ -49,7 +49,11 @@ export default function AchievementCard({ achievement, onClaimed }: Props) {
     <View style={styles.card}>
       <View style={styles.iconWrap}>
         {achievement.imageUrl ? (
-          <Image source={{ uri: achievement.imageUrl }} style={styles.iconImage} resizeMode="contain" />
+          <Image
+            source={{ uri: achievement.imageUrl }} // Use the URL from backend
+            style={styles.iconImage}
+            resizeMode="contain"
+          />
         ) : (
           <View style={styles.iconFallback}>
             <Text style={styles.iconFallbackText}>🏅</Text>

@@ -14,8 +14,10 @@ export async function getUserGames(
   if (!token || !userId) throw new Error("Not logged in");
 
   const url = `/mygame/user/${userId}/mygame`;
+  const baseURL = api.defaults.baseURL;
 
   const res: AxiosResponse<GetUserGamesResponse> = await api.get(url, {
+    baseURL,
     headers: { Authorization: `Bearer ${token}` },
   });
 

@@ -8,7 +8,7 @@ import { AuthenticatedRequest } from "../types/authenticatedRequest";
 
 
 dotenv.config();
-const ACHIEVEMENT_IMAGE_FOLDER_ID = process.env.ACHIEVEMENT_IMAGE_FOLDER_ID!;
+const ACHIEVEMENT_IMAGE_FOLDERID = process.env.ACHIEVEMENT_IMAGE_FOLDERID!;
 
 interface AchievementProgress {
   id: number;
@@ -256,17 +256,25 @@ export const getAchievementImage = async (req: Request, res: Response) => {
   }
 
   try {
-    const file = await getFileFromDrive(fileName, ACHIEVEMENT_IMAGE_FOLDER_ID);
+    // Fetch the file from Google Drive
+    const file = await getFileFromDrive(fileName, ACHIEVEMENT_IMAGE_FOLDERID);
     if (!file) {
       res.status(404).json({ message: "Achievement image not found" });
       return;
     }
 
-    const downloadUrl = `https://drive.google.com/uc?export=download&id=${file.id}`;
+    // Construct the download URL for the file
+    const fileId = file.id;
+    const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+
+    // Fetch the image data using axios
     const response = await axios.get(downloadUrl, { responseType: "arraybuffer" });
 
+    // Set headers for the image response
     res.setHeader("Content-Type", file.mimeType || "image/png");
-    res.setHeader("Cache-Control", "public, max-age=3600");
+    res.setHeader("Cache-Control", "public, max-age=3600"); // Cache for an hour
+
+    // Send the image data as a response
     res.send(response.data);
   } catch (err) {
     console.error("Error fetching achievement image:", err);
