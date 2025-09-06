@@ -31,17 +31,24 @@ export async function fetchUserAchievements(): Promise<Achievement[]> {
 }
 
 export async function claimAchievementAPI(
-  achievementId: number
-): Promise<{ coinReward: number }> {
-  const token = await getToken();
-  if (!token) throw new Error("Not logged in");
-
-  const res: AxiosResponse<{
-    message: string;
-    data: { achievementId: number; coinReward: number };
-  }> = await api.post(`/achievement/${achievementId}/claim`, undefined, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  return res.data.data;
-}
+    achievementId: number
+  ): Promise<{ coinReward: number; newCoinBalance: number }> {
+    const token = await getToken();
+    const res = await api.post(`/achievement/${achievementId}/claim`, undefined, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data.data;
+  }
+  export async function fetchUserCoins(): Promise<number> {
+    const token = await getToken();
+    if (!token) throw new Error("Not logged in");
+  
+    const res = await api.get("/achievement/coins", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  
+    // Controller returns: { message, data: { coins: number } }
+    return res.data.data.coins as number;
+  }
+  
+  

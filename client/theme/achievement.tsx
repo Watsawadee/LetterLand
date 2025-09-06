@@ -14,7 +14,6 @@ export const AchievementCardStyles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     marginRight: 20,
-    
   },
 
   // top icon
@@ -128,7 +127,7 @@ export const AchievementCardStyles = StyleSheet.create({
 
   // claimed pill
   claimedPill: {
-    marginTop: 14,
+    marginTop: 25,
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 9999,

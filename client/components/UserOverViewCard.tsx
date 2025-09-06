@@ -9,8 +9,12 @@ import Explore from "../assets/images/Explore.png"
 import { Button, Card, Dialog, Portal, Text } from "react-native-paper";
 import { theme } from "@/theme";
 
+type Props = {
+  coins?: number;
+};
 
-const UserOverviewCard = () => {
+
+const UserOverviewCard = ({ coins }: Props) => {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
   const [gameType, setGameType] = useState<"crossword" | "wordsearch" | null>(
@@ -79,7 +83,7 @@ const UserOverviewCard = () => {
         </Text>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
           <Image source={coinIcon} style={{ width: 30, height: 30, }} />
-          <Text style={{ color: theme.colors.darkGrey }}>{user.coin}</Text>
+          <Text style={{ color: theme.colors.darkGrey }}>{typeof coins === "number" ? coins : user.coin}</Text>
         </View>
         <View style={{
           alignItems: "center",

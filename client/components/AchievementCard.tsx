@@ -7,7 +7,7 @@ import { Achievement } from "@/types/achievementTypes";
 
 type Props = {
   achievement: Achievement;
-  onClaimed?: (id: number) => void;
+  onClaimed?: (id: number, newBalance: number) => void; 
 };
 
 export default function AchievementCard({ achievement, onClaimed }: Props) {
@@ -31,7 +31,10 @@ export default function AchievementCard({ achievement, onClaimed }: Props) {
     try {
       setClaiming(true);
       const result = await claimAchievementAPI(achievement.id);
-      onClaimed?.(achievement.id);
+  
+      // Pass both id and balance up
+      onClaimed?.(achievement.id, result.newCoinBalance);
+  
       Alert.alert("Claimed!", `You received 🪙 ${result.coinReward}`);
     } catch (e: any) {
       const msg = e?.response?.data?.message || e?.message || "Failed to claim";
@@ -41,7 +44,6 @@ export default function AchievementCard({ achievement, onClaimed }: Props) {
       setClaiming(false);
     }
   };
-
   // Hide these when claim is available or already claimed
   const showProgressAndBadge = !canClaim && !alreadyClaimed;
 

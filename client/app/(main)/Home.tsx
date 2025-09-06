@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import {
   View,
@@ -17,14 +17,28 @@ import { Image } from "react-native";
 import mascot from "@/assets/images/mascot.png";
 import Book from "@/assets/icon/Book";
 import AchievementsRow from "../../components/AchievementRow";
+import { fetchUserCoins } from "@/services/achievementService";
 
 export default function Home() {
   const router = useRouter();
   const [showBook, setShowBook] = useState(false);
   const { width } = useWindowDimensions();
   const isWide = width >= 1024;
-
   const token = undefined;
+  const [coins, setCoins] = useState(0);
+
+  // Load the user’s current coins once at mount
+  useEffect(() => {
+    const loadCoins = async () => {
+      try {
+        const balance = await fetchUserCoins();
+        setCoins(balance);
+      } catch (e) {
+        console.error("Failed to load coins:", e);
+      }
+    };
+    loadCoins();
+  }, []);
 
   return (
     <View style={styles.root}>
@@ -74,7 +88,11 @@ export default function Home() {
           </View>
 
           {/* ⬇️ ACHIEVEMENT SECTION (live data) */}
-          <AchievementsRow title="Achievement"  />
+          <AchievementsRow
+  onCoinsUpdated={(newBalance) => {
+    setCoins(newBalance); // your local/global coin setter
+  }}
+/>
 
           {/* Recent game title row */}
           <View style={styles.sectionHeader}>
@@ -91,7 +109,7 @@ export default function Home() {
 
         {/* RIGHT SIDEBAR */}
         <View style={styles.rightPanel}>
-          <UserOverviewCard />
+        <UserOverviewCard coins={coins} />
         </View>
       </View>
     </View>

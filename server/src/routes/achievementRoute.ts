@@ -3,7 +3,6 @@ import {
   getUserAchievements,
   getAchievementImage,
   getUserCoins,
-  checkAchievementsMiddleware,
   triggerAchievementCheck, 
   claimAchievement,// <-- add this
 } from "../controllers/achievementController";

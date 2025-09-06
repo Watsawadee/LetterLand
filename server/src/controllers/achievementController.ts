@@ -225,21 +225,28 @@ export const claimAchievement: RequestHandler<{ userId: string; achievementId: s
       return;
     }
 
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { id: authUserId },
-        data: { coin: { increment: ua.achievement.coinReward } },
-      }),
-      prisma.userAchievement.update({
-        where: { id: ua.id },
-        data: { isClaimed: true },
-      }),
-    ]);
+// inside claimAchievement controller
+const [updatedUser, _ua] = await prisma.$transaction([
+  prisma.user.update({
+    where: { id: authUserId },
+    data: { coin: { increment: ua.achievement.coinReward } },
+    select: { coin: true }, // <-- get new balance
+  }),
+  prisma.userAchievement.update({
+    where: { id: ua.id },
+    data: { isClaimed: true },
+  }),
+]);
 
-    res.status(200).json({
-      message: "Reward claimed",
-      data: { achievementId, coinReward: ua.achievement.coinReward },
-    });
+res.status(200).json({
+  message: "Reward claimed",
+  data: {
+    achievementId,
+    coinReward: ua.achievement.coinReward,
+    newCoinBalance: updatedUser.coin, // <-- return balance
+  },
+});
+
     return;
   } catch (error) {
     console.error("Error claiming achievement:", error);
