@@ -12,8 +12,10 @@ import SettingIcon from "@/assets/icon/settingIcon";
 import { Color } from "@/theme/Color";
 import { Typography } from "@/theme/Font";
 
-
-const UserOverviewCard = () => {
+type Props = {
+  coins?: number;
+};
+const UserOverviewCard = ({ coins }: Props) => {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
   const [gameType, setGameType] = useState<"crossword" | "wordsearch" | null>(
@@ -85,7 +87,7 @@ const UserOverviewCard = () => {
               </Text>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
                 <Image source={coinIcon} style={{ width: 30, height: 30, }} />
-                <Text style={{ color: Color.gray }}>{user.coin}</Text>
+                <Text style={{ color: Color.gray }}>{typeof coins === "number" ? coins : user.coin}</Text>
               </View>
             </View>
             <Button

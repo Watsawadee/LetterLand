@@ -17,10 +17,8 @@ export const listPublicGames: RequestHandler<
     const rawLimit = Number(req.query.limit ?? 20);
     const rawOffset = Number(req.query.offset ?? 0);
 
-    const limit =
-      Number.isFinite(rawLimit) && rawLimit > 0 ? Math.floor(rawLimit) : 20;
-    const offset =
-      Number.isFinite(rawOffset) && rawOffset > 0 ? Math.floor(rawOffset) : 0;
+    const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.floor(rawLimit) : 20;
+    const offset = Number.isFinite(rawOffset) && rawOffset > 0 ? Math.floor(rawOffset) : 0;
 
     const [templates, total] = await Promise.all([
       prisma.gameTemplate.findMany({
@@ -39,6 +37,9 @@ export const listPublicGames: RequestHandler<
       prisma.gameTemplate.count({ where: { isPublic: true } }),
     ]);
 
+    console.log("Total Public Games:", total);  // Log total
+    console.log("Fetched Games:", templates.length);  // Log how many games we actually fetched
+
     const items = templates.map((t) => ({
       id: t.id,
       title: t.gameTopic,
@@ -53,6 +54,7 @@ export const listPublicGames: RequestHandler<
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
 
 export const startPublicGame: RequestHandler<
   { templateId: string },                                   // params typed here

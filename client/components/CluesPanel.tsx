@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, Text } from "react-native";
+import { View, StyleSheet, Text, ScrollView } from "react-native";
 import WordCard from "./WordCard";
 import QuestionListSlider from "./QuestionListSlider";
 import { CluesProps } from "../types/type";
@@ -13,6 +13,7 @@ export default function CluesPanel(props: CluesProps) {
     onChangeIndex,
     revealedAnswers,
   } = props;
+
   if (mode === "CROSSWORD_SEARCH") {
     return (
       <QuestionListSlider
@@ -27,28 +28,38 @@ export default function CluesPanel(props: CluesProps) {
   }
 
   return (
-    <View
-      style={[
-        styles.wordListWrapper,
-        { flexDirection: "row", flexWrap: "wrap" },
-      ]}
-    >
-      {questionsAndAnswers.map(({ answer }) => (
-        <WordCard
-          key={answer}
-          word={answer}
-          found={foundWordsList.includes(answer)}
-        />
-      ))}
+    <View style={styles.wordListWrapper}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.wordRow}
+      >
+        {questionsAndAnswers.map(({ answer }) => (
+          <WordCard
+            key={answer}
+            word={answer}
+            found={foundWordsList.includes(answer)}
+          />
+        ))}
+      </ScrollView>
     </View>
   );
 }
 
+const ROW_HEIGHT = 75;
+
 const styles = StyleSheet.create({
   wordListWrapper: {
-    padding: 10,
+    height: ROW_HEIGHT,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "rgba(249, 249, 249, 0.8)",
+  },
+  wordRow: {
+    alignItems: "center",
+    paddingRight: 8,
   },
 });

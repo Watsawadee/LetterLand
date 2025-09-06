@@ -82,7 +82,7 @@ export function useGameLogic(rawConfig: UseGameLogicConfig) {
   }, [answers, GRID_SIZE]);
 
   const showHintForAnswer = useCallback(
-    (answer: string) => {
+    (answer: string, yellowOnly?: boolean) => {
       const target = answer.toUpperCase().trim();
       if (mode === "WORD_SEARCH") {
         const positions = answerPositionsRef.current[target];
@@ -91,8 +91,16 @@ export function useGameLogic(rawConfig: UseGameLogicConfig) {
           setActiveHintWord(target);
         }
       } else if (mode === "CROSSWORD_SEARCH") {
-        if (!revealedAnswers.includes(target)) {
-          setRevealedAnswers((prev) => [...prev, target]);
+        if (yellowOnly) {
+          const positions = answerPositionsRef.current[target];
+          if (positions?.length) {
+            setHintCell(positions[0]);
+            setActiveHintWord(target);
+          }
+        } else {
+          if (!revealedAnswers.includes(target)) {
+            setRevealedAnswers((prev) => [...prev, target]);
+          }
         }
       }
     },

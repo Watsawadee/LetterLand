@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useRouter } from "expo-router";
 import {
@@ -11,14 +10,14 @@ import {
 } from "react-native";
 import GardenBackgroundBlueSky from "@/assets/backgroundTheme/GardenBackgroundBlue";
 import WordBankModal from "@/components/WordBank";
-import {ButtonStyles} from "@/theme/ButtonStyles";
+import { ButtonStyles } from "@/theme/ButtonStyles";
 import { Typography } from "@/theme/Font";
 import PublicGames from "@/components/publicgame";      
 import UserOverviewCard from "@/components/UserOverViewCard";
-import { Image } from "react-native"; 
-import mascot from "@/assets/images/mascot.png"; 
 import Book from "@/assets/icon/Book"; 
+import ArrowLeft from "@/assets/icon/ArrowLeft";
 
+ 
 
 export default function Public() {
   const router = useRouter();
@@ -26,64 +25,48 @@ export default function Public() {
   const { width } = useWindowDimensions();
   const isWide = width >= 1024;
 
+  // Navigate back to Home
+  const handleBackPress = () => {
+    router.push('/Home'); 
+  };
+
   return (
     <View style={styles.root}>
-
       <GardenBackgroundBlueSky style={styles.bg} />
 
-      <View style={[styles.page, { flexDirection: isWide ? "row" : "column" }]}>
+      <View style={[styles.page, { flexDirection: isWide ? 'row' : 'column' }]}>
         {/* LEFT PANEL */}
-        <View
-          style={[
-            styles.leftPanel,
-            { marginRight: isWide ? 24 : 0, marginBottom: isWide ? 0 : 24 },
-          ]}
-        >
-
+        <View style={[styles.leftPanel, { marginRight: isWide ? 24 : 0, marginBottom: isWide ? 0 : 24 }]}>
+          
+          {/* Header with back button */}
           <View style={styles.headerRow}>
+            <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+              <ArrowLeft width={24} height={24} />
+              <Text style={[Typography.header30, { marginLeft: 4 }]}>Public Board</Text>
+            </TouchableOpacity>
 
-  <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-    <Image
-      source={mascot}
-      style={{ width: 90, height: 90, borderRadius: 25, transform: [{ scaleX: -1 }] }}
-      resizeMode="contain"
-    />
-    <View>
-      <Text style={[Typography.header25, { marginBottom: 4 }]}>
-        Hello Watsawadee Saeyong
-      </Text>
-      <Text style={[Typography.body20, { opacity: 0.8 }]}>
-        How are you? Long time no see LEK
-      </Text>
-    </View>
-  </View>
-
- {/* Word Bank Button */}
- <TouchableOpacity
+            {/* Word Bank Button */}
+            <TouchableOpacity
               style={[ButtonStyles.wordBank.container, { flexDirection: "row", alignItems: "center" }]}
               onPress={() => setShowBook(true)}
             >
-              <Book width={50} height={50} style={{ marginRight: 4 }} /> 
+              <Book width={50} height={50} style={{ marginRight: 4 }} />
               <View style={{ flexDirection: "column", alignItems: "flex-start", paddingLeft: 8 }}>
-                <Text style={ButtonStyles.wordBank.text}>Word</Text> 
-                <Text style={ButtonStyles.wordBank.text}>Bank</Text>  
+                <Text style={ButtonStyles.wordBank.text}>Word</Text>
+                <Text style={ButtonStyles.wordBank.text}>Bank</Text>
               </View>
             </TouchableOpacity>
 
-<WordBankModal visible={showBook} onClose={() => setShowBook(false)} />
+            <WordBankModal visible={showBook} onClose={() => setShowBook(false)} />
           </View>
 
-          <View style={styles.sectionHeader}>
-            <Text style={Typography.header25}>Public game</Text>
-          </View>
-
+          {/* Public Games Scroll */}
           <ScrollView showsVerticalScrollIndicator={false} style={styles.publicGamesContainer}>
-  <PublicGames title=" " />
-
-</ScrollView>
+          <PublicGames title=" " />
+          </ScrollView>
         </View>
 
-       
+        {/* RIGHT PANEL */}
         <View style={styles.rightPanel}>
           <UserOverviewCard />
         </View>
@@ -110,46 +93,44 @@ const styles = StyleSheet.create({
   page: {
     flex: 1,
     width: "100%",
-    maxWidth: 1500,
+    maxWidth: 1300,
+    maxHeight: 850,
     paddingHorizontal: 0,
     paddingTop: 16,
     paddingBottom: 24,
     flexDirection: "row",
   },
-
   leftPanel: {
     flex: 2.5,  
     borderRadius: 20,
     padding: 16,
   },
-  
   rightPanel: {
     flex: 1,  
     borderRadius: 20,
     padding: 16,
-    // marginLeft: 20,
     justifyContent: 'center', 
     alignItems: 'center',  
   },
-
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    gap: 12,
     alignItems: "center",
     marginBottom: 40,
-  },
-  
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
   },
   link: {
     color: "#2F80ED",
   },
   publicGamesContainer: {
-    flexDirection: "column",  // Ensures the children are laid out horizontally
-    gap: 16,  // Optional: Space between items
+    flexDirection: "column",
+    gap: 16,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,              // smaller gap between arrow and text
+    paddingVertical: 8,
+    paddingHorizontal: 0, // remove horizontal padding to shift left
+    marginLeft: -8,       // nudge it to the left
   },
 });

@@ -1,8 +1,7 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { CardProps } from '../types/gametypes';
-import { cardStyles as styles } from '../theme/CardStyles'; // adjust path as needed
-
+import { cardStyles as styles } from '../theme/CardStyles';
 
 export const Card: React.FC<CardProps> = ({
   image,

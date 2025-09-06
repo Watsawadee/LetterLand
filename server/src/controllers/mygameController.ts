@@ -32,8 +32,7 @@ export const getUserGames = async (
     orderBy: { startedAt: "desc" },
   });
 
-  // const items: GetUserGamesResponse["items"] = games.map((g) => ({
-  const items: any = games.map((g) => ({
+  const items: GetUserGamesResponse["items"] = games.map((g :any) => ({
 
     id: g.id,
     isFinished: g.isFinished,

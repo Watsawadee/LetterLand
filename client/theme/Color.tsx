@@ -3,6 +3,7 @@ export const Color: { [key: string]: string } = {
   lightblue: '#F2F8F9',
   green: '#71CB86',
   lightgreen: '#9EDBB3',
+  darkgreen: '#49A35B',
   gray: '#5B6073',
   pink: '#EF89C4',
   white: '#FFFFFF',

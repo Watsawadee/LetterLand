@@ -14,6 +14,7 @@ import mygameRoutes from './routes/mygameRoute';
 import publicgameRoutes from './routes/publicgameRoute';
 import wordBankRoutes from './routes/wordbankRoute'
 import settingRoutes from './routes/settingRoutes'
+import achievementRoutes from "./routes/achievementRoute";
 
 dotenv.config();
 const app = express();
@@ -38,6 +39,7 @@ app.use('/mygame', mygameRoutes);
 app.use("/publicgame", publicgameRoutes);
 app.use("/wordbank", wordBankRoutes);
 app.use("/setting", settingRoutes)
+app.use("/achievement", achievementRoutes);
 
 
 app.listen(3000, () => {

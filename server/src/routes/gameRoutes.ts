@@ -3,17 +3,22 @@ import {
   getAllGameController,
   getAllGameByUserIdController,
   getGameDataController,
+  getWordFoundController,
   recordFoundWordController,
   batchRecordFoundWordsController,
+  completeGameController
 } from "../controllers/gameController";
 
 const router = express.Router();
 
 router.get("/", getAllGameController);
 router.get("/user/:userId", getAllGameByUserIdController);
-router.get("/:gameId", getGameDataController);
+router.get("/wordfound/:gameId", getWordFoundController);
 
-router.post("/:gameId/wordfound", recordFoundWordController);
+router.post("/:gameId/complete", completeGameController);
 router.post("/:gameId/wordfound/batch", batchRecordFoundWordsController);
+router.post("/:gameId/wordfound", recordFoundWordController);
+
+router.get("/:gameId", getGameDataController);
 
 export default router;
