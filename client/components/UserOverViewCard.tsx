@@ -144,7 +144,7 @@ const UserOverviewCard = ({ coins }: Props) => {
 
                 <Text style={{ fontWeight: "700", color: Color.gray, display: "flex", flexDirection: "column", justifyContent: "center" }}>Solve puzzles created by others</Text>
               </View>
-              <Button mode="contained" style={{ backgroundColor: Color.green }} onPress={() => { router.replace("/Public") }}>
+              <Button mode="contained" style={{ backgroundColor: Color.green }} onPress={() => { router.replace("/Publicboard") }}>
                 <Text style={{ color: Color.white, fontWeight: "bold" }}>Explore other game</Text>
               </Button>
             </View>

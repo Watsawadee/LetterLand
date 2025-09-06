@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const USE_LAN = false;
+const USE_LAN = true;
 
 const API_URL = USE_LAN ? "http://localhost:3000" : "http://10.4.56.20:3000";
 const api = axios.create({
