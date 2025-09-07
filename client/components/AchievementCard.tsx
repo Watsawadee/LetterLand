@@ -35,7 +35,6 @@ export default function AchievementCard({ achievement, onClaimed }: Props) {
       // Pass both id and balance up
       onClaimed?.(achievement.id, result.newCoinBalance);
   
-      Alert.alert("Claimed!", `You received 🪙 ${result.coinReward}`);
     } catch (e: any) {
       const msg = e?.response?.data?.message || e?.message || "Failed to claim";
       Alert.alert("Oops", msg);
