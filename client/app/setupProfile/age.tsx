@@ -4,6 +4,7 @@ import { Card, Text, TextInput, Button } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { getLoggedInUserId } from "@/utils/auth";
 import GardenBackground from "@/assets/backgroundTheme/GardenBackground";
+import { Color } from "@/theme/Color";
 export default function AgeScreen() {
   const [age, setAge] = useState("");
   const router = useRouter();
@@ -27,10 +28,12 @@ export default function AgeScreen() {
     <View
       style={{
         flex: 1,
-        alignItems: "center",
+        width: "100%",
+        height: "100%",
         justifyContent: "center",
-        backgroundColor: "#ffffff",
-        padding: 24,
+        alignItems: "center",
+        position: "relative",
+        backgroundColor: "#F2F8F9",
       }}
     >
       <GardenBackground
@@ -46,44 +49,48 @@ export default function AgeScreen() {
       />
 
 
-
-      <Card
-        style={{
-          backgroundColor: "transparent",
-          padding: 40,
-          width: "100%",
-          maxWidth: 400,
-          gap: 24,
-          borderRadius: 16,
-        }}
-      >
-        <Text
-          variant="titleLarge"
-          style={{ textAlign: "center", fontWeight: "800", color: "#5B6073", marginBottom: 16 }}
-        >
-          How old are you?
-        </Text>
-
-        <TextInput
-          placeholder="Enter your age"
-          keyboardType="numeric"
-          value={age}
-          onChangeText={setAge}
-          mode="outlined"
-          textColor="black"
-          activeOutlineColor="#5B6073"
-          style={{ marginBottom: 12, backgroundColor: "transparent" }}
-        />
-
-        <Button
+      <View style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "40%" }}>
+        <Card
           mode="contained"
-          onPress={handleAge}
-          style={{ backgroundColor: "#007AFF", borderRadius: 8 }}
-          contentStyle={{ paddingVertical: 6 }}
+          style={{
+            backgroundColor: "transparent",
+            padding: 40,
+            width: "100%",
+            maxWidth: 400,
+            gap: 24,
+            borderRadius: 16,
+          }}
         >
-          <Text style={{ color: "white", fontWeight: "800", fontSize: 16 }}>Continue</Text>
-        </Button>
-      </Card>
+          <View style={{ display: "flex", flexDirection: "column", width: "100%", justifyContent: "center" }}>
+            <Text
+              variant="titleLarge"
+              style={{ textAlign: "center", fontWeight: "800", color: "#5B6073", marginBottom: 16 }}
+            >
+              How old are you?
+            </Text>
+
+            <TextInput
+              placeholder="Enter your age"
+              keyboardType="numeric"
+              value={age}
+              onChangeText={setAge}
+              mode="outlined"
+              textColor="black"
+              activeOutlineColor="#5B6073"
+              style={{ marginBottom: 12, backgroundColor: "transparent" }}
+            />
+
+            <Button
+              mode="contained"
+              onPress={handleAge}
+              style={{ backgroundColor: Color.blue, borderRadius: 8 }}
+              contentStyle={{ paddingVertical: 6 }}
+            >
+              <Text style={{ color: "white", fontWeight: "800", fontSize: 16 }}>Continue</Text>
+            </Button>
+          </View>
+        </Card>
+      </View>
     </View>
   );
 }

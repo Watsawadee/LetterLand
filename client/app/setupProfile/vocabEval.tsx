@@ -86,11 +86,13 @@ const VocabEvalScreen = () => {
   return (
     <View
       style={{
-        flexGrow: 1,
+        flex: 1,
+        width: "100%",
+        height: "100%",
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "#fff",
-        padding: 16,
+        position: "relative",
+        backgroundColor: "#F2F8F9",
       }}
     >
       <GardenBackground
@@ -104,71 +106,77 @@ const VocabEvalScreen = () => {
           zIndex: 0,
         }}
       />
-      <Card
-        style={{
-          padding: 24,
-          width: "90%",
-          maxWidth: "80%",
-          borderRadius: 16,
-          gap: 16,
-          backgroundColor: "transparent",
+      <View style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
 
-        }}
-      >
-        <Text
-          variant="titleLarge"
-          style={{
-            textAlign: "center",
-            fontWeight: "800",
-            color: "#5B6073",
-            marginBottom: 16,
-          }}
-        >
-          What words are you familiar with?
-        </Text>
-
-
-        <View style={{
-          flexDirection: "row",
-          flexWrap: "wrap",
-          justifyContent: "center",
-          gap: 8,
-        }}>
-          {words.map((word, index) => (
-            <Button
-              key={index}
-              style={{
-                margin: 4,
-                backgroundColor: selectedWords.includes(word) ? "#58A7F8" : "white",
-                borderColor: "#58A7F8",
-                borderRadius: 12,
-              }}
-              labelStyle={{
-                color: selectedWords.includes(word) ? "white" : "#58A7F8",
-                fontWeight: "600",
-              }}
-              onPress={() => handleWordToggle(word)}
-            >
-              {word}
-            </Button>
-          ))}
-        </View>
-
-        <Button
+        <Card
           mode="contained"
-          onPress={handleSubmit}
           style={{
-            backgroundColor: "#58A7F8",
-            borderRadius: 10,
-            marginTop: 20,
-            alignSelf: "center",
+            padding: 24,
+            width: "100%",
+            minWidth: "80%",
+            borderRadius: 16,
+            gap: 16,
+            backgroundColor: "transparent",
+
           }}
         >
-          <Text style={{ color: "white", fontWeight: "800", fontSize: 16 }}>
-            Continue
-          </Text>
-        </Button>
-      </Card>
+          <View style={{ display: "flex", flexDirection: "column", width: "100%", justifyContent: "center" }}>
+            <Text
+              variant="titleLarge"
+              style={{
+                textAlign: "center",
+                fontWeight: "800",
+                color: "#5B6073",
+                marginBottom: 16,
+              }}
+            >
+              What words are you familiar with?
+            </Text>
+
+
+            <View style={{
+              flexDirection: "row",
+              flexWrap: "wrap",
+              justifyContent: "center",
+              gap: 8,
+            }}>
+              {words.map((word, index) => (
+                <Button
+                  key={index}
+                  style={{
+                    margin: 4,
+                    backgroundColor: selectedWords.includes(word) ? "#58A7F8" : "white",
+                    borderColor: "#58A7F8",
+                    borderRadius: 12,
+                  }}
+                  labelStyle={{
+                    color: selectedWords.includes(word) ? "white" : "#58A7F8",
+                    fontWeight: "600",
+                  }}
+                  onPress={() => handleWordToggle(word)}
+                >
+                  {word}
+                </Button>
+              ))}
+            </View>
+
+            <Button
+              mode="contained"
+              onPress={handleSubmit}
+              style={{
+                backgroundColor: "#58A7F8",
+                borderRadius: 10,
+                marginTop: 20,
+                alignSelf: "center",
+              }}
+            >
+              <Text style={{ color: "white", fontWeight: "800", fontSize: 16 }}>
+                Continue
+              </Text>
+            </Button>
+          </View>
+        </Card>
+      </View>
     </View>
   );
 };
