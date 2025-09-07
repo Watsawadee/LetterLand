@@ -41,9 +41,12 @@ export default function SharedGameScreen({
   const hasPostedWordsRef = useRef(false);
   const hasPostedCompleteRef = useRef(false);
 
+  const restartLockRef = useRef(false);
+  const [resetting, setResetting] = useState(false);
+
   useEffect(() => {
     if (!gameData?.id) return;
-    fetchGamePronunciations(gameData.id).catch(() => { });
+    fetchGamePronunciations(gameData.id).catch(() => {});
   }, [gameData?.id]);
 
   const {
@@ -85,18 +88,30 @@ export default function SharedGameScreen({
   const hasTimer = !!(gameData?.timer && gameData.timer > 0);
 
   const hardResetRound = () => {
+    if (restartLockRef.current) return;
+    restartLockRef.current = true;
+    setResetting(true);
+
     setAllFoundVisible(false);
+    setTimeUp(false);
+    setWordModalVisible(false);
+
     resetGame();
     setActiveQuestionIndex(0);
     clearActiveHint();
     resetHints();
-    setTimeUp(false);
     setAwardedCoins(null);
     setUsedSeconds(null);
     hasPostedWordsRef.current = false;
     hasPostedCompleteRef.current = false;
     startedAtRef.current = Date.now();
+
     setRoundKey((k) => k + 1);
+
+    setTimeout(() => {
+      restartLockRef.current = false;
+      setResetting(false);
+    }, 0);
   };
 
   const handleBackPress = () => setConfirmExitVisible(true);
@@ -149,10 +164,10 @@ export default function SharedGameScreen({
         foundWordsList,
         questionsAndAnswers
       );
-    } catch { }
+    } catch {}
     try {
       await postCompletionOnce();
-    } catch { }
+    } catch {}
 
     setWordModalVisible(true);
     setTimeUp(false);
@@ -196,6 +211,9 @@ export default function SharedGameScreen({
 
   const wordsLearnedCount = foundWordsList.length;
 
+  const endModalVisible = !resetting && !wordModalVisible && (allFoundVisible || (timeUp && hasTimer));
+  const endVariant = allFoundVisible ? "success" : "timeout";
+
   return (
     <View style={styles.container}>
       <View style={styles.topRow}>
@@ -214,7 +232,7 @@ export default function SharedGameScreen({
             onTimeUp={() => {
               if (hasTimer) setTimeUp(true);
             }}
-            paused={allFoundVisible || timeUp || wordModalVisible}
+            paused={allFoundVisible || timeUp || wordModalVisible || resetting}
             resetKey={roundKey}
           />
         </View>
@@ -227,7 +245,11 @@ export default function SharedGameScreen({
             foundWords={foundWords}
             hintCell={hintCell}
             fontSize={fontSettings.fontSize}
-            panHandlers={timeUp || wordModalVisible ? {} : panResponder.panHandlers}
+            panHandlers={
+              (timeUp || wordModalVisible || allFoundVisible || resetting)
+                ? {}
+                : panResponder.panHandlers
+            }
             layoutRef={layoutRef}
           />
         </View>
@@ -253,32 +275,19 @@ export default function SharedGameScreen({
         onCancel={handleExitCancel}
       />
 
-      {!wordModalVisible && (
-        <>
-          {/* SUCCESS modal */}
-          <GameEndModal
-            visible={allFoundVisible}
-            variant="success"
-            hasTimer={hasTimer}
-            timeUsedSeconds={usedSeconds ?? undefined}
-            coinsEarned={awardedCoins ?? undefined}
-            wordsLearned={wordsLearnedCount}
-            onRestart={hardResetRound}
-            onContinue={openWordModal}
-            restartIcon={<Restart />}
-            continueIcon={<ArrowRight />}
-          />
-
-          {/* TIMEOUT / NOT COMPLETED modal (only meaningful with timer) */}
-          <GameEndModal
-            visible={timeUp && hasTimer}
-            variant="timeout"
-            onRestart={hardResetRound}
-            onContinue={openWordModal}
-            restartIcon={<Restart />}
-            continueIcon={<ArrowRight />}
-          />
-        </>
+      {endModalVisible && (
+        <GameEndModal
+          visible={endModalVisible}
+          variant={endVariant}
+          hasTimer={hasTimer}
+          timeUsedSeconds={usedSeconds ?? undefined}
+          coinsEarned={awardedCoins ?? undefined}
+          wordsLearned={wordsLearnedCount}
+          onRestart={hardResetRound}
+          onContinue={openWordModal}
+          restartIcon={<Restart />}
+          continueIcon={<ArrowRight />}
+        />
       )}
 
       <WordLearnedModal
