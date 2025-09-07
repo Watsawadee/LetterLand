@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react"
-import { View, Text, ScrollView } from "react-native"
+import { View, Text, ScrollView, Image } from "react-native"
 import { useTotalGamesThisWeek, useUserTotalPlaytime, useUserWordLearned } from "@/hooks/useDashboard";
 import Swiper from "react-native-swiper";
 import { Color } from "@/theme/Color";
@@ -13,6 +13,7 @@ import { Dimensions } from "react-native";
 import Carousel, { Pagination, ICarouselInstance } from "react-native-reanimated-carousel";
 import { useSharedValue } from "react-native-reanimated";
 import { Typography } from "@/theme/Font";
+import NoGamePlayed from "@/assets/backgroundTheme/NoGamePlayed";
 
 const MAX_WEEKS = 5;
 const UserOverviewPerformance = () => {
@@ -54,6 +55,30 @@ const UserOverviewPerformance = () => {
                 </View>
             );
         }
+        const noGamePlayed = counts.every((c) => c === 0)
+        if (noGamePlayed) {
+            return (
+                <View style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%" }}>
+                    <Card style={{
+                        backgroundColor: "#F2F8F9", borderRadius: 16,
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        width: CHART_W
+                    }}>
+                        <Card.Title
+                            title={"📆 " + weekLabel}
+                            titleStyle={{ color: Color.gray, textAlign: "center", fontSize: 20 }}
+                            style={{ alignItems: "center", paddingBottom: 0 }}
+                        />
+                        <Text style={{ color: Color.grey, fontWeight: "bold", fontSize: 20, textAlign: "center" }}>
+                            No games played this week!
+                        </Text>
+                        <NoGamePlayed />
+                    </Card>
+                </View>
+            )
+        }
         return (
 
             <Card style={{
@@ -67,9 +92,9 @@ const UserOverviewPerformance = () => {
             }>
                 <Card.Title
                     title="Games Played"
-                    subtitle={weekLabel}
+                    subtitle={"📆 " + weekLabel}
                     titleStyle={{ color: Color.gray, fontWeight: "bold", fontSize: 25, textAlign: "center" }}
-                    subtitleStyle={{ color: Color.gray, textAlign: "center" }}
+                    subtitleStyle={{ color: Color.gray, textAlign: "center", fontSize: 20 }}
                     style={{ alignItems: "center", paddingBottom: 0 }}
                 />
 
