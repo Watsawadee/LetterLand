@@ -108,16 +108,14 @@ const styles = StyleSheet.create({
     height: 100,
   },
   headerTitle: {
-    ...Typography.header20,
+    ...Typography.popupbody25,
     fontWeight: "800",
     color: Color.white,
   },
-
   body: { paddingHorizontal: 20, paddingVertical: 18 },
   sliderRow: { flexDirection: "row", alignItems: "center", marginBottom: 16 },
   iconBtn: { width: 36, alignItems: "center" },
   iconText: { ...Typography.header20, color: "#000", fontWeight: "900" },
-
   sliderWrap: {
     flex: 1,
     position: "relative",
@@ -142,12 +140,11 @@ const styles = StyleSheet.create({
     borderRadius: DOT_SIZE / 2,
     backgroundColor: "#000",
   },
-
   sizeLabel: {
     ...Typography.body20,
     color: Color.gray,
     textAlign: "center",
-    marginBottom: 16,
+    marginBottom: 20,
   },
   primaryBtn: {
     alignSelf: "center",

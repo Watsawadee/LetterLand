@@ -214,7 +214,7 @@ export default function SharedGameScreen({
             onTimeUp={() => {
               if (hasTimer) setTimeUp(true);
             }}
-            paused={allFoundVisible || timeUp}
+            paused={allFoundVisible || timeUp || wordModalVisible}
             resetKey={roundKey}
           />
         </View>
@@ -227,7 +227,7 @@ export default function SharedGameScreen({
             foundWords={foundWords}
             hintCell={hintCell}
             fontSize={fontSettings.fontSize}
-            panHandlers={timeUp ? {} : panResponder.panHandlers}
+            panHandlers={timeUp || wordModalVisible ? {} : panResponder.panHandlers}
             layoutRef={layoutRef}
           />
         </View>
