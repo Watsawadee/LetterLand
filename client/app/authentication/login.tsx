@@ -6,6 +6,7 @@ import { useLogin } from "@/hooks/useLogins";
 import { storeToken } from "@/utils/storeToken";
 import GardenBackground from "@/assets/backgroundTheme/GardenBackground";
 import { jwtDecode } from "jwt-decode";
+import { Color } from "@/theme/Color";
 const LoginScreen = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -54,7 +55,7 @@ const LoginScreen = () => {
         width: "100%",
         height: "100%",
         justifyContent: "center",
-        // alignItems: "center",
+        alignItems: "center",
         position: "relative",
         backgroundColor: "#F2F8F9",
       }}
@@ -72,65 +73,63 @@ const LoginScreen = () => {
       />
 
 
-
-      <Card
-        mode="contained"
-        style={{
-          padding: 24,
-          width: '100%',
-          maxWidth: "100%",
-          backgroundColor: 'transparent',
-          elevation: 0,
-          borderColor: 'transparent',
-          borderRadius: 0,
-        }}
-      >
-        <Text
-          variant="titleLarge"
+      <View style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "40%" }}>
+        <Card
+          mode="contained"
           style={{
-            textAlign: "center",
-            fontWeight: "800",
-            color: "#5B6073",
-            marginBottom: 12,
+            width: "100%",
+            maxWidth: "100%",
+            backgroundColor: "transparent",
+            gap: 16,
           }}
         >
-          Log in to your Account
-        </Text>
-        <TextInput
-          placeholder={isFocused ? '' : "Email"}
-          value={email}
-          onChangeText={setEmail}
-          mode="outlined"
-          autoCapitalize="none"
-          textColor="black"
-          activeOutlineColor="#5B6073"
-          style={{ marginBottom: 12, backgroundColor: "transparent" }}
-        />
-
-        <TextInput
-          placeholder={isFocused ? '' : 'Password'}
-          value={password}
-          onChangeText={setPassword}
-          mode="outlined"
-          secureTextEntry
-          textColor="black"
-          activeOutlineColor="#5B6073"
-          style={{ marginBottom: 12, backgroundColor: "transparent", color: "black" }}
-        />
-        <Button
-          mode="contained"
-          onPress={handleLogin}
-          style={{ backgroundColor: "#007AFF", borderRadius: 8 }}
-          contentStyle={{ paddingVertical: 6 }}
-          loading={isPending}
-          disabled={isPending}
-
-        >
-          <Text style={{ color: "white", fontWeight: "800", fontSize: 16 }}>
-            Login
+          <Text
+            variant="titleLarge"
+            style={{
+              textAlign: "center",
+              fontWeight: "800",
+              color: "#5B6073",
+              marginBottom: 12,
+            }}
+          >
+            Log in to your Account
           </Text>
-        </Button>
-      </Card>
+          <TextInput
+            placeholder={isFocused ? '' : "Email"}
+            value={email}
+            onChangeText={setEmail}
+            mode="outlined"
+            autoCapitalize="none"
+            textColor="black"
+            activeOutlineColor="#5B6073"
+            style={{ marginBottom: 12, backgroundColor: "transparent" }}
+          />
+
+          <TextInput
+            placeholder={isFocused ? '' : 'Password'}
+            value={password}
+            onChangeText={setPassword}
+            mode="outlined"
+            secureTextEntry
+            textColor="black"
+            activeOutlineColor="#5B6073"
+            style={{ marginBottom: 12, backgroundColor: "transparent", color: "black" }}
+          />
+          <Button
+            mode="contained"
+            onPress={handleLogin}
+            style={{ backgroundColor: Color.blue, borderRadius: 8 }}
+            contentStyle={{ paddingVertical: 6 }}
+            loading={isPending}
+            disabled={isPending}
+
+          >
+            <Text style={{ color: "white", fontWeight: "800", fontSize: 16 }}>
+              Login
+            </Text>
+          </Button>
+        </Card>
+      </View>
     </View>
   );
 };
