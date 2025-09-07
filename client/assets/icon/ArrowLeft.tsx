@@ -10,7 +10,7 @@ const ArrowLeft = (props: SvgProps) => (
   >
     <Path
       fill="none"
-      stroke="currentColor"
+      stroke={props.color ?? "#000"}
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeWidth={1.5}

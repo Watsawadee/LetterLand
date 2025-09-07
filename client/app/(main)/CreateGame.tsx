@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useUserProfile } from "@/hooks/useGetUserProfile";
-import { View, Dimensions, Switch, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
+import { View, Dimensions, Switch, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, Pressable } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import LoadingPopup from "@/components/LoadingPopupCreateGame";
 
@@ -19,6 +19,7 @@ import PlainTextIcon from "@/assets/icon/plainText";
 import LinkIcon from "@/assets/icon/linkIcon";
 import PdfIcon from "@/assets/icon/pdfIcon";
 import { Color } from "@/theme/Color";
+import ArrowLeft from "@/assets/icon/ArrowLeft";
 
 const CreateGameScreen = () => {
   const router = useRouter();
@@ -194,11 +195,25 @@ const CreateGameScreen = () => {
               }}
               keyboardShouldPersistTaps="handled"
             >
-              <Text variant="titleLarge" style={{ fontWeight: "800", color: "#333" }}>
-                Create Puzzle
-              </Text>
+              <View style={{ display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "flex-start", marginBottom: 20 }}>
+                <Pressable
+                  onPress={() => {
+                    if (router.canGoBack?.()) {
+                      router.back();
+                    } else {
+                      router.replace("/Home");
+                    }
+                  }}
+                  hitSlop={10}
+                >
+                  <ArrowLeft color={Color.gray} />
+                </Pressable>
+                <Text variant="titleLarge" style={{ fontWeight: "800", color: Color.gray }}>
+                  Create Puzzle
+                </Text>
+              </View>
               <View style={{ gap: 10 }}>
-                <Text style={{ fontWeight: "700", color: "#555" }}>English Level</Text>
+                <Text style={{ fontWeight: "700", color: Color.gray }}>English Level</Text>
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                   {["A1", "A2", "B1", "B2", "C1", "C2"].map((level) => (
                     <Button
@@ -220,7 +235,7 @@ const CreateGameScreen = () => {
                 </View>
 
                 <View style={{ flexDirection: "column", gap: 8 }}>
-                  <Text style={{ fontWeight: "700", color: "#555" }}>Timer</Text>
+                  <Text style={{ fontWeight: "700", color: Color.gray }}>Timer</Text>
                   <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                     {TIMER_OPTIONS.map((t) => {
                       const active = timer === t;
@@ -250,7 +265,7 @@ const CreateGameScreen = () => {
                   </View>
                 </View>
                 <View style={{ flexDirection: "column", gap: 8 }}>
-                  <Text style={{ fontWeight: "700", color: "#555" }}>Privacy</Text>
+                  <Text style={{ fontWeight: "700", color: Color.gray }}>Privacy</Text>
                   <View style={{ flexDirection: "row", gap: 8 }}>
                     <Button
                       style={{
@@ -291,7 +306,7 @@ const CreateGameScreen = () => {
                 </View>
 
                 <View style={{ flexDirection: "column", gap: 8 }}>
-                  <Text style={{ fontWeight: "700", color: "#555" }}>
+                  <Text style={{ fontWeight: "700", color: Color.gray }}>
                     Upload type
                   </Text>
                   <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
