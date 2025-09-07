@@ -4,6 +4,7 @@ dotenv.config();
 
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
 
+
 export const getSynonyms = async (word: string): Promise<string[]> => {
   try {
     const res = await axios.get("https://api.datamuse.com/words", {
@@ -18,38 +19,6 @@ export const getSynonyms = async (word: string): Promise<string[]> => {
     return [word];
   }
 };
-
-/** ---------- Utilities ---------- **/
-
-function stripCodeFences(s: string): string {
-  return s.replace(/```json/gi, "").replace(/```/g, "").trim();
-}
-
-function looseJsonFix(s: string): string {
-  // Remove trailing commas before ] or }
-  return s.replace(/,\s*([\]}])/g, "$1");
-}
-
-/** Keep first occurrence of each unique answer (case-insensitive) AFTER sanitization. */
-function dedupeQuestions<T extends { answer: string }>(qs: T[]): T[] {
-  const seen = new Set<string>();
-  const out: T[] = [];
-  for (const q of qs) {
-    const key = (q.answer ?? "").trim().toLowerCase();
-    if (!key) continue; // drop empty
-    if (seen.has(key)) continue; // drop duplicates
-    seen.add(key);
-    out.push(q);
-  }
-  return out;
-}
-
-/** Sanitize an answer for grid use (letters & digits only, lowercase). */
-function sanitizeAnswer(s: string): string {
-  return (s ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
-}
-
-/** ---------- Main ---------- **/
 
 export const generateCrosswordHints = async (
   extractedText: string,
@@ -109,18 +78,18 @@ Respond only with the following strict JSON format:
       throw new Error("No valid response from Gemini API.");
     }
 
+    // ---- Parse + normalize AI response ----
     let geminiResponse = response.data.candidates[0].content.parts?.[0]?.text ?? "";
     geminiResponse = looseJsonFix(stripCodeFences(geminiResponse));
-
     let gameData = JSON.parse(geminiResponse);
 
-    // Normalize "topic" -> "gameTopic"
+    // Normalize "topic" → "gameTopic"
     if (gameData.game?.topic && !gameData.game.gameTopic) {
       gameData.game.gameTopic = gameData.game.topic;
       delete gameData.game.topic;
     }
 
-    // Ensure questions format and default hints
+    // Ensure questions are in {question, answer, hint} format
     gameData.game.questions = (gameData.game.questions ?? []).map((q: any) => ({
       question: q.question,
       answer: q.answer,
@@ -129,25 +98,28 @@ Respond only with the following strict JSON format:
 
     console.log("Transformed Game Format:", gameData);
 
-    // Pull answers for synonym/CEFR ranking
+    // Extract answers for synonym/CEFR ranking
     const words: string[] = gameData.game.questions.map((q: any) => q.answer);
     console.log("Extracted Words:", words);
 
+    // Build synonyms map using Datamuse
     const synonymMap: { [key: string]: string[] } = {};
     for (const word of words) {
       let synonyms = await getSynonyms((word ?? "").toLowerCase());
-      // Remove spaces in multi-word synonyms for grid friendliness
+      // Remove spaces for grid-friendliness
       synonyms = synonyms.map((s) => s.replace(/\s+/g, ""));
       synonymMap[word] = synonyms;
     }
     console.log("🔹 Retrieved Synonyms:", synonymMap);
 
+    // Ask Gemini to rank/choose synonyms across CEFR levels
     const rankedWords = await rankWordsByCEFR(synonymMap, userCEFR as string);
     console.log(
       "CEFR-Filtered Words from Gemini API:",
       JSON.stringify(rankedWords, null, 2)
     );
 
+    // ---- Strict answer length limits by CEFR ----
     const gridLengths: Record<string, number> = {
       A1: 8,
       A2: 8,
@@ -156,45 +128,43 @@ Respond only with the following strict JSON format:
       C1: 12,
       C2: 12,
     };
-
-    // Apply CEFR selection + sanitization
     const maxLen = gridLengths[userCEFR];
-    const processedQuestions = (gameData.game.questions as Array<any>).map((q) => {
-      const originalWord = q.answer ?? "";
-      const userWordChoice =
-        rankedWords?.[originalWord]?.[userCEFR] ||
-        originalWord ||
-        ""; // fall back to original if ranking missing
-      const withinLimit =
-        (userWordChoice ?? "").length > 0 && (userWordChoice ?? "").length <= maxLen;
 
-      const chosen = withinLimit ? userWordChoice : originalWord;
-      const sanitizedAnswer = sanitizeAnswer(chosen);
+    // Apply CEFR choice → sanitize → strict length filter (drop if invalid/too long)
+    const processed = (gameData.game.questions as Array<any>)
+      .map((q) => {
+        const original = q.answer ?? "";
+        // Prefer ranked CEFR word; fallback to original
+        const picked = rankedWords?.[original]?.[userCEFR] ?? original;
+        const sanitized = sanitizeAnswer(picked);
 
-      console.log(
-        `Replacing word: "${originalWord}" → "${chosen}" → sanitized: "${sanitizedAnswer}" (CEFR ${userCEFR}, max ${maxLen})`
-      );
+        // STRICT RULE: drop clue if empty or exceeds maxLen
+        if (!sanitized || sanitized.length > maxLen) {
+          console.log(
+            `Dropping clue — length limit: "${original}" → "${picked}" → "${sanitized}" (max ${maxLen})`
+          );
+          return null;
+        }
 
-      return {
-        ...q,
-        answer: sanitizedAnswer,
-      };
-    });
+        return { ...q, answer: sanitized };
+      })
+      .filter(Boolean) as Array<any>;
 
-    const dedupedQuestions = dedupeQuestions(processedQuestions);
+    // Remove duplicates AFTER strict length filtering (case-insensitive on sanitized answers)
+    const deduped = dedupeQuestions(processed);
 
-    // Optional: ensure we still have at least one question
-    if (!dedupedQuestions.length) {
-      throw new Error("All generated answers were duplicates or invalid after sanitization.");
-    }
+    // Optional: enforce minimum question count to accept a puzzle
+    // const MIN_QUESTIONS = 6;
+    // if (deduped.length < MIN_QUESTIONS) {
+    //   throw new Error(`Not enough unique, within-limit answers (need ${MIN_QUESTIONS}).`);
+    // }
 
-    // Build final payload (keep your shape)
     const finalPayload = {
       success: true,
       game: {
         id: gameData.game.id ?? Math.floor(Math.random() * 1_000_000),
         gameTopic: gameData.game.gameTopic,
-        questions: dedupedQuestions,
+        questions: deduped,
         userId: gameData.game.userId ?? userId,
       },
       imagePrompt: gameData.imagePrompt ?? "",
@@ -208,6 +178,40 @@ Respond only with the following strict JSON format:
   }
 };
 
+/* =========================
+   Utilities / Internals
+   ========================= */
+
+/** Remove ```json fences and trim. */
+function stripCodeFences(s: string): string {
+  return s.replace(/```json/gi, "").replace(/```/g, "").trim();
+}
+
+/** Remove trailing commas before ] or } */
+function looseJsonFix(s: string): string {
+  return s.replace(/,\s*([\]}])/g, "$1");
+}
+
+/** Sanitize an answer for grid use (letters & digits only, lowercase). */
+function sanitizeAnswer(s: string): string {
+  return (s ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+/** Keep first occurrence of each unique answer (case-insensitive) AFTER sanitization. */
+function dedupeQuestions<T extends { answer: string }>(qs: T[]): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const q of qs) {
+    const key = (q.answer ?? "").trim().toLowerCase();
+    if (!key) continue;          // drop empty
+    if (seen.has(key)) continue; // drop duplicate
+    seen.add(key);
+    out.push(q);
+  }
+  return out;
+}
+
+/** Legacy helper – not used in main flow, kept for compatibility/reference. */
 function transformGameFormat(geminiResponse: any, userId: number) {
   const transformedGame = {
     success: true,
@@ -215,11 +219,11 @@ function transformGameFormat(geminiResponse: any, userId: number) {
       id: geminiResponse.game?.id || Math.floor(Math.random() * 1000),
       topic: geminiResponse.game?.topic || "Unknown Topic",
       questions: [] as Array<{ question: string; answer: string }>,
-      userId: userId,
+      userId,
     },
   };
 
-  const { across = {}, down = {} } = geminiResponse.game.clues || {};
+  const { across = {}, down = {} } = geminiResponse.game?.clues || {};
   Object.entries({ ...across, ...down }).forEach(([_, clueObj]) => {
     transformedGame.game.questions.push({
       question: (clueObj as { clue: string }).clue,
@@ -248,19 +252,20 @@ Return a JSON object in this exact structure:
     "C2": "most difficult synonym"
   },
   ...
-    }
-    Ensure each word has **one synonym per CEFR level**. Do not add any explanations or extra text.
-    Guidelines:
-- Avoid using overly academic, rare, or scientific terms (e.g., "homoiothermic", "limnetic") even at C2.
+}
+Ensure each word has **one synonym per CEFR level**. Do not add any explanations or extra text.
+Guidelines:
+- Avoid overly academic, rare, or scientific terms (e.g., "homoiothermic", "limnetic") even at C2.
 - Favor real-world, commonly understood words instead.
 - Prefer general English over discipline-specific vocabulary.
 
 Words and their synonyms:
 ${Object.entries(wordSynonyms)
-        .map(([word, synonyms]) => `"${word}": ["${synonyms.join('", "')}"]`)
+        .map(([word, syns]) => `"${word}": ["${syns.join('", "')}"]`)
         .join(",\n")}
 `;
 
+    console.log("🔍 Sending request to Gemini for CEFR ranking...");
     const response = await axios.post(GEMINI_API_URL, {
       contents: [{ parts: [{ text: prompt }] }],
     });
