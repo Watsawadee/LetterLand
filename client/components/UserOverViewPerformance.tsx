@@ -64,7 +64,8 @@ const UserOverviewPerformance = () => {
                         display: "flex",
                         justifyContent: "center",
                         alignItems: "center",
-                        width: CHART_W
+                        width: CHART_W,
+                        height: CHART_H + 80
                     }}>
                         <Card.Title
                             title={"📆 " + weekLabel}
@@ -86,7 +87,7 @@ const UserOverviewPerformance = () => {
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
-                width: CHART_W
+                width: CHART_W,
 
             }
             }>
