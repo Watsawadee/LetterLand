@@ -1,4 +1,4 @@
-import { View, Image } from "react-native";
+import { View, Image, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import GameTypeCard from "./GameTypeModal";
 import { useEffect, useState } from "react";
@@ -11,6 +11,7 @@ import mascot from "@/assets/images/mascot.png";
 import SettingIcon from "@/assets/icon/settingIcon";
 import { Color } from "@/theme/Color";
 import { Typography } from "@/theme/Font";
+import * as SecureStore from "expo-secure-store";
 
 type Props = {
   coins?: number;
@@ -76,7 +77,7 @@ const UserOverviewCard = ({ coins }: Props) => {
         height: "100%",
       }}
     >
-      <View style={{ display: "flex", flexDirection: "column", gap: "30%" }}>
+      <View style={{ display: "flex", flexDirection: "column", gap: "25%" }}>
         <View style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <View style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", alignContent: "center", gap: 5 }}>
             <View style={{ display: "flex", flexDirection: "column", gap: 5 }}>
@@ -149,6 +150,25 @@ const UserOverviewCard = ({ coins }: Props) => {
               </Button>
             </View>
           </View>
+          <Button onPress={() => {
+            if (Platform.OS === "web") {
+              localStorage.removeItem("user-token")
+            }
+            else {
+              SecureStore.deleteItemAsync("user-token")
+                .then(() => {
+                  console.log("token cleared");
+                  router.replace("/authentication/login");
+                })
+            }
+          }}
+            rippleColor={"transparent"}
+            style={{ backgroundColor: Color.blue }}
+          >
+            <Text style={{ color: Color.white, fontWeight: "bold" }}>
+              Logout
+            </Text>
+          </Button>
         </View>
 
         <View style={{ display: "flex", flexDirection: "row", justifyContent: "space-around", alignItems: "center" }}>
@@ -199,6 +219,7 @@ const UserOverviewCard = ({ coins }: Props) => {
               </Dialog.Content>
             </Dialog>
           </Portal >
+
           <Image
             source={mascot}
             style={{ width: 90, height: 100, borderRadius: 25, transform: [{ rotateY: "360deg" }] }}

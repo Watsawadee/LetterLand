@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useRouter } from "expo-router";
-import { Alert, View } from "react-native";
+import { Alert, ScrollView, View } from "react-native";
 import { Card, TextInput, Button, Text } from "react-native-paper";
 import { useRegister } from "@/hooks/useRegister";
 import { storeToken } from "@/utils/storeToken";
 import GardenBackground from "@/assets/backgroundTheme/GardenBackground";
+import { Color } from "@/theme/Color";
 
 const RegisterScreen = () => {
   const [username, setUsername] = useState("");
@@ -61,84 +62,91 @@ const RegisterScreen = () => {
           bottom: 0,
           left: 0,
           width: "100%",
-          height: 1000,
+          height: "120%",
           zIndex: 0,
         }}
       />
-      <Card
-        style={{
-          padding: 24,
-          width: "100%",
-          maxWidth: 400,
-          backgroundColor: "transparent",
-          gap: 16,
-        }}
-      >
-        <Text
-          variant="titleLarge"
-          style={{
-            textAlign: "center",
-            fontWeight: "800",
-            color: "#5B6073",
-            marginBottom: 12,
-          }}
+      <View style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "40%" }}>
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          style={{ width: "100%" }}
         >
-          Create Account
-        </Text>
-        <TextInput
-          placeholder={isFocused ? "" : "Username"}
-          value={username}
-          onChangeText={setUsername}
-          mode="outlined"
-          autoCapitalize="none"
-          textColor="black"
-          activeOutlineColor="#5B6073"
-          style={{ marginBottom: 12, backgroundColor: "transparent" }}
-        />
-        <TextInput
-          placeholder={isFocused ? "" : "Email"}
-          value={email}
-          onChangeText={setEmail}
-          mode="outlined"
-          autoCapitalize="none"
-          textColor="black"
-          activeOutlineColor="#5B6073"
-          style={{ marginBottom: 12, backgroundColor: "transparent" }}
-        />
-        <TextInput
-          placeholder={isFocused ? "" : "Password"}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          mode="outlined"
-          textColor="black"
-          activeOutlineColor="#5B6073"
-          style={{ marginBottom: 12, backgroundColor: "transparent" }}
-        />
-        <TextInput
-          placeholder={isFocused ? "" : "Confirm Password"}
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          secureTextEntry
-          mode="outlined"
-          textColor="black"
-          activeOutlineColor="#5B6073"
-          style={{ marginBottom: 12, backgroundColor: "transparent" }}
-        />
-        <Button
-          mode="contained"
-          onPress={handleRegister}
-          style={{ backgroundColor: "#007AFF", borderRadius: 8 }}
-          contentStyle={{ paddingVertical: 6 }}
-          loading={isPending}
-          disabled={isPending}
-        >
-          <Text style={{ color: "white", fontWeight: "800", fontSize: 16 }}>
-            Register
-          </Text>
-        </Button>
-      </Card>
-    </View>
+          <Card
+            mode="contained"
+            style={{
+              width: "100%",
+              maxWidth: "100%",
+              backgroundColor: "transparent",
+              gap: 16,
+            }}
+          >
+            <Text
+              variant="titleLarge"
+              style={{
+                textAlign: "center",
+                fontWeight: "800",
+                color: "#5B6073",
+                marginBottom: 12,
+              }}
+            >
+              Create Account
+            </Text>
+            <TextInput
+              placeholder={isFocused ? "" : "Username"}
+              value={username}
+              onChangeText={setUsername}
+              mode="outlined"
+              autoCapitalize="none"
+              textColor="black"
+              activeOutlineColor="#5B6073"
+              style={{ marginBottom: 12, backgroundColor: "transparent" }}
+            />
+            <TextInput
+              placeholder={isFocused ? "" : "Email"}
+              value={email}
+              onChangeText={setEmail}
+              mode="outlined"
+              autoCapitalize="none"
+              textColor="black"
+              activeOutlineColor="#5B6073"
+              style={{ marginBottom: 12, backgroundColor: "transparent" }}
+            />
+            <TextInput
+              placeholder={isFocused ? "" : "Password"}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              mode="outlined"
+              textColor="black"
+              activeOutlineColor="#5B6073"
+              style={{ marginBottom: 12, backgroundColor: "transparent" }}
+            />
+            <TextInput
+              placeholder={isFocused ? "" : "Confirm Password"}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+              mode="outlined"
+              textColor="black"
+              activeOutlineColor="#5B6073"
+              style={{ marginBottom: 12, backgroundColor: "transparent" }}
+            />
+            <Button
+              mode="contained"
+              onPress={handleRegister}
+              style={{ backgroundColor: Color.blue, borderRadius: 8 }}
+              contentStyle={{ paddingVertical: 6 }}
+              loading={isPending}
+              disabled={isPending}
+            >
+              <Text style={{ color: "white", fontWeight: "800", fontSize: 16 }}>
+                Register
+              </Text>
+            </Button>
+          </Card>
+        </ScrollView>
+      </View>
+    </View >
   );
 };
 
