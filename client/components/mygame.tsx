@@ -36,7 +36,7 @@ type Props = {
     scrollDirection?: "horizontal" | "vertical"; // horizontal = flat list row, vertical = grid
   };
   
-  export default function MyGamesRow({ title = "My Games", scrollDirection = "horizontal" }: Props) {
+  export default function MyGamesRow({ title = "My Games", scrollDirection = "horizontal"}: Props) {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [items, setItems] = useState<GetUserGamesResponse["items"]>([]);

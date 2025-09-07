@@ -31,9 +31,9 @@ const MyCard: React.FC<CardProps> = ({ id, image, title, subtitle, level, onPres
 );
 // -----------------------------------------------
 
-type Props = { title?: string; limit?: number; offset?: number };
+type Props = { title?: string; limit?: number; offset?: number};
 
-export default function PublicGames({ title = "Public Games", limit = 10, offset = 0 }: Props) {
+export default function PublicGames({ title = "Public Games", limit = 10, offset = 0}: Props) {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [items, setItems] = useState<PublicGameItem[]>([]);

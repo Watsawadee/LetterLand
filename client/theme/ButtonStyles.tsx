@@ -109,4 +109,18 @@ export const ButtonStyles: {
       color: Color.white,
     },
   },
+  useHint: {
+    container: {
+      backgroundColor: "#B5B5B5",
+      height: 99,
+      width: 99,
+      borderRadius: 130,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    text: {
+      ...Typography.header20,
+      color: Color.white,
+    },
+  },
 };

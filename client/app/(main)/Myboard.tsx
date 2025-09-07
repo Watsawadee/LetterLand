@@ -6,7 +6,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   useWindowDimensions,
-  ScrollView,
 } from "react-native";
 import GardenBackgroundBlueSky from "@/assets/backgroundTheme/GardenBackgroundBlue";
 import WordBankModal from "@/components/WordBank";
@@ -14,7 +13,7 @@ import { ButtonStyles } from "@/theme/ButtonStyles";
 import { Typography } from "@/theme/Font";
 import MyGamesRow from "@/components/mygame";
 import UserOverviewCard from "@/components/UserOverViewCard";
-import Book from "@/assets/icon/Book"; 
+import Book from "@/assets/icon/Book";
 import ArrowLeft from "@/assets/icon/ArrowLeft";
 
 export default function Public() {
@@ -25,44 +24,67 @@ export default function Public() {
 
   // Navigate back to Home
   const handleBackPress = () => {
-    router.push('/Home'); 
+    router.push("/Home");
   };
 
   return (
     <View style={styles.root}>
       <GardenBackgroundBlueSky style={styles.bg} />
 
-      <View style={[styles.page, { flexDirection: isWide ? 'row' : 'column' }]}>
+      <View style={[styles.page, { flexDirection: isWide ? "row" : "column" }]}>
         {/* LEFT PANEL */}
-        <View style={[styles.leftPanel, { marginRight: isWide ? 24 : 0, marginBottom: isWide ? 0 : 24 }]}>
-          
+        <View
+          style={[
+            styles.leftPanel,
+            { marginRight: isWide ? 24 : 0, marginBottom: isWide ? 0 : 24 },
+          ]}
+        >
           {/* Header with back button */}
           <View style={styles.headerRow}>
-            <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+            <TouchableOpacity
+              onPress={handleBackPress}
+              style={styles.backButton}
+            >
               <ArrowLeft width={24} height={24} />
-              <Text style={[Typography.header30, { marginLeft: 4 }]}>My Board</Text>
+              <Text style={[Typography.header30, { marginLeft: 4 }]}>
+                My Board
+              </Text>
             </TouchableOpacity>
 
             {/* Word Bank Button */}
             <TouchableOpacity
-              style={[ButtonStyles.wordBank.container, { flexDirection: "row", alignItems: "center" }]}
+              style={[
+                ButtonStyles.wordBank.container,
+                { flexDirection: "row", alignItems: "center" },
+              ]}
               onPress={() => setShowBook(true)}
             >
               <Book width={50} height={50} style={{ marginRight: 4 }} />
-              <View style={{ flexDirection: "column", alignItems: "flex-start", paddingLeft: 8 }}>
+              <View
+                style={{
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  paddingLeft: 8,
+                }}
+              >
                 <Text style={ButtonStyles.wordBank.text}>Word</Text>
                 <Text style={ButtonStyles.wordBank.text}>Bank</Text>
               </View>
             </TouchableOpacity>
 
-            <WordBankModal visible={showBook} onClose={() => setShowBook(false)} />
+            <WordBankModal
+              visible={showBook}
+              onClose={() => setShowBook(false)}
+            />
           </View>
 
           {/* Public Games Scroll */}
-          <ScrollView showsVerticalScrollIndicator={false} style={styles.publicGamesContainer}>
-  <MyGamesRow title=" " scrollDirection="vertical" />
-</ScrollView>
-
+          <View style={styles.publicGamesContainer}>
+            <MyGamesRow
+              title=" "
+              scrollDirection="vertical"
+            />
+          </View>
         </View>
 
         {/* RIGHT PANEL */}
@@ -100,16 +122,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   leftPanel: {
-    flex: 2.5,  
+    flex: 2.5,
     borderRadius: 20,
     padding: 16,
   },
   rightPanel: {
-    flex: 1,  
+    flex: 1,
     borderRadius: 20,
     padding: 16,
-    justifyContent: 'center', 
-    alignItems: 'center',  
+    justifyContent: "center",
+    alignItems: "center",
   },
   headerRow: {
     flexDirection: "row",
@@ -123,13 +145,17 @@ const styles = StyleSheet.create({
   publicGamesContainer: {
     flexDirection: "column",
     gap: 16,
+    flex: 1,
+    minHeight: 0,
   },
   backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,              // smaller gap between arrow and text
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4, // smaller gap between arrow and text
     paddingVertical: 8,
     paddingHorizontal: 0, // remove horizontal padding to shift left
-    marginLeft: -8,       // nudge it to the left
+    marginLeft: -8, // nudge it to the left
   },
+  // container: { flex: 1 },
+  listArea: { flex: 1, minHeight: 0 },
 });
