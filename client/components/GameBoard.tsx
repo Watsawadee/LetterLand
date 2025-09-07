@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from "react";
-import { View, Text, StyleSheet, Animated, Easing } from "react-native";
+import React, { useRef, useEffect, useCallback } from "react";
+import { View, Text, StyleSheet, Animated, Easing, LayoutChangeEvent } from "react-native";
 import { GameBoardProps } from "../types/type";
 import { Typography } from "@/theme/Font";
 
@@ -17,6 +17,10 @@ export default function GameBoard(props: GameBoardProps) {
 
   const viewRef = useRef<View>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  const CELL_MARGIN = 2;
+  const CELL_PITCH = CELL_SIZE + CELL_MARGIN * 2;
+  const GRID_WIDTH = grid.length * CELL_PITCH;
 
   const PALETTE = [
     "#A0E7E5", // teal
@@ -47,41 +51,52 @@ export default function GameBoard(props: GameBoardProps) {
     return undefined;
   };
 
-  useEffect(() => {
-    const measure = () => {
-      if (viewRef.current) {
-        viewRef.current.measureInWindow((x, y) => {
-          layoutRef.current = { x, y };
-        });
-      }
-    };
-    setTimeout(measure, 0);
-  }, []);
+  const updateLayoutRef = useCallback(() => {
+    if (!viewRef.current) return;
+    viewRef.current.measureInWindow((x, y, _w, _h) => {
+      layoutRef.current = {
+        x: x + CELL_MARGIN,
+        y: y + CELL_MARGIN,
+        pitch: CELL_PITCH,
+        cellSize: CELL_SIZE,
+        margin: CELL_MARGIN,
+      };
+    });
+  }, [layoutRef, CELL_MARGIN, CELL_PITCH, CELL_SIZE]);
 
   useEffect(() => {
-    if (hintCell) {
-      pulseAnim.setValue(1);
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.2,
-          duration: 300,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 300,
-          easing: Easing.in(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  }, [hintCell]);
+    const id = requestAnimationFrame(updateLayoutRef);
+    return () => cancelAnimationFrame(id);
+  }, [updateLayoutRef, grid.length, CELL_SIZE]);
+
+  const onLayout = useCallback((_: LayoutChangeEvent) => {
+    requestAnimationFrame(updateLayoutRef);
+  }, [updateLayoutRef]);
+
+  useEffect(() => {
+    if (!hintCell) return;
+    pulseAnim.setValue(1);
+    Animated.sequence([
+      Animated.timing(pulseAnim, {
+        toValue: 1.2,
+        duration: 300,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.timing(pulseAnim, {
+        toValue: 1,
+        duration: 300,
+        easing: Easing.in(Easing.ease),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [hintCell, pulseAnim]);
 
   return (
     <View
       ref={viewRef}
-      style={[styles.grid, { width: CELL_SIZE * grid.length }]}
+      onLayout={onLayout}
+      style={[styles.grid, { width: GRID_WIDTH }]}
       {...panHandlers}
     >
       {grid.map((row, rowIndex) => (
@@ -93,18 +108,19 @@ export default function GameBoard(props: GameBoardProps) {
 
             const coveringWord = getCoveringWord(rowIndex, colIndex);
             const isCorrectCell = !!coveringWord;
-            const wordColor = coveringWord
-              ? colorFromWord(coveringWord.word)
-              : undefined;
+            const wordColor = coveringWord ? colorFromWord(coveringWord.word) : undefined;
 
             const isHint =
               hintCell?.[0] === rowIndex && hintCell?.[1] === colIndex;
-
             const isHintVisible = isHint && !isSelected && !isCorrectCell;
 
             const cellStyles = [
               styles.cell,
-              { width: CELL_SIZE, height: CELL_SIZE },
+              {
+                width: CELL_SIZE,
+                height: CELL_SIZE,
+                margin: CELL_MARGIN,
+              },
               isCorrectCell && !isSelected && wordColor
                 ? { backgroundColor: wordColor }
                 : null,
@@ -143,16 +159,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     justifyContent: "center",
     alignItems: "center",
-    margin: 2,
     borderRadius: 4,
     padding: 6,
     position: "relative",
     overflow: "hidden",
   },
   selectedCell: { backgroundColor: "#add8e6" },
-  hintCell: {
-    backgroundColor: "#ffff99",
-  },
+  hintCell: { backgroundColor: "#ffff99" },
   charWrapper: {
     flex: 1,
     justifyContent: "center",
