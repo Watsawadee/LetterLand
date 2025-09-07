@@ -113,8 +113,20 @@ const LoginScreen = () => {
             secureTextEntry
             textColor="black"
             activeOutlineColor="#5B6073"
-            style={{ marginBottom: 12, backgroundColor: "transparent", color: "black" }}
+            style={{ backgroundColor: "transparent", color: "black" }}
           />
+          <View style={{ display: "flex", alignItems: "flex-start", marginBottom: 12 }}>
+            <Button onPress={() => {
+              router.push("/authentication/register")
+            }}
+              rippleColor={"transparent"}
+
+            >
+              <Text style={{ color: Color.blue }}>
+                No account yet? Create your account for free
+              </Text>
+            </Button>
+          </View>
           <Button
             mode="contained"
             onPress={handleLogin}

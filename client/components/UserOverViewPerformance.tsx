@@ -14,6 +14,9 @@ import Carousel, { Pagination, ICarouselInstance } from "react-native-reanimated
 import { useSharedValue } from "react-native-reanimated";
 import { Typography } from "@/theme/Font";
 import NoGamePlayed from "@/assets/backgroundTheme/NoGamePlayed";
+import { Pressable } from "react-native";
+import { useRouter } from "expo-router";
+import ArrowLeft from "@/assets/icon/ArrowLeft";
 
 const MAX_WEEKS = 5;
 const UserOverviewPerformance = () => {
@@ -35,6 +38,8 @@ const UserOverviewPerformance = () => {
     const weekLabel = TotalgamesData?.weekLabel ?? "";
     const maxY = Math.max(1, ...counts);
     const showLoader = forceLoading || loadingChart || !TotalgamesData;
+    const router = useRouter();
+
 
     const { data: totalPlaytime } = useUserTotalPlaytime();
     const { data: wordsLearned } = useUserWordLearned();
@@ -151,7 +156,21 @@ const UserOverviewPerformance = () => {
     return (
         <View style={{ width: "50%", height: "100%", gap: 20 }}>
             <Card style={{ backgroundColor: "#E1F3F6", padding: 20 }}>
-                <Text style={{ color: Color.gray, fontSize: 20, fontWeight: "bold" }}>Dashboard and Analysis</Text>
+                <View style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
+                    <Pressable
+                        onPress={() => {
+                            if (router.canGoBack?.()) {
+                                router.back();
+                            } else {
+                                router.replace("/Home");
+                            }
+                        }}
+                        hitSlop={10}
+                    >
+                        <ArrowLeft color={Color.gray} />
+                    </Pressable>
+                    <Text style={{ color: Color.gray, fontSize: 20, fontWeight: "bold" }}>Dashboard and Analysis</Text>
+                </View>
                 <Carousel
                     width={CHART_W}
                     height={CHART_H + 60}

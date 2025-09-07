@@ -129,8 +129,19 @@ const RegisterScreen = () => {
               mode="outlined"
               textColor="black"
               activeOutlineColor="#5B6073"
-              style={{ marginBottom: 12, backgroundColor: "transparent" }}
+              style={{ backgroundColor: "transparent" }}
             />
+            <View style={{ display: "flex", alignItems: "flex-start", marginBottom: 12 }}>
+              <Button onPress={() => {
+                router.push("/authentication/login")
+              }}
+                rippleColor={"transparent"}
+              >
+                <Text style={{ color: Color.blue }}>
+                  Already have an account? Login to your account
+                </Text>
+              </Button>
+            </View>
             <Button
               mode="contained"
               onPress={handleRegister}
