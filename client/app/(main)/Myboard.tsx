@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
   page: {
     flex: 1,
     width: "100%",
-    maxWidth: 1300,
+    maxWidth: 1125,
     maxHeight: 850,
     paddingHorizontal: 0,
     paddingTop: 16,

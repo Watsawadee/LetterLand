@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
     position: "absolute", bottom: 0, left: 0, width: "100%", height: 1000, zIndex: 0,
   },
   page: {
-    flex: 1, width: "100%", maxWidth: 1300, paddingHorizontal: 0,
+    flex: 1, width: "100%", maxWidth: 1125, paddingHorizontal: 0,
     paddingTop: 16, paddingBottom: 24, flexDirection: "row",
   },
   leftPanel: { flex: 2.5, borderRadius: 20, padding: 16 },
