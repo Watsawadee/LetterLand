@@ -1,23 +1,9 @@
-// hooks/useGameLogic.ts
-// Purpose: Provide grid state, selection state, and actions for the game.
-// Notes:
-// - API uses a single config object to avoid long prop lists downstream.
-// - Zod-ready: call `validateConfig` at the boundary when you add Zod later.
-
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { generateGrid } from "../utils/gridGenerator";
 import { useDragGesture } from "../utils/dragGesture";
 import { useFontSizeSettings } from "./useFontSizeSettings";
-
+import { QuestionAnswer, GameState, UseGameLogicProps } from "@/types/type";
 export type FoundWord = { word: string; cells: [number, number][] };
-
-export type GameState = {
-  selectedCells: [number, number][];
-  currentWord: string;
-  selectedWord: string;
-  isCorrect: boolean | null;
-  foundWords: FoundWord[];
-};
 
 const initialGameState: GameState = {
   selectedCells: [],
@@ -27,31 +13,26 @@ const initialGameState: GameState = {
   foundWords: [],
 };
 
-export type QA = { answer: string; question?: string };
-export type Mode = "WORD_SEARCH" | "CROSSWORD_SEARCH";
-
-export type UseGameLogicConfig = {
-  GRID_SIZE: number;
-  CELL_SIZE: number;
-  questionsAndAnswers: QA[];
-  mode: Mode;
-};
-
 // TODO(Zod): Replace with schema validation when ready.
-function validateConfig(cfg: UseGameLogicConfig) {
+function validateConfig(cfg: UseGameLogicProps) {
   if (!cfg) throw new Error("useGameLogic: missing config");
   if (typeof cfg.GRID_SIZE !== "number" || typeof cfg.CELL_SIZE !== "number") {
     throw new Error("useGameLogic: GRID_SIZE and CELL_SIZE must be numbers");
   }
-  if (!Array.isArray(cfg.questionsAndAnswers) || cfg.questionsAndAnswers.length === 0) {
-    throw new Error("useGameLogic: questionsAndAnswers must be a non-empty array");
+  if (
+    !Array.isArray(cfg.questionsAndAnswers) ||
+    cfg.questionsAndAnswers.length === 0
+  ) {
+    throw new Error(
+      "useGameLogic: questionsAndAnswers must be a non-empty array"
+    );
   }
   if (cfg.mode !== "WORD_SEARCH" && cfg.mode !== "CROSSWORD_SEARCH") {
     throw new Error("useGameLogic: invalid mode");
   }
 }
 
-export function useGameLogic(rawConfig: UseGameLogicConfig) {
+export function useGameLogic(rawConfig: UseGameLogicProps) {
   validateConfig(rawConfig);
   const { GRID_SIZE, CELL_SIZE, questionsAndAnswers, mode } = rawConfig;
 
@@ -68,7 +49,10 @@ export function useGameLogic(rawConfig: UseGameLogicConfig) {
 
   const fontSettings = useFontSizeSettings();
 
-  const answers = useMemo(() => questionsAndAnswers.map((q) => q.answer.toUpperCase().trim()), [questionsAndAnswers]);
+  const answers = useMemo(
+    () => questionsAndAnswers.map((q) => q.answer.toUpperCase().trim()),
+    [questionsAndAnswers]
+  );
 
   const initializeGame = useCallback(() => {
     const { grid, positions } = generateGrid(answers, GRID_SIZE);
@@ -129,18 +113,21 @@ export function useGameLogic(rawConfig: UseGameLogicConfig) {
     layoutRef,
     gameState,
     setGameState,
-    questionsAndAnswers: questionsAndAnswers.map((q) => ({ ...q, answer: q.answer.toUpperCase().trim() })),
+    questionsAndAnswers:  questionsAndAnswers.map((q) => ({
+        ...q,
+        answer: q.answer.trim().toUpperCase(),
+      })),
   });
 
-  // Clear hint highlight after the hinted word is found
   useEffect(() => {
     if (!activeHintWord) return;
-    const isFound = gameState.foundWords.some((fw) => fw.word === activeHintWord);
+    const isFound = gameState.foundWords.some(
+      (fw) => fw.word === activeHintWord
+    );
     if (isFound) setActiveHintWord(null);
   }, [gameState.foundWords, activeHintWord]);
 
   return {
-    // data for consumers (can be provided via Context to avoid prop drilling)
     grid,
     selectedCells: gameState.selectedCells,
     foundWords: gameState.foundWords,

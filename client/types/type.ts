@@ -100,7 +100,15 @@ export interface GameBoardProps {
   hintCell: [number, number] | null;
   fontSize: number;
   panHandlers: GestureResponderHandlers;
-  layoutRef: React.RefObject<{ x: number; y: number }>;
+  layoutRef: React.RefObject<LayoutMeta>;
+}
+
+export interface LayoutMeta {
+  x: number;
+  y: number;
+  pitch?: number;
+  cellSize?: number;
+  margin?: number;
 }
 
 export interface FoundWord {
@@ -135,11 +143,11 @@ export type GameState = {
   foundWords: { word: string; cells: [number, number][] }[];
 };
 
-export type Params = {
+export type DragGestureConfig = {
   GRID_SIZE: number;
   CELL_SIZE: number;
   gridRef: RefObject<string[][]>;
-  layoutRef: RefObject<{ x: number; y: number }>;
+  layoutRef: RefObject<LayoutMeta>;
   gameState: GameState;
   setGameState: Dispatch<SetStateAction<GameState>>;
   questionsAndAnswers: QuestionAnswer[];
