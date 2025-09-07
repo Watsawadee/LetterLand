@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Text,
   View,
@@ -43,7 +43,9 @@ export default function GameScreen() {
         };
 
         setGameData(finalData);
-        setMode(finalData.gameTemplate.gameType as "WORD_SEARCH" | "CROSSWORD_SEARCH");
+        setMode(
+          finalData.gameTemplate.gameType as "WORD_SEARCH" | "CROSSWORD_SEARCH"
+        );
 
         if (finalData.gameTemplate.imageUrl) {
           try {
@@ -62,6 +64,17 @@ export default function GameScreen() {
     })();
   }, [gameId]);
 
+  const { CELL_SIZE, GRID_SIZE } = useMemo(() => {
+    const level = gameData?.gameTemplate?.difficulty?.toUpperCase().trim();
+    if (level === "A1" || level === "A2") {
+      return { CELL_SIZE: 75, GRID_SIZE: 8 };
+    }
+    if (level === "B1" || level === "B2") {
+      return { CELL_SIZE: 65, GRID_SIZE: 10 };
+    }
+    // Default and C-levels
+    return { CELL_SIZE: 55, GRID_SIZE: 12 };
+  }, [gameData?.gameTemplate?.difficulty]);
 
   if (loading)
     return (
@@ -94,8 +107,8 @@ export default function GameScreen() {
       <SharedGameScreen
         mode={mode}
         title={gameData.gameTemplate.gameTopic}
-        CELL_SIZE={55}
-        GRID_SIZE={12}
+        CELL_SIZE={CELL_SIZE}
+        GRID_SIZE={GRID_SIZE}
         questionsAndAnswers={gameData.gameTemplate.questions}
         gameData={gameData}
       />
