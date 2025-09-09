@@ -5,6 +5,7 @@ import {
   loginUserController,
   getAllUserController,
   useHintController,
+  buyHintController,
 } from "../controllers/userController";
 const router = express.Router();
 
@@ -14,6 +15,6 @@ router.post("/auth/register", createUserController);
 
 router.post("/auth/login", loginUserController);
 router.post("/:userId/usehint", useHintController);
-
+router.post("/:userId/buyhint", buyHintController);
 
 export default router;

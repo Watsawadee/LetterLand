@@ -1,10 +1,20 @@
-import { getAllUser, getUserById, useHint } from "../services/userService";
+import { getAllUser, getUserById, useHint, buyHint } from "../services/userService";
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import prisma from "../configs/db";
-import { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse } from "../types/type";
-import { LoginRequestSchema, LoginResponseSchema, RegisterRequestSchema, RegisterResponseSchema } from "../types/auth.schema";
+import {
+  LoginRequest,
+  LoginResponse,
+  RegisterRequest,
+  RegisterResponse,
+} from "../types/type";
+import {
+  LoginRequestSchema,
+  LoginResponseSchema,
+  RegisterRequestSchema,
+  RegisterResponseSchema,
+} from "../types/auth.schema";
 
 export const getAllUserController = async (req: Request, res: Response) => {
   try {
@@ -34,11 +44,7 @@ export const getUserByIdController = async (req: Request, res: Response) => {
   }
 };
 
-export const createUserController = async (
-  req: Request,
-  res: Response
-
-) => {
+export const createUserController = async (req: Request, res: Response) => {
   try {
     const parsed = RegisterRequestSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -69,10 +75,18 @@ export const createUserController = async (
     });
     const JWTtoken = process.env.JWT_SECRET as string;
 
-
-    const token = jwt.sign({ userId: user.id, email: user.email, username: user.username, hasCompletedSetup: !!(user.age && user.englishLevel), }, JWTtoken, {
-      expiresIn: "7d",
-    });
+    const token = jwt.sign(
+      {
+        userId: user.id,
+        email: user.email,
+        username: user.username,
+        hasCompletedSetup: !!(user.age && user.englishLevel),
+      },
+      JWTtoken,
+      {
+        expiresIn: "7d",
+      }
+    );
     const response: RegisterResponse = {
       message: "Successfully created user",
       user: {
@@ -92,17 +106,14 @@ export const createUserController = async (
 
     const safeResponse = RegisterResponseSchema.parse(response);
 
-    res.status(201).json(safeResponse)
+    res.status(201).json(safeResponse);
   } catch (error) {
     console.error("Create user error:", error);
     res.status(500).json({ message: "Failed to create account" });
   }
 };
 
-export const loginUserController = async (
-  req: Request,
-  res: Response
-) => {
+export const loginUserController = async (req: Request, res: Response) => {
   try {
     const parsed = LoginRequestSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -114,25 +125,36 @@ export const loginUserController = async (
 
     if (!normalisedEmail || !password) {
       res.status(401).json({ message: "Incorrect credentials" });
-      return
+      return;
     }
 
-    const user = await prisma.user.findUnique({ where: { email: normalisedEmail } });
+    const user = await prisma.user.findUnique({
+      where: { email: normalisedEmail },
+    });
     if (!user) {
       res.status(401).json({ error: "Incorrect credentials" });
-      return
+      return;
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       res.status(401).json({ message: "Incorrect credentials" });
-      return
+      return;
     }
     const JWTtoken = process.env.JWT_SECRET as string;
 
-    const token = jwt.sign({ userId: user.id, email: user.email, username: user.username, hasCompletedSetup: !!(user.age && user.englishLevel), }, JWTtoken, {
-      expiresIn: "7d",
-    });
+    const token = jwt.sign(
+      {
+        userId: user.id,
+        email: user.email,
+        username: user.username,
+        hasCompletedSetup: !!(user.age && user.englishLevel),
+      },
+      JWTtoken,
+      {
+        expiresIn: "7d",
+      }
+    );
 
     const response: LoginResponse = {
       message: "LoggedIn Successfully",
@@ -178,3 +200,37 @@ export const useHintController = async (req: Request, res: Response) => {
     res.status(400).json("Failed to use hint");
   }
 };
+
+export const buyHintController = async (req: Request, res: Response) => {
+  try {
+    const userId = Number(req.params.userId);
+    const qty = Number(req.body?.qty);
+
+    if (!Number.isInteger(userId)) {
+      res.status(400).json({ message: "Missing or invalid userId" });
+    }
+    if (!Number.isInteger(qty)) {
+      res.status(400).json({ message: "Missing or invalid qty" });
+    }
+
+    const updated = await buyHint(userId, qty);
+
+    res.status(200).json({
+      message: "Purchase hint successful",
+      data: updated,
+    });
+  } catch (error: any) {
+    if (error?.code === "USER_NOT_FOUND") {
+      res.status(404).json({ message: "User not found" });
+    }
+    if (error?.code === "INVALID_QTY") {
+      res.status(400).json({ message: "Invalid qty (must be 1, 3, or 5)" });
+    }
+    if (error?.code === "INSUFFICIENT_FUNDS") {
+      res.status(400).json({ message: "Not enough coins" });
+    }
+    console.error("Buy Hint Controller error:", error);
+    res.status(400).json({ message: "Failed to purchase hint" });
+  }
+};
+
