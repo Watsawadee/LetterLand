@@ -5,6 +5,10 @@ import bcrypt from "bcrypt";
 import prisma from "../configs/db";
 import { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse } from "../types/type";
 import { LoginRequestSchema, LoginResponseSchema, RegisterRequestSchema, RegisterResponseSchema } from "../types/auth.schema";
+import { getNextLevel } from "../services/levelupService";
+import { ProgressLevelupResponseSchema } from "../types/progressLevelup.schema";
+import { AuthenticatedRequest } from "../types/authenticatedRequest";
+
 
 export const getAllUserController = async (req: Request, res: Response) => {
   try {
@@ -23,10 +27,18 @@ export const getUserByIdController = async (req: Request, res: Response) => {
   try {
     const userId = Number(req.params.userId);
     const user = await getUserById(userId);
-
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+    const nextLevel = getNextLevel(user.englishLevel);
+    let canLevelUp = false;
+    if (nextLevel && user.total_playtime >= 200 * 60 * 60) {
+      canLevelUp = true;
+    }
     res.status(200).json({
       message: "Get user successfully",
-      data: user,
+      data: { ...user, nextLevel, canLevelUp },
     });
   } catch (error) {
     console.error("User Controller error:", error);
@@ -178,3 +190,67 @@ export const useHintController = async (req: Request, res: Response) => {
     res.status(400).json("Failed to use hint");
   }
 };
+
+
+export const progressLevelupController = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(400).json({ message: "Missing userId" });
+      return;
+    }
+    const user = await prisma.user.findUnique({ where: { id: userId } })
+
+    if (!user) {
+      res.status(404).json({ message: "User not found" })
+      return;
+    }
+    const nextLevelup = getNextLevel(user.englishLevel);
+    if (!nextLevelup) {
+      res.status(400).json({ message: "You are already at the top level" })
+      return;
+    }
+    const hasEnoughPlaytime = user.total_playtime >= 200 * 60 * 60;
+
+    const lastFiveGames = await prisma.game.findMany({
+      where: { userId },
+      orderBy: { startedAt: "desc" },
+      take: 5,
+      select: { isHintUsed: true }
+    });
+
+    if (lastFiveGames.length < 5) {
+      res.status(400).json({ message: "Not enough games played" });
+      return;
+    }
+
+    const usedAnyHints = lastFiveGames.some(g => g.isHintUsed === true);
+    if (usedAnyHints) {
+      res.status(400).json({ message: "Hints were used in last five games" });
+      return;
+    }
+
+    const canLevelUp = hasEnoughPlaytime && !usedAnyHints;
+
+    if (!canLevelUp) {
+      res.status(400).json({
+        message: "Level up conditions not met",
+        nextLevelup,
+        canLevelUp: false,
+      });
+      return;
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { englishLevel: nextLevelup }
+    })
+    const response = { message: `Level up! New level: ${nextLevelup}`, nextLevelup };
+    ProgressLevelupResponseSchema.parse(response);
+    res.status(200).json(response)
+  }
+  catch (error) {
+    console.error("ProgressLevelupController error:", error);
+    res.status(500).json("Failed to levelup")
+  }
+}

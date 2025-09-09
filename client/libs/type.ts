@@ -11,6 +11,7 @@ import { UserProfileOrErrorSchema, UserProfileResponseSchema } from "../types/us
 import { GamesPlayedPerWeekOrErrorSchema, GamesPlayedPerWeekResponseSchema, TotalPlaytimeOrErrorSchema, TotalPlaytimeResponseSchema, WordsLearnedOrErrorSchema, WordsLearnedResponseSchema } from "../types/dashboard.schema"
 import { CreateGameFromGeminiRequestSchema, CreateGameFromGeminiResponseSchema, EnglishLevelSchema, GameTypeSchema, MaterialTypeSchema } from "@/types/createGame.schema";
 import { UpdateUserProfileResponse, UpdateUserSettingSchema } from "@/types/setting.schema";
+import { ProgressLevelupParamsSchema, ProgressLevelupResponseSchema } from "@/types/progressLevelup.schema";
 //Auth
 export type User = z.infer<typeof UserSchema>;
 
@@ -59,6 +60,9 @@ export type UpdateUserProfileInput = z.infer<typeof UpdateUserSettingSchema>;
 export type UpdateUserProfileResponse = z.infer<typeof UpdateUserProfileResponse>
 
 
+//Progress Levelup
+export type ProgressLevelupParams = z.infer<typeof ProgressLevelupParamsSchema>;
+export type ProgressLevelupResponse = z.infer<typeof ProgressLevelupResponseSchema>;
 
 
 
