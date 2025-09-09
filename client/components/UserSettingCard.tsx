@@ -17,8 +17,8 @@ import { useUpdateUserSetting } from "@/hooks/useUpdateSetting";
 import { UpdateUserSettingSchema } from "@/types/setting.schema";
 import ArrowLeft from "@/assets/icon/ArrowLeft";
 
-
-const UserSettingCard = () => {
+type Props = { onBack?: () => void };
+const UserSettingCard = ({ onBack }: Props) => {
   const { data: user, isLoading } = useUserProfile();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -54,7 +54,6 @@ const UserSettingCard = () => {
   if ("error" in user) return <Text>Failed to load user data.</Text>;
 
   const onSave = () => {
-    // Validate with Zod (allows partial; requires at least one)
     const parsed = UpdateUserSettingSchema.safeParse(payload);
     if (!parsed.success) {
       const first = parsed.error.issues[0]?.message ?? "Invalid input";
@@ -82,9 +81,8 @@ const UserSettingCard = () => {
       <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
         <Pressable
           onPress={() => {
-            if (router.canGoBack?.()) {
-              router.back();
-            } else {
+            if (onBack) return onBack();
+            if (router.canGoBack?.()) router.back(); else {
               router.replace("/Home");
             }
           }}

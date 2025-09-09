@@ -7,9 +7,17 @@ import { View, Dimensions } from "react-native";
 import TotalGameThisWeek from "@/components/UserOverViewPerformance";
 import { Text } from "react-native-paper";
 import UserOverviewPerformance from "@/components/UserOverViewPerformance";
+import UserSettingCard from "@/components/UserSettingCard";
 
+type Props = {
+    coins?: number;
+    onOpenSettings?: () => void;
+};
 const Dashboard = () => {
     const screenWidth = Dimensions.get("window").width;
+    const [coins, setCoins] = useState(0);
+    const [showSettings, setShowSettings] = useState(false);
+
     const { data: profile, isLoading, error } = useUserProfile();
     if (isLoading) return <Text>Loading...</Text>;
     if (error) return <Text>Error loading profile</Text>;
@@ -42,7 +50,11 @@ const Dashboard = () => {
                 padding: 16,
             }}>
                 <UserOverviewPerformance />
-                <UserOverviewCard />
+                {showSettings ? (
+                    <UserSettingCard onBack={() => setShowSettings(false)} />
+                ) : (
+                    <UserOverviewCard coins={coins} onOpenSettings={() => setShowSettings(true)} />
+                )}
             </View>
 
         </View>

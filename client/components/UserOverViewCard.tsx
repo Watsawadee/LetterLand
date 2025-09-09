@@ -15,8 +15,9 @@ import * as SecureStore from "expo-secure-store";
 
 type Props = {
   coins?: number;
+  onOpenSettings?: () => void;
 };
-const UserOverviewCard = ({ coins }: Props) => {
+const UserOverviewCard = ({ coins, onOpenSettings }: Props) => {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
   const [gameType, setGameType] = useState<"crossword" | "wordsearch" | null>(
@@ -92,7 +93,7 @@ const UserOverviewCard = ({ coins }: Props) => {
               </View>
             </View>
             <Button
-              onPress={() => router.push("/setting")}
+              onPress={onOpenSettings}
               contentStyle={{ padding: 0 }}
               style={{ width: undefined, minWidth: 0, padding: 0, borderRadius: 50 }}
               theme={{ roundness: 1 }}
