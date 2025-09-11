@@ -154,6 +154,7 @@ const UserOverviewCard = ({ coins, onOpenSettings }: Props) => {
           <Button onPress={() => {
             if (Platform.OS === "web") {
               localStorage.removeItem("user-token")
+              router.replace("/authentication/login");
             }
             else {
               SecureStore.deleteItemAsync("user-token")

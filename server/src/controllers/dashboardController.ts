@@ -119,6 +119,7 @@ export const getUserGamesPlayedPerWeek = async (
           gte: start,
           lte: end,
         },
+        isFinished: true
       },
       select: {
         startedAt: true,
