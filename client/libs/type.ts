@@ -6,7 +6,7 @@ import {
     RegisterResponseSchema,
 } from "../types/auth.schema";
 import { UserSchema } from "../types/user.schema";
-import { ErrorResponseSchema, GetWordsOrErrorSchema, GetWordsResponseSchema, OxfordEntrySchema, SetupProfileRequestSchema, SetupProfileResponseSchema, SetupProfileSuccessSchema } from "../types/setup.schema"
+import { ErrorResponseSchema, GetWordsOrErrorSchema, GetWordsResponseSchema, SetupProfileRequestSchema, SetupProfileResponseSchema, SetupProfileSuccessSchema, vocabEntrySchema } from "../types/setup.schema"
 import { UserProfileOrErrorSchema, UserProfileResponseSchema } from "../types/userProfile.schema"
 import { GamesPlayedPerWeekOrErrorSchema, GamesPlayedPerWeekResponseSchema, TotalPlaytimeOrErrorSchema, TotalPlaytimeResponseSchema, WordsLearnedOrErrorSchema, WordsLearnedResponseSchema } from "../types/dashboard.schema"
 import { CreateGameFromGeminiRequestSchema, CreateGameFromGeminiResponseSchema, EnglishLevelSchema, GameTypeSchema, MaterialTypeSchema } from "@/types/createGame.schema";
@@ -23,7 +23,7 @@ export type RegisterResponse = z.infer<typeof RegisterResponseSchema>;
 
 
 //Profile Setup
-export type OxfordEntry = z.infer<typeof OxfordEntrySchema>;
+export type vocabEntry = z.infer<typeof vocabEntrySchema>;
 export type GetWordsResponse = z.infer<typeof GetWordsResponseSchema>;
 export type SetupProfileRequest = z.infer<typeof SetupProfileRequestSchema>;
 export type SetupProfileSuccess = z.infer<typeof SetupProfileSuccessSchema>;
