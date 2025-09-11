@@ -1,7 +1,7 @@
 import { Platform } from "react-native";
 import api from "./api";
 import { getLoggedInUserId } from "@/utils/auth";
-import { QuestionAnswer } from "@/types/type";
+import { QuestionAnswer, UserData } from "@/types/type";
 
 export const getGameData = async (gameId: string | number) => {
   const response = await api.get(`/games/${gameId}`);
@@ -31,11 +31,6 @@ export const getBGImage = async (imgName: string) => {
   }
 };
 
-// export const useHint = async (userId: string | number) => {
-//   const response = await api.post(`/users/${userId}/usehint`);
-//   return response.data.hint;
-// };
-
 export const useHint = async (userId: number, gameId?: number | string) => {
   await api.post(`/users/${userId}/useHint`);
 
@@ -51,6 +46,18 @@ export const useHint = async (userId: number, gameId?: number | string) => {
   }
   return true;
 };
+
+export const purchaseHints = async (
+  userId: number,
+  qty: 1 | 3 | 5
+): Promise<UserData> => {
+  const res = await api.post(`/users/${userId}/buyhint`, { qty });
+  return res.data.data as UserData;
+};
+
+export async function deleteIncompleteGame(gameId: number, userId: number) {
+  await api.delete(`/games/${gameId}/delete`, { data: { userId } });
+}
 
 export type BoolRef = { current: boolean };
 
@@ -126,14 +133,11 @@ export const completeGame = async ({
   const userId = await getLoggedInUserId();
   if (!userId) throw new Error("Not logged in");
 
-  const body: any = {
-    userId: Number(userId),
-  };
+  const body: any = { userId: Number(userId) };
   if (typeof completed === "boolean") body.completed = completed;
   if (typeof finishedOnTime === "boolean") body.finishedOnTime = finishedOnTime;
   if (typeof wordsLearned === "number") body.wordsLearned = wordsLearned;
-  if (typeof timeUsedSeconds === "number")
-    body.timeUsedSeconds = timeUsedSeconds;
+  if (typeof timeUsedSeconds === "number") body.timeUsedSeconds = timeUsedSeconds;
   if (hintUsed) body.isHintUsed = true;
 
   const { data } = await api.post(`/games/${gameId}/complete`, body);

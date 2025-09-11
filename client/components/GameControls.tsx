@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import FontSizeModal from "./FontSizeModal";
 import { CustomButton } from "../theme/ButtonCustom";
@@ -7,27 +7,8 @@ import FontIcon from "@/assets/icon/FontIcon";
 import Timer from "@/assets/icon/Timer";
 import { Typography } from "@/theme/Font";
 import { useTime } from "@/hooks/useTime";
-
-type FontSettings = {
-  fontModalVisible: boolean;
-  tempFontSize: number;
-  fontSize: number;
-  setTempFontSize: (n: number) => void;
-  setFontModalVisible: (v: boolean) => void;
-  setFontSize: (n: number) => void;
-};
-
-type GameControlsProps = {
-  title: string;
-  onShowHint: () => void;
-  hintCount: number | null;
-  isHintDisabled: boolean;
-  fontSettings: FontSettings;
-  startTimeSeconds: number;
-  onTimeUp: () => void;
-  paused?: boolean;
-  resetKey?: unknown;
-};
+import { GameControlsProps } from "@/types/type";
+import HintShopModal from "../components/HintShopModal";
 
 export default function GameControls({
   title,
@@ -39,6 +20,7 @@ export default function GameControls({
   onTimeUp,
   paused = false,
   resetKey,
+  refreshHints,
 }: GameControlsProps) {
   const {
     fontModalVisible,
@@ -55,12 +37,42 @@ export default function GameControls({
     resetSignal: resetKey,
   });
 
+  const [shopVisible, setShopVisible] = useState(false);
+  const [currentHints, setCurrentHints] = useState<number>(
+    typeof hintCount === "number" ? hintCount : 0
+  );
+
+  useEffect(() => {
+    if (typeof hintCount === "number") {
+      setCurrentHints(hintCount);
+    }
+  }, [hintCount]);
+
   const formatTime = (sec: number) => {
     const minutes = Math.floor(sec / 60);
     const seconds = sec % 60;
     return `${minutes.toString().padStart(2, "0")}:${seconds
       .toString()
       .padStart(2, "0")}`;
+  };
+
+  const hasHints = currentHints > 0;
+
+  // Ignore stale "no hints" disable when we locally have hints (just after purchase)
+  const parentThinksNoHints =
+    typeof hintCount === "number" && hintCount === 0;
+
+  const computedDisabled = hasHints
+    ? Boolean(isHintDisabled && !parentThinksNoHints)
+    : false;
+
+  const onPressHint = () => {
+    if (!hasHints) {
+      setShopVisible(true);
+      return;
+    }
+    if (computedDisabled) return;
+    onShowHint();
   };
 
   return (
@@ -85,18 +97,17 @@ export default function GameControls({
           icon={<FontIcon />}
         />
 
-        {/* Hint button (gray-out via opacity) */}
         <View>
           <CustomButton
-            onPress={onShowHint}
-            type={isHintDisabled ? "useHint" : "buyHint"}
+            onPress={onPressHint}
+            type={hasHints ? "buyHint" : "useHint"}
             icon={
-              <View style={{ opacity: isHintDisabled ? 0.5 : 1 }}>
+              <View style={{ opacity: computedDisabled ? 0.5 : 1 }}>
                 <Magnify />
               </View>
             }
-            disabled={isHintDisabled}
-            number={hintCount ?? 0}
+            disabled={computedDisabled}
+            number={Math.max(0, currentHints)}
           />
         </View>
       </View>
@@ -110,6 +121,16 @@ export default function GameControls({
           setFontModalVisible(false);
         }}
         onClose={() => setFontModalVisible(false)}
+      />
+
+      <HintShopModal
+        visible={shopVisible}
+        onClose={() => setShopVisible(false)}
+        onPurchased={(newHint) => {
+          setCurrentHints(newHint);
+          setShopVisible(false);
+          refreshHints?.();
+        }}
       />
     </View>
   );

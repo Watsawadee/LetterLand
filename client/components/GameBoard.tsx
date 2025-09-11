@@ -1,5 +1,12 @@
-import React, { useRef, useEffect, useCallback } from "react";
-import { View, Text, StyleSheet, Animated, Easing, LayoutChangeEvent } from "react-native";
+import React, { useRef, useEffect, useCallback, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  Easing,
+  LayoutChangeEvent,
+} from "react-native";
 import { GameBoardProps } from "../types/type";
 import { Typography } from "@/theme/Font";
 
@@ -10,6 +17,7 @@ export default function GameBoard(props: GameBoardProps) {
     selectedCells,
     foundWords,
     hintCell,
+    hintTargetWord,
     fontSize,
     panHandlers,
     layoutRef,
@@ -69,28 +77,53 @@ export default function GameBoard(props: GameBoardProps) {
     return () => cancelAnimationFrame(id);
   }, [updateLayoutRef, grid.length, CELL_SIZE]);
 
-  const onLayout = useCallback((_: LayoutChangeEvent) => {
-    requestAnimationFrame(updateLayoutRef);
-  }, [updateLayoutRef]);
+  const onLayout = useCallback(
+    (_: LayoutChangeEvent) => {
+      requestAnimationFrame(updateLayoutRef);
+    },
+    [updateLayoutRef]
+  );
+
+  const normalize = (s?: string | null) => (s ?? "").trim().toLowerCase();
+
+  const isHintWordFoundByName =
+    !!hintTargetWord &&
+    foundWords.some((w) => normalize(w.word) === normalize(hintTargetWord));
+
+  const isHintWordFoundByFirstCell =
+    !!hintCell &&
+    foundWords.some(
+      (w) =>
+        w.cells?.[0]?.[0] === hintCell[0] && w.cells?.[0]?.[1] === hintCell[1]
+    );
+
+  const isHintedWordFound = isHintWordFoundByName || isHintWordFoundByFirstCell;
 
   useEffect(() => {
-    if (!hintCell) return;
-    pulseAnim.setValue(1);
-    Animated.sequence([
-      Animated.timing(pulseAnim, {
-        toValue: 1.2,
-        duration: 300,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }),
-      Animated.timing(pulseAnim, {
-        toValue: 1,
-        duration: 300,
-        easing: Easing.in(Easing.ease),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [hintCell, pulseAnim]);
+    if (!hintCell || isHintedWordFound) {
+      pulseAnim.stopAnimation();
+      pulseAnim.setValue(1);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.2,
+          duration: 350,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 350,
+          easing: Easing.in(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [hintCell, isHintedWordFound, pulseAnim]);
 
   return (
     <View
@@ -108,11 +141,14 @@ export default function GameBoard(props: GameBoardProps) {
 
             const coveringWord = getCoveringWord(rowIndex, colIndex);
             const isCorrectCell = !!coveringWord;
-            const wordColor = coveringWord ? colorFromWord(coveringWord.word) : undefined;
+            const wordColor = coveringWord
+              ? colorFromWord(coveringWord.word)
+              : undefined;
 
             const isHint =
               hintCell?.[0] === rowIndex && hintCell?.[1] === colIndex;
-            const isHintVisible = isHint && !isSelected && !isCorrectCell;
+
+            const isHintVisible = isHint && !isSelected && !isHintedWordFound;
 
             const cellStyles = [
               styles.cell,
