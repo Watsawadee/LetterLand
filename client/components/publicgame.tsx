@@ -83,7 +83,7 @@ export default function PublicGames({ title = "Public Games", limit = 10, offset
     const handlePress = async (templateId: number) => {
       try {
         const started = await startPublicGame(templateId);
-        router.push({ pathname: "/gameScreen", params: { gameId: String(started.id) } });
+        router.push({ pathname: "/GameScreen", params: { gameId: String(started.id) } });
       } catch (err: any) {
         console.error("[PublicGamesRow] start failed:", err?.response?.data || err?.message || err);
         Alert.alert("Couldn’t start game", err?.response?.data?.error ?? "Please try again.");

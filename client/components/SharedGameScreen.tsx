@@ -16,6 +16,8 @@ import ArrowRight from "@/assets/icon/ArrowRight";
 import WordLearnedModal from "./WordLearnedModal";
 import { fetchGamePronunciations } from "@/services/pronunciationService";
 import { saveFoundWordsOnce, completeGame } from "@/services/gameService";
+import { deleteIncompleteGame } from "@/services/gameService";
+import { getLoggedInUserId } from "@/utils/auth";
 
 export default function SharedGameScreen({
   mode,
@@ -115,17 +117,35 @@ export default function SharedGameScreen({
   };
 
   const handleBackPress = () => setConfirmExitVisible(true);
-  const handleExitConfirm = () => router.replace("/Home");
+  const handleExitConfirm = async () => {
+    setConfirmExitVisible(false);
+
+    const notFinished = !(allFoundVisible || timeUp);
+    if (notFinished && gameData?.id) {
+      try {
+        const uid = Number(await getLoggedInUserId());
+        if (Number.isFinite(uid)) {
+          await deleteIncompleteGame(gameData.id, uid);
+          console.log("delete game", gameData.id);
+        }
+      } catch (e) {
+        console.warn("[deleteIncompleteGame] failed:", e);
+      }
+    }
+
+    router.replace("/Home");
+  };
   const handleExitCancel = () => setConfirmExitVisible(false);
 
-  const captureTimeUsedOnce = () => {
-    if (usedSeconds != null) return;
+  const captureTimeUsedOnce = (): number => {
     const elapsed = Math.floor((Date.now() - startedAtRef.current) / 1000);
     const cap =
       typeof gameData?.timer === "number" && gameData.timer > 0
         ? Math.min(elapsed, gameData.timer)
         : elapsed;
-    setUsedSeconds(cap);
+
+    if (usedSeconds == null) setUsedSeconds(cap);
+    return usedSeconds ?? cap;
   };
 
   const postCompletionOnce = async (opts?: { force?: boolean }) => {
@@ -133,10 +153,10 @@ export default function SharedGameScreen({
     const gameId = gameData?.id;
     if (!gameId) return;
 
-    const completed = !!allFoundVisible;
-    const finishedOnTime = completed && !timeUp;
+    const completed = allFoundVisible || timeUp;
+    const finishedOnTime = allFoundVisible && !timeUp;
 
-    captureTimeUsedOnce();
+    const seconds = captureTimeUsedOnce();
     const wordsLearned = foundWordsList.length;
 
     try {
@@ -145,7 +165,7 @@ export default function SharedGameScreen({
         completed,
         finishedOnTime,
         wordsLearned,
-        timeUsedSeconds: usedSeconds ?? 0,
+        timeUsedSeconds: seconds,
       });
       if (typeof res?.coinsAwarded === "number") {
         setAwardedCoins(res.coinsAwarded);
@@ -211,7 +231,10 @@ export default function SharedGameScreen({
 
   const wordsLearnedCount = foundWordsList.length;
 
-  const endModalVisible = !resetting && !wordModalVisible && (allFoundVisible || (timeUp && hasTimer));
+  const endModalVisible =
+    !resetting &&
+    !wordModalVisible &&
+    (allFoundVisible || (timeUp && hasTimer));
   const endVariant = allFoundVisible ? "success" : "timeout";
 
   return (
@@ -234,6 +257,7 @@ export default function SharedGameScreen({
             }}
             paused={allFoundVisible || timeUp || wordModalVisible || resetting}
             resetKey={roundKey}
+            refreshHints={resetHints}
           />
         </View>
 
@@ -246,7 +270,7 @@ export default function SharedGameScreen({
             hintCell={hintCell}
             fontSize={fontSettings.fontSize}
             panHandlers={
-              (timeUp || wordModalVisible || allFoundVisible || resetting)
+              timeUp || wordModalVisible || allFoundVisible || resetting
                 ? {}
                 : panResponder.panHandlers
             }
