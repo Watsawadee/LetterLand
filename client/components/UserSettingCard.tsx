@@ -182,9 +182,11 @@ const UserSettingCard = ({ onBack }: Props) => {
             onPress={onSave}
             disabled={!isDirty || isPending}
             loading={isPending}
-            style={{ marginTop: 8 }}
+            style={{ marginTop: 8, backgroundColor: !isDirty || isPending ? Color.lightblue : Color.blue }}
           >
-            Save
+            <Text style={{ marginTop: 8, color: Color.white }}>
+              Save
+            </Text>
           </Button>
         </View>
         <View style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", height: "17%", }}>

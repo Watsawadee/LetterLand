@@ -57,7 +57,7 @@ export default function Layout() {
       <PaperProvider>
         <ThemeProvider>
           <Stack screenOptions={{ headerShown: false }} />
-          <ReactQueryDevtools initialIsOpen={true} />
+          {/* <ReactQueryDevtools initialIsOpen={true} /> */}
         </ThemeProvider>
       </PaperProvider>
     </QueryClientProvider>
