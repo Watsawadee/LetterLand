@@ -56,13 +56,11 @@ export const getGameData = async (gameId: number) => {
 
 export const getAllWordFound = async (gameId: number) => {
   try {
-
     const wordFound = prisma.wordFound.findMany({
       where: { gameId },
       include: {
         question: true,
         // user: { select: { id: true, username: true } }, // if you need it
-
       },
       orderBy: { foundAt: "asc" },
     });
@@ -295,7 +293,9 @@ async function applyPartialGameUpdates(opts: {
   };
 }
 
-export async function completeGame(input: gameCompleteInput): Promise<gameCompleteResult> {
+export async function completeGame(
+  input: gameCompleteInput
+): Promise<gameCompleteResult> {
   try {
     const {
       gameId,
@@ -365,5 +365,33 @@ export async function completeGame(input: gameCompleteInput): Promise<gameComple
   } catch (err) {
     console.error("Error completing game:", err);
     throw err;
+  }
+}
+
+export async function deleteIncompleteGame(gameId: number, userId: number) {
+  if (!Number.isFinite(gameId) || !Number.isFinite(userId)) {
+    return { ok: false, message: "Invalid gameId or userId" };
+  }
+
+  try {
+    const game = await prisma.game.findUnique({
+      where: { id: gameId },
+      select: { id: true, userId: true, isFinished: true },
+    });
+
+    if (!game) return { ok: false, message: "Game not found" };
+    if (game.userId !== userId)
+      return {
+        ok: false,
+        message: "You don't have permission to delete this game",
+      };
+    if (game.isFinished)
+      return { ok: false, message: "Finished games cannot be deleted" };
+
+    await prisma.game.delete({ where: { id: gameId } });
+    return { ok: true, data: { id: gameId, userId } };
+  } catch (err) {
+    console.error("Error deleteIncompleteGame service:", err);
+    return { ok: false, message: "Failed to delete game" };
   }
 }

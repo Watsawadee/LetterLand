@@ -7,6 +7,7 @@ import {
   batchRecordFoundWords,
   getAllWordFound,
   completeGame,
+  deleteIncompleteGame,
 } from "../services/gameService";
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
@@ -187,19 +188,14 @@ export const batchRecordFoundWordsController = async (
 export const completeGameController = async (req: Request, res: Response) => {
   try {
     const gameId = Number(req.params.gameId);
-    const {
-      userId,
-      completed,
-      finishedOnTime,
-      isHintUsed,
-      timeUsedSeconds,
-    } = (req.body ?? {}) as {
-      userId?: number;
-      completed?: boolean;
-      finishedOnTime?: boolean;
-      isHintUsed?: boolean;
-      timeUsedSeconds?: number;
-    };
+    const { userId, completed, finishedOnTime, isHintUsed, timeUsedSeconds } =
+      (req.body ?? {}) as {
+        userId?: number;
+        completed?: boolean;
+        finishedOnTime?: boolean;
+        isHintUsed?: boolean;
+        timeUsedSeconds?: number;
+      };
 
     const result = await completeGame({
       gameId,
@@ -238,4 +234,38 @@ export const completeGameController = async (req: Request, res: Response) => {
     console.error("Error in complete Game Controller:", err);
     res.status(500).json({ message: "Internal server error" });
   }
+};
+
+export const deleteIncompleteGameController = async (
+  req: Request,
+  res: Response
+) => {
+  const gameId = Number(req.params.gameId);
+  const userId = Number(req.body.userId);
+
+  const result = await deleteIncompleteGame(gameId, userId);
+
+  if (!result.ok) {
+    const msg = result.message || "Failed";
+    if (msg.includes("Invalid")) {
+      res.status(400).json({ message: msg });
+      return;
+    }
+    if (msg.includes("not found")) {
+      res.status(404).json({ message: msg });
+      return;
+    }
+    if (msg.includes("permission")) {
+      res.status(403).json({ message: msg });
+      return;
+    }
+    if (msg.includes("Finished")) {
+      res.status(409).json({ message: msg });
+      return;
+    }
+    res.status(500).json({ message: "Internal server error" });
+    return;
+  }
+
+  res.status(200).json({ message: "Delete complete", data: result.data });
 };

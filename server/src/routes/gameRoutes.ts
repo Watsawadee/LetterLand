@@ -6,7 +6,8 @@ import {
   getWordFoundController,
   recordFoundWordController,
   batchRecordFoundWordsController,
-  completeGameController
+  completeGameController,
+  deleteIncompleteGameController,
 } from "../controllers/gameController";
 
 const router = express.Router();
@@ -18,6 +19,8 @@ router.get("/wordfound/:gameId", getWordFoundController);
 router.post("/:gameId/complete", completeGameController);
 router.post("/:gameId/wordfound/batch", batchRecordFoundWordsController);
 router.post("/:gameId/wordfound", recordFoundWordController);
+
+router.delete("/:gameId/delete", deleteIncompleteGameController);
 
 router.get("/:gameId", getGameDataController);
 
