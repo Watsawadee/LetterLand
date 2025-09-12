@@ -12,24 +12,22 @@ import {
 import {
   fetchGamePronunciations,
   PronunciationItem,
+  fetchLearnedWords,
+  LearnedWord,
 } from "@/services/pronunciationService";
 import { Color } from "@/theme/Color";
 import { Typography } from "@/theme/Font";
 import Home from "@/assets/icon/Home";
 import Play from "@/assets/icon/Play";
 import Stop from "@/assets/icon/Stop";
+import { CustomButton } from "@/theme/ButtonCustom";
+import * as FS from "expo-file-system/legacy";
+import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 
 function cap(s: string) {
   if (!s) return s;
   return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 }
-import {
-  fetchLearnedWords,
-  LearnedWord,
-} from "@/services/pronunciationService";
-import { CustomButton } from "@/theme/ButtonCustom";
-import * as FileSystem from "expo-file-system";
-import { Audio as ExpoAudio } from "expo-av";
 
 type Props = {
   visible: boolean;
@@ -42,12 +40,12 @@ const asArray = <T,>(v: any): T[] =>
   Array.isArray(v)
     ? v
     : Array.isArray(v?.data?.game)
-      ? v.data.game
-      : Array.isArray(v?.results)
-        ? v.results
-        : Array.isArray(v?.items)
-          ? v.items
-          : [];
+    ? v.data.game
+    : Array.isArray(v?.results)
+    ? v.results
+    : Array.isArray(v?.items)
+    ? v.items
+    : [];
 
 export default function WordLearnedModal({
   visible,
@@ -61,7 +59,10 @@ export default function WordLearnedModal({
   const [learned, setLearned] = useState<LearnedWord[]>([]);
   const [playingKey, setPlayingKey] = useState<string | null>(null);
 
-  const soundRef = useRef<ExpoAudio.Sound | null>(null);
+  const player = useAudioPlayer(null);
+  const status = useAudioPlayerStatus(player);
+
+  const webAudioRef = useRef<any>(null);
 
   useEffect(() => {
     if (!visible) return;
@@ -75,20 +76,14 @@ export default function WordLearnedModal({
           fetchGamePronunciations(gameId),
           fetchLearnedWords(gameId),
         ]);
-        console.log("[learned]", gameId, {
-          learnedLen: learned?.length,
-          pronLen: pronRaw?.length,
-        });
 
         if (canceled) return;
         const pron = asArray<PronunciationItem>(pronRaw);
-        const words = asArray<LearnedWord>(learnedRaw);
+        const wordsArr = asArray<LearnedWord>(learnedRaw);
 
         const seen = new Set<string>();
-        const unique = words.filter((w) => {
-          const k = String(w?.word ?? "")
-            .trim()
-            .toLowerCase();
+        const unique = wordsArr.filter((w) => {
+          const k = String(w?.word ?? "").trim().toLowerCase();
           if (!k || seen.has(k)) return false;
           seen.add(k);
           return true;
@@ -111,11 +106,24 @@ export default function WordLearnedModal({
   useEffect(() => {
     return () => {
       try {
-        soundRef.current?.unloadAsync();
-      } catch { }
-      soundRef.current = null;
+        if (Platform.OS === "web") {
+          webAudioRef.current?.pause?.();
+          webAudioRef.current = null;
+        } else {
+          player.pause?.();
+        }
+      } catch {}
+      setPlayingKey(null);
     };
   }, []);
+
+  useEffect(() => {
+    if (!playingKey || !status) return;
+    if (!status.playing && status.duration != null) {
+      const done = status.currentTime >= (status.duration - 0.05);
+      if (done) setPlayingKey(null);
+    }
+  }, [status, playingKey]);
 
   const byWord = useMemo(() => {
     const map = new Map<string, PronunciationItem>();
@@ -132,20 +140,18 @@ export default function WordLearnedModal({
     if (!item?.dataUrl) return;
 
     try {
-      if (soundRef.current) {
-        try {
-          await soundRef.current.stopAsync();
-        } catch { }
-        try {
-          await soundRef.current.unloadAsync();
-        } catch { }
-        soundRef.current = null;
+      if (Platform.OS === "web") {
+        webAudioRef.current?.pause?.();
+        webAudioRef.current = null;
+      } else {
+        await player.pause?.();
       }
-    } catch { }
+    } catch {}
 
     try {
       if (Platform.OS === "web") {
         const a = new Audio(item.dataUrl);
+        webAudioRef.current = a;
         setPlayingKey(item.fileName || "");
         a.onended = () => setPlayingKey(null);
         await a.play();
@@ -154,18 +160,16 @@ export default function WordLearnedModal({
 
       const base64 = (item.dataUrl.split(",")[1] || "").trim();
       const fileName = item.fileName || `${item.answer}.mp3`;
-      const fileUri = (FileSystem.cacheDirectory || "") + `pron-${fileName}`;
-      await FileSystem.writeAsStringAsync(fileUri, base64, {
-        encoding: FileSystem.EncodingType.Base64,
+      const fileUri = (FS.cacheDirectory || "") + `pron-${fileName}`;
+
+      await FS.writeAsStringAsync(fileUri, base64, {
+        encoding: FS.EncodingType.Base64,
       });
 
-      const { sound } = await ExpoAudio.Sound.createAsync({ uri: fileUri });
-      soundRef.current = sound;
+      await player.replace({ uri: fileUri });
       setPlayingKey(fileName);
-      sound.setOnPlaybackStatusUpdate((s: any) => {
-        if (s?.didJustFinish) setPlayingKey(null);
-      });
-      await sound.playAsync();
+      player.seekTo(0);
+      await player.play();
     } catch {
       setPlayingKey(null);
     }
@@ -178,35 +182,22 @@ export default function WordLearnedModal({
       )
     )
     .map(({ word }) => {
-      const key = String(word ?? "")
-        .trim()
-        .toLowerCase();
+      const key = String(word ?? "").trim().toLowerCase();
       return { word: String(word ?? ""), item: byWord.get(key) };
     });
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.modal}>
           <Text style={styles.title}>Word Learned</Text>
 
           {loading ? (
-            <View style={styles.center}>
-              <ActivityIndicator />
-            </View>
+            <View style={styles.center}><ActivityIndicator /></View>
           ) : err ? (
-            <View style={styles.center}>
-              <Text style={styles.error}>{err}</Text>
-            </View>
+            <View style={styles.center}><Text style={styles.error}>{err}</Text></View>
           ) : learnedList.length === 0 ? (
-            <View style={styles.center}>
-              <Text>No learned words yet.</Text>
-            </View>
+            <View style={styles.center}><Text>No learned words yet.</Text></View>
           ) : (
             <ScrollView contentContainerStyle={styles.list}>
               {learnedList.map(({ word, item }, i) => {
@@ -217,29 +208,17 @@ export default function WordLearnedModal({
                   <View key={word} style={styles.row}>
                     <Text style={styles.indexText}>{index}.</Text>
 
-                    <View
-                      style={[styles.chip, !canPlay && styles.chipDisabled]}
-                    >
+                    <View style={[styles.chip, !canPlay && styles.chipDisabled]}>
                       <Pressable
                         onPress={() => canPlay && play(item)}
                         disabled={!canPlay}
-                        style={[
-                          styles.soundBtn,
-                          !canPlay && styles.soundBtnDisabled,
-                        ]}
+                        style={[styles.soundBtn, !canPlay && styles.soundBtnDisabled]}
                       >
-                        <Text style={styles.soundEmoji}>
-                          {active ? <Stop /> : <Play />}
-                        </Text>
+                        <Text style={styles.soundEmoji}>{active ? <Stop /> : <Play />}</Text>
                       </Pressable>
 
-                      <Text style={styles.word} numberOfLines={1}>
-                        {cap(word)}
-                      </Text>
-
-                      {!canPlay && (
-                        <Text style={styles.missing}>(no audio)</Text>
-                      )}
+                      <Text style={styles.word} numberOfLines={1}>{cap(word)}</Text>
+                      {!canPlay && <Text style={styles.missing}>(no audio)</Text>}
                     </View>
                   </View>
                 );
