@@ -53,6 +53,7 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
         gameType: gameType,
         difficulty: difficulty,
         isPublic: isPublic,
+        ownerId: userId,
         questions: {
           create: geminiResult.game.questions.map((q: any) => ({
             name: q.question,

@@ -109,19 +109,11 @@ const CreateGameScreen = () => {
     }
     const apiUploadType = uploadType === "pdf" ? "pdf" : uploadType;
     const apiTimer: number | null = timer === "none" ? null : Number(timer);
-    console.log("🧠 Payload:", {
-      userId: user.id,
-      difficulty: englishLevel,
-      inputData: input,
-      type: uploadType,
-      gameType,
-      timer: apiTimer,
-      isPublic
-    });
-    console.log("🧾 File:", pdfFile);
+
     createGameMutation.mutate({
       data: {
         userId: user.id,
+        ownerId: user.id,
         difficulty: englishLevel,
         inputData: input,
         type: apiUploadType,

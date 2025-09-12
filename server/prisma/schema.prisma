@@ -19,6 +19,7 @@ model User {
   created_at       DateTime          @default(now())
   total_playtime   Int               @default(0)
   games            Game[]
+  GameTemplate     GameTemplate[]
   userAchievements UserAchievement[]
   wordFound        WordFound[]
 }
@@ -50,7 +51,9 @@ model GameTemplate {
   difficulty EnglishLevel
   isPublic   Boolean      @default(false)
   imageUrl   String?
+  ownerId    Int
   games      Game[]
+  User       User         @relation(fields: [ownerId], references: [id])
   questions  Question[]
 }
 
@@ -90,6 +93,8 @@ model WordFound {
   Game       Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
   question   Question @relation(fields: [questionId], references: [id])
   user       User     @relation(fields: [userId], references: [id])
+
+  @@unique([gameId, userId, questionId])
 }
 
 enum EnglishLevel {
