@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  getAverageGamesPlayedByLevel,
   getUserGamesPlayedPerWeek,
   getUserTotalPlaytime,
   getUserWordLearned,
@@ -12,6 +13,12 @@ router.get(
   "/user/:userId/gameplayedperweek",
   authenticatedUser,
   getUserGamesPlayedPerWeek
+);
+
+router.get(
+  "/user/:userId/averagebylevel",
+  authenticatedUser,
+  getAverageGamesPlayedByLevel
 );
 
 export default router;

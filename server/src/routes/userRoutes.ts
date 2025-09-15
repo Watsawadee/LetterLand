@@ -5,8 +5,10 @@ import {
   loginUserController,
   getAllUserController,
   useHintController,
+  progressLevelupController,
   buyHintController,
 } from "../controllers/userController";
+import { authenticatedUser } from "../middleware/authMiddleware";
 const router = express.Router();
 
 router.get("/", getAllUserController);
@@ -15,6 +17,9 @@ router.post("/auth/register", createUserController);
 
 router.post("/auth/login", loginUserController);
 router.post("/:userId/usehint", useHintController);
+
+//progress Level up route
+router.put("/progress", authenticatedUser, progressLevelupController)
 router.post("/:userId/buyhint", buyHintController);
 
 export default router;

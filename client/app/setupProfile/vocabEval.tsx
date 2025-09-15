@@ -11,8 +11,8 @@ const VocabEvalScreen = () => {
     age: string;
   }>();
   const [userId, setUserId] = useState<string | null>(null);
-  const [words, setWords] = useState<string[]>([]);
-  const [selectedWords, setSelectedWords] = useState<string[]>([]);
+  const [headwords, setHeadwords] = useState<string[]>([]);
+  const [selectedHeadwords, setSelectedHeadwords] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -29,12 +29,12 @@ const VocabEvalScreen = () => {
 
       try {
         const data = await getWords();
-        if ("words" in data && Array.isArray(data.words)) {
-          setWords(data.words.slice(0, 30));
-        } else {
-          // Handle error case
-          setWords([]);
+
+        if ("error" in data) {
+          setHeadwords([]);
           alert("Failed to load words.");
+        } else {
+          setHeadwords(data.headwords.slice(0, 30));
         }
       } catch (error) {
         console.error("Failed to load words", error);
@@ -47,7 +47,7 @@ const VocabEvalScreen = () => {
   }, []);
 
   const handleWordToggle = (word: string) => {
-    setSelectedWords((prev) =>
+    setSelectedHeadwords((prev) =>
       prev.includes(word) ? prev.filter((w) => w !== word) : [...prev, word]
     );
   };
@@ -60,13 +60,13 @@ const VocabEvalScreen = () => {
     console.log("VocabEvalScreen - Submitting profile setup with:", {
       userId,
       age,
-      selectedWords,
+      selectedHeadwords,
     });
     try {
       await setupProfile({
         userId: Number(userId),
         age: Number(age),
-        selectedWords,
+        selectedHeadwords,
       });
       router.replace("/authentication/login");
     } catch (error) {
@@ -140,17 +140,17 @@ const VocabEvalScreen = () => {
               justifyContent: "center",
               gap: 8,
             }}>
-              {words.map((word, index) => (
+              {headwords.map((word, index) => (
                 <Button
                   key={index}
                   style={{
                     margin: 4,
-                    backgroundColor: selectedWords.includes(word) ? "#58A7F8" : "white",
+                    backgroundColor: selectedHeadwords.includes(word) ? "#58A7F8" : "white",
                     borderColor: "#58A7F8",
                     borderRadius: 12,
                   }}
                   labelStyle={{
-                    color: selectedWords.includes(word) ? "white" : "#58A7F8",
+                    color: selectedHeadwords.includes(word) ? "white" : "#58A7F8",
                     fontWeight: "600",
                   }}
                   onPress={() => handleWordToggle(word)}

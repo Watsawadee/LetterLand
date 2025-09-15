@@ -6,11 +6,12 @@ import {
     RegisterResponseSchema,
 } from "../types/auth.schema";
 import { UserSchema } from "../types/user.schema";
-import { ErrorResponseSchema, GetWordsOrErrorSchema, GetWordsResponseSchema, OxfordEntrySchema, SetupProfileRequestSchema, SetupProfileResponseSchema, SetupProfileSuccessSchema } from "../types/setup.schema"
+import { ErrorResponseSchema, GetWordsOrErrorSchema, GetWordsResponseSchema, SetupProfileRequestSchema, SetupProfileResponseSchema, SetupProfileSuccessSchema, vocabEntrySchema } from "../types/setup.schema"
 import { UserProfileOrErrorSchema, UserProfileResponseSchema } from "../types/userProfile.schema"
-import { GamesPlayedPerWeekOrErrorSchema, GamesPlayedPerWeekResponseSchema, TotalPlaytimeOrErrorSchema, TotalPlaytimeResponseSchema, WordsLearnedOrErrorSchema, WordsLearnedResponseSchema } from "../types/dashboard.schema"
+import { AverageGamesByLevelOrErrorSchema, GamesPlayedPerWeekOrErrorSchema, GamesPlayedPerWeekResponseSchema, TotalPlaytimeOrErrorSchema, TotalPlaytimeResponseSchema, WordsLearnedOrErrorSchema, WordsLearnedResponseSchema } from "../types/dashboard.schema"
 import { CreateGameFromGeminiRequestSchema, CreateGameFromGeminiResponseSchema, EnglishLevelSchema, GameTypeSchema, MaterialTypeSchema } from "@/types/createGame.schema";
 import { UpdateUserProfileResponse, UpdateUserSettingSchema } from "@/types/setting.schema";
+import { ProgressLevelupParamsSchema, ProgressLevelupResponseSchema } from "@/types/progressLevelup.schema";
 //Auth
 export type User = z.infer<typeof UserSchema>;
 
@@ -22,7 +23,7 @@ export type RegisterResponse = z.infer<typeof RegisterResponseSchema>;
 
 
 //Profile Setup
-export type OxfordEntry = z.infer<typeof OxfordEntrySchema>;
+export type vocabEntry = z.infer<typeof vocabEntrySchema>;
 export type GetWordsResponse = z.infer<typeof GetWordsResponseSchema>;
 export type SetupProfileRequest = z.infer<typeof SetupProfileRequestSchema>;
 export type SetupProfileSuccess = z.infer<typeof SetupProfileSuccessSchema>;
@@ -46,6 +47,9 @@ export type WordsLearnedOrError = z.infer<typeof WordsLearnedOrErrorSchema>;
 export type GamesPlayedPerWeekOrError = z.infer<
     typeof GamesPlayedPerWeekOrErrorSchema
 >;
+export type AverageGamesByLevelOrError = z.infer<
+    typeof AverageGamesByLevelOrErrorSchema
+>;
 
 //Create Game
 export type MaterialType = z.infer<typeof MaterialTypeSchema>;
@@ -59,6 +63,9 @@ export type UpdateUserProfileInput = z.infer<typeof UpdateUserSettingSchema>;
 export type UpdateUserProfileResponse = z.infer<typeof UpdateUserProfileResponse>
 
 
+//Progress Levelup
+export type ProgressLevelupParams = z.infer<typeof ProgressLevelupParamsSchema>;
+export type ProgressLevelupResponse = z.infer<typeof ProgressLevelupResponseSchema>;
 
 
 

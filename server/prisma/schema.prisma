@@ -19,6 +19,7 @@ model User {
   created_at       DateTime          @default(now())
   total_playtime   Int               @default(0)
   games            Game[]
+  GameTemplate     GameTemplate[]
   userAchievements UserAchievement[]
   wordFound        WordFound[]
   GameTemplate     GameTemplate[]
@@ -53,7 +54,9 @@ model GameTemplate {
   difficulty EnglishLevel
   isPublic   Boolean      @default(false)
   imageUrl   String?
+  ownerId    Int
   games      Game[]
+  User       User         @relation(fields: [ownerId], references: [id])
   questions  Question[]
 }
 

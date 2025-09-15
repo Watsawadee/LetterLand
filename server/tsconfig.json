@@ -21,6 +21,7 @@
         "src/**/*.ts",
         "routes/**/*.ts",
         "../../client/types/decodedJwtToken.ts",
+        "src/types/progressLevelup.schema.ts",
     ],
     "exclude": [
         "node_modules",

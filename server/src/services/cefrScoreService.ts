@@ -21,10 +21,10 @@ function getCEFRLevelFromScore(avg: number): EnglishLevel {
 }
 
 export function calculateCEFRLevelFromSelectedWords(
-  words: { word: string; level: EnglishLevel }[]
+  words: { headword: string; CEFR: EnglishLevel }[]
 ): EnglishLevel {
   const totalPoints = words.reduce((sum, word) => {
-    return sum + (levelPoints[word.level] || 0);
+    return sum + (levelPoints[word.CEFR] || 0);
   }, 0);
 
   const avg = totalPoints / words.length;

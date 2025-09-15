@@ -7,6 +7,7 @@ export const MaterialTypeSchema = z.enum(["text", "link", "pdf"]);
 
 export const CreateGameFromGeminiRequestSchema = z.object({
     userId: z.number(),
+    ownerId: z.coerce.number(),
     gameType: GameTypeSchema,
     difficulty: EnglishLevelSchema,
     timer: z.number().nullable().optional(),
@@ -39,6 +40,7 @@ export const CreateGameFromGeminiResponseSchema = z.object({
             gameType: GameTypeSchema,
             difficulty: EnglishLevelSchema,
             imageUrl: z.string().nullable().optional(),
+            ownerId: z.number(),
             questions: z.array(
                 z.object({
                     id: z.number(),

@@ -1,40 +1,72 @@
 import { Request, Response } from "express";
 import prisma from "../configs/db";
 import { EnglishLevel } from "@prisma/client";
-import { ErrorResponse, GetWordsOrError, GetWordsResponse, OxfordEntry, SetupProfileRequest, SetupProfileResponse } from "../types/type";
+import { ErrorResponse, GetWordsOrError, GetWordsResponse, SetupProfileRequest, SetupProfileResponse, vocabEntry } from "../types/type";
 import { calculateCEFRLevelFromSelectedWords } from "../services/cefrScoreService";
 import fs from "fs";
 import path from "path";
-import { ErrorResponseSchema, SetupProfileRequestSchema, SetupProfileResponseSchema } from "../types/setup.schema";
+import { ErrorResponseSchema, SetupProfileRequestSchema, SetupProfileResponseSchema, vocabEntrySchema } from "../types/setup.schema";
 
-const oxfordDataPath = path.join(__dirname, "../../data/oxford3000.json");
-const oxfordWords: OxfordEntry[] = JSON.parse(
-  fs.readFileSync(oxfordDataPath, "utf8")
+const vocabDataPath = path.join(__dirname, "../../data/ENGLISHWORDSCERFLABELLED.json");
+const vocabWords: vocabEntry[] = JSON.parse(
+  fs.readFileSync(vocabDataPath, "utf8")
 );
 
-const wordToLevelMap = new Map<string, EnglishLevel>();
-for (const entry of oxfordWords) {
-  wordToLevelMap.set(entry.word.toLowerCase(), entry.level);
+const headwordToLevelMap = new Map<string, EnglishLevel>();
+for (const entry of vocabWords) {
+  if (typeof entry.headword !== "string") continue;
+  const variants = entry.headword.split("/").map((w) => w.trim().toLowerCase());
+  for (const v of variants) {
+    headwordToLevelMap.set(v, entry.CEFR);
+  }
+}
+function pickRandom(words: vocabEntry[], count: number): vocabEntry[] {
+  const levels: EnglishLevel[] = ["A1", "A2", "B1", "B2", "C1", "C2"];
+  const grouped: Record<EnglishLevel, vocabEntry[]> = {
+    A1: [], A2: [], B1: [], B2: [], C1: [], C2: []
+  };
+  for (const w of words) grouped[w.CEFR].push(w);
+
+  const perLevel = Math.floor(count / levels.length);
+  let remainder = count % levels.length;
+
+  const result: vocabEntry[] = [];
+
+  for (const level of levels) {
+    const group = grouped[level];
+    if (group.length === 0) continue;
+
+    const toTake = Math.min(perLevel + (remainder > 0 ? 1 : 0), group.length);
+    if (remainder > 0) remainder--;
+
+    const shuffled = group.slice().sort(() => Math.random() - 0.5);
+    result.push(...shuffled.slice(0, toTake));
+  }
+
+  return result;
 }
 
-function pickRandom<T>(arr: T[], count: number): T[] {
-  const copy = arr.slice();
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy.slice(0, count);
-}
 
 export const getWords = async (req: Request, res: Response) => {
   try {
-    const selected = pickRandom(oxfordWords, 30);
-    const wordList = selected.map((e) => e.word);
-    res.status(200).json({ words: wordList });
+    const selected = pickRandom(vocabWords, 30);
+    console.log(
+      "Randomly selected words with CEFR:",
+      selected.map((e) => `${e.headword} (${e.CEFR})`)
+    );
+
+    const headwords = selected.map((e) => e.headword);
+    res.status(200).json({ headwords });
   } catch (error: any) {
     console.error("Error fetching words:", error);
+
     const response = { error: "Failed to fetch words" };
-    res.status(500).json(ErrorResponseSchema.parse(response));
+    const parsed = ErrorResponseSchema.safeParse(response);
+    if (parsed.success) {
+      res.status(500).json(parsed.data);
+    } else {
+      res.status(500).json({ error: "Unknown error" });
+    }
   }
 };
 
@@ -49,18 +81,16 @@ export const setupProfile = async (
       return
     }
 
-    const { userId, age, selectedWords }: SetupProfileRequest = parsed.data;
-    const mappedWords = selectedWords
-      .map((word: string) => {
-        const level = wordToLevelMap.get(word.toLowerCase());
-        return level ? { word, level } : null;
+    const { userId, age, selectedHeadwords }: SetupProfileRequest = parsed.data;
+    const mappedWords = selectedHeadwords
+      .map((hw: string) => {
+        const level = headwordToLevelMap.get(hw.toLowerCase());
+        return level ? { headword: hw, CEFR: level } : null;
       })
-      .filter(
-        (v: { word: string; level: EnglishLevel } | null): v is { word: string; level: EnglishLevel } => v !== null
-      );
+      .filter((v): v is vocabEntry => v !== null);
     if (mappedWords.length === 0) {
       res.status(400).json({
-        error: "No valid CEFR levels found for selected words.",
+        error: "No valid CEFR levels found for selected headwords.",
       });
 
       return;

@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
 const JWTtoken =
-  process.env.JWT_SECRET || "bmY3eWNoY3k3OA.Y2lwczhsY3o3M3Y.a3V5bWR3cDNvNg";
+  process.env.JWT_SECRET as string;
 interface AuthenticatedRequest extends Request {
   user?: { id: number };
 }
