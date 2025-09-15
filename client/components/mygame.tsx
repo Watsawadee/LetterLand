@@ -131,7 +131,7 @@ type Props = {
               <MyCard
                 {...item}
                 onPress={() =>
-                  router.push({ pathname: "/gameScreen", params: { gameId: String(item.id) } })
+                  router.push({ pathname: "/GameScreen", params: { gameId: String(item.id) } })
                 }
               />
             )}
@@ -146,7 +146,7 @@ type Props = {
               <MyCard
                 {...item}
                 onPress={() =>
-                  router.push({ pathname: "/gameScreen", params: { gameId: String(item.id) } })
+                  router.push({ pathname: "/GameScreen", params: { gameId: String(item.id) } })
                 }
               />
             )}

@@ -45,25 +45,28 @@ export interface QuestionAnswer {
 }
 
 // GameControls.tsx
-export interface GameControlsProps {
+export type GameControlsProps = {
   title: string;
-  fontSettings: FontSettingsGroup;
-  confirmRestart: ConfirmRestartGroup;
   onShowHint: () => void;
-  onBackHome: () => void;
-  onRetryConfirm: () => void;
-  hintCount: number;
+  hintCount: number | null;
   isHintDisabled: boolean;
-}
+  fontSettings: FontSettings;
+  startTimeSeconds: number;
+  onTimeUp: () => void;
+  paused?: boolean;
+  resetKey?: unknown;
+  onOpenHintShop?: () => void;
+  refreshHints?: () => void;
+};
 
-export interface FontSettingsGroup {
-  fontSize: number;
-  tempFontSize: number;
+export type FontSettings = {
   fontModalVisible: boolean;
-  setFontSize: (size: number) => void;
-  setTempFontSize: (size: number) => void;
-  setFontModalVisible: (visible: boolean) => void;
-}
+  tempFontSize: number;
+  fontSize: number;
+  setTempFontSize: (n: number) => void;
+  setFontModalVisible: (v: boolean) => void;
+  setFontSize: (n: number) => void;
+};
 
 export interface ConfirmRestartGroup {
   visible: boolean;
@@ -98,6 +101,7 @@ export interface GameBoardProps {
   selectedCells: [number, number][];
   foundWords: FoundWord[];
   hintCell: [number, number] | null;
+  hintTargetWord?: string;
   fontSize: number;
   panHandlers: GestureResponderHandlers;
   layoutRef: React.RefObject<LayoutMeta>;
@@ -177,4 +181,17 @@ export type CluesProps = {
   revealedAnswers: string[];
   activeIndex: number;
   onChangeIndex: (i: number) => void;
+};
+
+// gameService.ts
+export type UserData = {
+  id: number;
+  username: string;
+  email: string;
+  age: number | null;
+  englishLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+  coin: number;
+  hint: number;
+  created_at: string;
+  total_playtime: number;
 };

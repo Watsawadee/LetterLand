@@ -126,7 +126,7 @@ const CreateGameScreen = () => {
       {
         onSuccess: (game) => {
           const id = String(game.id);
-          router.replace({ pathname: "/gameScreen", params: { gameId: id } });
+          router.replace({ pathname: "/GameScreen", params: { gameId: id } });
         },
       }
     );

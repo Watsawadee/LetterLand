@@ -22,6 +22,7 @@ model User {
   GameTemplate     GameTemplate[]
   userAchievements UserAchievement[]
   wordFound        WordFound[]
+  GameTemplate     GameTemplate[]
 }
 
 model Achievement {
@@ -46,6 +47,8 @@ model UserAchievement {
 
 model GameTemplate {
   id         Int          @id @default(autoincrement())
+  ownerId    Int
+  owner      User         @relation(fields: [ownerId], references: [id])
   gameTopic  String
   gameType   GameType
   difficulty EnglishLevel

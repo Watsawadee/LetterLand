@@ -6,6 +6,7 @@ import {
   getAllUserController,
   useHintController,
   progressLevelupController,
+  buyHintController,
 } from "../controllers/userController";
 import { authenticatedUser } from "../middleware/authMiddleware";
 const router = express.Router();
@@ -19,6 +20,6 @@ router.post("/:userId/usehint", useHintController);
 
 //progress Level up route
 router.put("/progress", authenticatedUser, progressLevelupController)
-
+router.post("/:userId/buyhint", buyHintController);
 
 export default router;

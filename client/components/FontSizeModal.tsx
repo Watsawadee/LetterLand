@@ -95,9 +95,9 @@ const styles = StyleSheet.create({
     width: 500,
     maxWidth: "100%",
     borderRadius: 18,
-    backgroundColor: "#F4FAFD",
+    backgroundColor: Color.white,
     overflow: "hidden",
-    shadowColor: "#000",
+    shadowColor: Color.black,
     shadowOpacity: 0.15,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: 20, paddingVertical: 18 },
   sliderRow: { flexDirection: "row", alignItems: "center", marginBottom: 16 },
   iconBtn: { width: 36, alignItems: "center" },
-  iconText: { ...Typography.header20, color: "#000", fontWeight: "900" },
+  iconText: { ...Typography.header20, color: Color.black, fontWeight: "900" },
   sliderWrap: {
     flex: 1,
     position: "relative",
@@ -123,7 +123,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   slider: { width: "100%", height: 40 },
-
   dotsRow: {
     position: "absolute",
     left: 10,
@@ -138,7 +137,7 @@ const styles = StyleSheet.create({
     width: DOT_SIZE,
     height: DOT_SIZE,
     borderRadius: DOT_SIZE / 2,
-    backgroundColor: "#000",
+    backgroundColor: Color.black,
   },
   sizeLabel: {
     ...Typography.body20,

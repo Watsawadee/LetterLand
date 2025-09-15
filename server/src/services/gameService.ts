@@ -11,6 +11,22 @@ export type FoundWordItem = {
   };
 };
 
+type gameCompleteInput = {
+  gameId: number;
+  userId: number;
+  completed?: boolean;
+  finishedOnTime?: boolean;
+  isHintUsed?: boolean;
+  timeUsedSeconds?: number;
+};
+
+type gameCompleteResult = {
+  coinsAwarded: number;
+  alreadyFinished: boolean;
+  updatedGame?: any;
+  secondsAdded: number;
+};
+
 export const getAllGame = async () => {
   try {
     const game = await prisma.game.findMany();
@@ -56,13 +72,11 @@ export const getGameData = async (gameId: number) => {
 
 export const getAllWordFound = async (gameId: number) => {
   try {
-
     const wordFound = prisma.wordFound.findMany({
       where: { gameId },
       include: {
         question: true,
         // user: { select: { id: true, username: true } }, // if you need it
-
       },
       orderBy: { foundAt: "asc" },
     });
@@ -108,12 +122,24 @@ export const recordFoundWord = async ({
   word: string;
 }) => {
   try {
+    const normalized = String(word).trim().toLowerCase();
+
+    const existing = await prisma.wordFound.findFirst({
+      where: {
+        gameId,
+        userId,
+        questionId,
+        word: { equals: normalized, mode: "insensitive" },
+      },
+    });
+    if (existing) return existing;
+
     const found = await prisma.wordFound.create({
       data: {
         userId,
         gameId,
         questionId,
-        word,
+        word: normalized,
       },
     });
     return found;
@@ -122,7 +148,6 @@ export const recordFoundWord = async ({
     throw new Error("Failed to record found word");
   }
 };
-
 export const batchRecordFoundWords = async (
   gameId: number,
   foundWords: FoundWordItem[]
@@ -143,27 +168,42 @@ export const batchRecordFoundWords = async (
     (r) => Number.isFinite(r.userId) && Number.isFinite(r.questionId) && r.word
   );
   if (!clean.length) return { count: 0 };
+  
+  const orClauses = clean.map((r) => ({
+    userId: r.userId,
+    questionId: r.questionId,
+    word: { equals: r.word, mode: "insensitive" as const },
+  }));
+
+  const existing = await prisma.wordFound.findMany({
+    where: { gameId, OR: orClauses },
+    select: { userId: true, questionId: true, word: true },
+  });
+
+  const key = (r: { userId: number; questionId: number; word: string }) =>
+    `${r.userId}|${r.questionId}|${r.word.toLowerCase()}`;
+
+  const existingKeys = new Set(existing.map(key));
+  const toInsert = clean.filter((r) => !existingKeys.has(key(r)));
+
+  if (!toInsert.length) return { count: 0 };
 
   return prisma.wordFound.createMany({
-    data: clean,
-    skipDuplicates: true,
+    data: toInsert,
   });
 };
 
-type gameCompleteInput = {
-  gameId: number;
-  userId: number;
-  completed?: boolean;
-  finishedOnTime?: boolean;
-  isHintUsed?: boolean;
-  timeUsedSeconds?: number;
-};
+function safeSecondsToAdd(
+  timeUsedSeconds?: number | null,
+  timer?: number | null
+): number {
+  const raw = Number.isFinite(timeUsedSeconds as number)
+    ? Math.max(0, Math.floor(timeUsedSeconds as number))
+    : 0;
 
-type gameCompleteResult = {
-  coinsAwarded: number;
-  alreadyFinished: boolean;
-  updatedGame?: any;
-};
+  if (!Number.isFinite(timer as number) || (timer as number) <= 0) return raw;
+  return Math.min(raw, Math.floor(timer as number));
+}
 
 export async function getGameForCompletion(gameId: number) {
   return prisma.game.findUnique({
@@ -199,9 +239,9 @@ export async function finalizeGame(opts: {
   userId: number;
   coins: number;
   extraGameData?: Record<string, any>;
-  timeUsedSeconds?: number;
+  secondsToAdd: number;
 }) {
-  const { gameId, userId, coins, extraGameData = {}, timeUsedSeconds } = opts;
+  const { gameId, userId, coins, extraGameData = {}, secondsToAdd } = opts;
 
   const updated = await prisma.$transaction(async (tx) => {
     const game = await tx.game.update({
@@ -223,10 +263,10 @@ export async function finalizeGame(opts: {
       });
     }
 
-    if (typeof timeUsedSeconds === "number" && timeUsedSeconds > 0) {
+    if (secondsToAdd > 0) {
       await tx.user.update({
         where: { id: userId },
-        data: { total_playtime: { increment: timeUsedSeconds } },
+        data: { total_playtime: { increment: secondsToAdd } },
       });
     }
 
@@ -235,12 +275,13 @@ export async function finalizeGame(opts: {
       select: { id: true, coin: true, total_playtime: true },
     });
 
-    return { game, user };
+    return { game, user, secondsAdded: secondsToAdd };
   });
 
   return {
     ...updated.game,
     user: updated.user,
+    secondsAdded: updated.secondsAdded,
   };
 }
 
@@ -250,7 +291,7 @@ async function applyPartialGameUpdates(opts: {
   setHintUsed?: boolean;
   timeUsedSeconds?: number;
 }) {
-  const { gameId, userId, setHintUsed, timeUsedSeconds } = opts;
+  const { gameId, userId, setHintUsed } = opts;
 
   const updated = await prisma.$transaction(async (tx) => {
     let gameUpdateData: Record<string, any> | undefined;
@@ -274,13 +315,6 @@ async function applyPartialGameUpdates(opts: {
             },
           });
 
-    if (typeof timeUsedSeconds === "number" && timeUsedSeconds > 0) {
-      await tx.user.update({
-        where: { id: userId },
-        data: { total_playtime: { increment: timeUsedSeconds } },
-      });
-    }
-
     const user = await tx.user.findUnique({
       where: { id: userId },
       select: { id: true, coin: true, total_playtime: true },
@@ -295,7 +329,9 @@ async function applyPartialGameUpdates(opts: {
   };
 }
 
-export async function completeGame(input: gameCompleteInput): Promise<gameCompleteResult> {
+export async function completeGame(
+  input: gameCompleteInput
+): Promise<gameCompleteResult> {
   try {
     const {
       gameId,
@@ -306,50 +342,67 @@ export async function completeGame(input: gameCompleteInput): Promise<gameComple
       timeUsedSeconds,
     } = input;
 
-    if (!Number.isFinite(gameId)) {
-      console.error("Invalid gameId");
-      throw new Error("Invalid gameId");
-    }
-    if (!Number.isFinite(userId)) {
-      console.error("Invalid or missing userId");
-      throw new Error("Invalid or missing userId");
-    }
+    if (!Number.isFinite(gameId)) throw new Error("Invalid gameId");
+    if (!Number.isFinite(userId)) throw new Error("Invalid or missing userId");
 
     const game = await getGameForCompletion(gameId);
-    if (!game) {
-      console.error("Game not found");
-      throw new Error("Game not found");
-    }
-
-    if (game.userId !== userId) {
-      console.error("Forbidden: user does not own this game");
+    if (!game) throw new Error("Game not found");
+    if (game.userId !== userId)
       throw new Error("Forbidden: user does not own this game");
-    }
 
-    const wantToFinish = completed === true && game.isFinished !== true;
+    const secondsToAdd = safeSecondsToAdd(timeUsedSeconds, game.timer);
 
-    if (wantToFinish) {
-      const isTimerMode = game.timer !== null && game.timer !== undefined;
-      const coins = computeCoins({ isTimerMode, completed, finishedOnTime });
+    if (completed === true) {
+      // First-ever finish for this Game row → finalize and (optionally) award coins
+      if (game.isFinished !== true) {
+        const isTimerMode = game.timer !== null && game.timer !== undefined;
+        const coins = computeCoins({ isTimerMode, completed, finishedOnTime });
 
-      const extraGameData: Record<string, any> = {};
-      if (isHintUsed === true && game.isHintUsed !== true) {
-        extraGameData.isHintUsed = true;
+        const extraGameData: Record<string, any> = {};
+        if (isHintUsed === true && game.isHintUsed !== true)
+          extraGameData.isHintUsed = true;
+
+        const updatedGame = await finalizeGame({
+          gameId,
+          userId,
+          coins,
+          extraGameData,
+          secondsToAdd,
+        });
+
+        return {
+          coinsAwarded: coins,
+          alreadyFinished: false,
+          updatedGame,
+          secondsAdded: updatedGame.secondsAdded ?? secondsToAdd,
+        };
       }
 
-      const updatedGame = await finalizeGame({
-        gameId,
-        userId,
-        coins,
-        extraGameData,
-        timeUsedSeconds,
+      // Replay completion: game already finished → just add playtime, no coins
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data:
+          secondsToAdd > 0
+            ? { total_playtime: { increment: secondsToAdd } }
+            : {},
+        select: { id: true, coin: true, total_playtime: true },
       });
 
-      return { coinsAwarded: coins, alreadyFinished: false, updatedGame };
+      return {
+        coinsAwarded: 0,
+        alreadyFinished: true,
+        updatedGame: {
+          id: gameId,
+          userId,
+          isFinished: true,
+          user: updatedUser,
+        },
+        secondsAdded: secondsToAdd,
+      };
     }
 
+    // Not completed → just partial flags (e.g., hint used). No time increment.
     const setHintUsed = isHintUsed === true && game.isHintUsed !== true;
-
     const updatedGame = await applyPartialGameUpdates({
       gameId,
       userId,
@@ -361,9 +414,38 @@ export async function completeGame(input: gameCompleteInput): Promise<gameComple
       coinsAwarded: 0,
       alreadyFinished: game.isFinished === true,
       updatedGame,
+      secondsAdded: 0,
     };
   } catch (err) {
     console.error("Error completing game:", err);
     throw err;
+  }
+}
+
+export async function deleteIncompleteGame(gameId: number, userId: number) {
+  if (!Number.isFinite(gameId) || !Number.isFinite(userId)) {
+    return { ok: false, message: "Invalid gameId or userId" };
+  }
+
+  try {
+    const game = await prisma.game.findUnique({
+      where: { id: gameId },
+      select: { id: true, userId: true, isFinished: true },
+    });
+
+    if (!game) return { ok: false, message: "Game not found" };
+    if (game.userId !== userId)
+      return {
+        ok: false,
+        message: "You don't have permission to delete this game",
+      };
+    if (game.isFinished)
+      return { ok: false, message: "Finished games cannot be deleted" };
+
+    await prisma.game.delete({ where: { id: gameId } });
+    return { ok: true, data: { id: gameId, userId } };
+  } catch (err) {
+    console.error("Error deleteIncompleteGame service:", err);
+    return { ok: false, message: "Failed to delete game" };
   }
 }
