@@ -7,7 +7,7 @@ import {
 } from "./auth.schema";
 import { ErrorResponseSchema, GetWordsOrErrorSchema, GetWordsResponseSchema, SetupProfileRequestSchema, SetupProfileResponseSchema, SetupProfileSuccessSchema, vocabEntrySchema } from "./setup.schema";
 import { UserProfileOrErrorSchema, UserProfileResponseSchema } from "./userProfile.schema";
-import { GamesPlayedPerWeekOrErrorSchema, TotalPlaytimeOrErrorSchema, WordsLearnedOrErrorSchema } from "./dashboard.schema";
+import { AverageGamesByLevelOrErrorSchema, GamesPlayedPerWeekOrErrorSchema, TotalPlaytimeOrErrorSchema, WordsLearnedOrErrorSchema } from "./dashboard.schema";
 import { CreateGameFromGeminiRequestSchema, CreateGameFromGeminiResponseSchema, EnglishLevelSchema, GameTypeSchema, MaterialTypeSchema } from "./createGame.schema";
 import { UpdateUserProfileResponse, UpdateUserSettingSchema } from "./setting.schema";
 import { ProgressLevelupParamsSchema, ProgressLevelupResponseSchema } from "./progressLevelup.schema";
@@ -35,6 +35,9 @@ export type TotalPlaytimeOrError = z.infer<typeof TotalPlaytimeOrErrorSchema>;
 export type WordsLearnedOrError = z.infer<typeof WordsLearnedOrErrorSchema>;
 export type GamesPlayedPerWeekOrError = z.infer<
     typeof GamesPlayedPerWeekOrErrorSchema
+>;
+export type AverageGamesByLevelOrError = z.infer<
+    typeof AverageGamesByLevelOrErrorSchema
 >;
 
 
