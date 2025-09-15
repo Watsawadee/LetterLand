@@ -7,13 +7,54 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id               Int               @id @default(autoincrement())
+  username         String            @unique
+  email            String            @unique
+  password         String
+  age              Int
+  englishLevel     EnglishLevel
+  coin             Int               @default(0)
+  hint             Int               @default(3)
+  created_at       DateTime          @default(now())
+  total_playtime   Int               @default(0)
+  games            Game[]
+  userAchievements UserAchievement[]
+  wordFound        WordFound[]
+  gameTemplate     GameTemplate[]
+}
+
 model Achievement {
-  id              Int               @id @default(autoincrement())
-  name            String
-  description     String
-  coinReward      Int
-  imageUrl        String?
-  UserAchievement UserAchievement[]
+  id               Int               @id @default(autoincrement())
+  name             String
+  description      String
+  coinReward       Int
+  imageUrl         String?
+  userAchievements UserAchievement[]
+}
+
+model UserAchievement {
+  id            Int         @id @default(autoincrement())
+  userId        Int
+  achievementId Int
+  isCompleted   Boolean     @default(false)
+  earnedAt      DateTime    @default(now())
+  isClaimed     Boolean     @default(false)
+  achievement   Achievement @relation(fields: [achievementId], references: [id])
+  user          User        @relation(fields: [userId], references: [id])
+}
+
+model GameTemplate {
+  id         Int          @id @default(autoincrement())
+  ownerId    Int
+  owner      User         @relation(fields: [ownerId], references: [id])
+  gameTopic  String
+  gameType   GameType
+  difficulty EnglishLevel
+  isPublic   Boolean      @default(false)
+  imageUrl   String?
+  games      Game[]
+  questions  Question[]
 }
 
 model Game {
@@ -26,22 +67,9 @@ model Game {
   isFinished     Boolean      @default(false)
   gameCode       String?      @unique
   timer          Int?
-  GameTemplate   GameTemplate @relation(fields: [gameTemplateId], references: [id])
-  User           User         @relation(fields: [userId], references: [id])
+  gameTemplate   GameTemplate @relation(fields: [gameTemplateId], references: [id])
+  user           User         @relation(fields: [userId], references: [id])
   WordFound      WordFound[]
-}
-
-model GameTemplate {
-  id         Int          @id @default(autoincrement())
-  gameTopic  String
-  gameType   GameType
-  difficulty EnglishLevel
-  isPublic   Boolean      @default(false)
-  imageUrl   String?
-  ownerId    Int
-  Game       Game[]
-  User       User         @relation(fields: [ownerId], references: [id])
-  Question   Question[]
 }
 
 model Question {
@@ -51,36 +79,8 @@ model Question {
   answer         String
   hint           String
   audioUrl       String?
-  GameTemplate   GameTemplate @relation(fields: [gameTemplateId], references: [id])
-  WordFound      WordFound[]
-}
-
-model User {
-  id              Int               @id @default(autoincrement())
-  username        String            @unique
-  email           String            @unique
-  password        String
-  age             Int
-  englishLevel    EnglishLevel
-  coin            Int               @default(0)
-  hint            Int               @default(3)
-  created_at      DateTime          @default(now())
-  total_playtime  Int               @default(0)
-  Game            Game[]
-  GameTemplate    GameTemplate[]
-  UserAchievement UserAchievement[]
-  WordFound       WordFound[]
-}
-
-model UserAchievement {
-  id            Int         @id @default(autoincrement())
-  userId        Int
-  achievementId Int
-  isCompleted   Boolean     @default(false)
-  earnedAt      DateTime    @default(now())
-  isClaimed     Boolean     @default(false)
-  Achievement   Achievement @relation(fields: [achievementId], references: [id])
-  User          User        @relation(fields: [userId], references: [id])
+  gameTemplate   GameTemplate @relation(fields: [gameTemplateId], references: [id])
+  wordFound      WordFound[]
 }
 
 model WordFound {
@@ -90,9 +90,9 @@ model WordFound {
   word       String
   foundAt    DateTime @default(now())
   gameId     Int
-  Game       Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  Question   Question @relation(fields: [questionId], references: [id])
-  User       User     @relation(fields: [userId], references: [id])
+  game       Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  question   Question @relation(fields: [questionId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
 
   @@unique([gameId, userId, questionId])
 }
