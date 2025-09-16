@@ -86,12 +86,13 @@ model Question {
 model WordFound {
   id         Int      @id @default(autoincrement())
   userId     Int
-  questionId Int
+  questionId Int?
   word       String
   foundAt    DateTime @default(now())
   gameId     Int
+  isExtra    Boolean   @default(false)
   game       Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  question   Question @relation(fields: [questionId], references: [id])
+  question   Question? @relation(fields: [questionId], references: [id])
   user       User     @relation(fields: [userId], references: [id])
 
   @@unique([gameId, userId, questionId])
