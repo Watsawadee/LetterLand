@@ -22,6 +22,7 @@ model User {
   gameTemplate     GameTemplate[]
   userAchievements UserAchievement[]
   wordFound        WordFound[]
+  extraWordFound   ExtraWordFound[]
 }
 
 model Achievement {
@@ -58,18 +59,19 @@ model GameTemplate {
 }
 
 model Game {
-  id             Int          @id @default(autoincrement())
+  id             Int              @id @default(autoincrement())
   userId         Int
   gameTemplateId Int
-  startedAt      DateTime     @default(now())
+  startedAt      DateTime         @default(now())
   finishedAt     DateTime?
-  isHintUsed     Boolean      @default(false)
-  isFinished     Boolean      @default(false)
-  gameCode       String?      @unique
+  isHintUsed     Boolean          @default(false)
+  isFinished     Boolean          @default(false)
+  gameCode       String?          @unique
   timer          Int?
-  gameTemplate   GameTemplate @relation(fields: [gameTemplateId], references: [id])
-  user           User         @relation(fields: [userId], references: [id])
-  WordFound      WordFound[]
+  gameTemplate   GameTemplate     @relation(fields: [gameTemplateId], references: [id])
+  user           User             @relation(fields: [userId], references: [id])
+  wordFound      WordFound[]
+  extraWordFound ExtraWordFound[]
 }
 
 model Question {
@@ -84,20 +86,33 @@ model Question {
 }
 
 model WordFound {
-  id         Int       @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   userId     Int
-  questionId Int?
+  questionId Int
   word       String
-  foundAt    DateTime  @default(now())
+  foundAt    DateTime @default(now())
   gameId     Int
-  isExtra    Boolean   @default(false)
-  game       Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  question   Question? @relation(fields: [questionId], references: [id])
-  user       User      @relation(fields: [userId], references: [id])
+  game       Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  question   Question @relation(fields: [questionId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
 
   @@unique([gameId, userId, questionId])
-  @@unique([gameId, userId, word, isExtra])
-  @@index([gameId, userId, isExtra])
+  @@index([gameId, userId, foundAt])
+}
+
+model ExtraWordFound {
+  id       Int      @id @default(autoincrement())
+  userId   Int
+  word     String
+  foundAt  DateTime @default(now())
+  gameId   Int
+  audioUrl String?
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([gameId, userId, word])
+  @@index([gameId, userId, foundAt])
 }
 
 enum EnglishLevel {
