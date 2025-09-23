@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useRef, useEffect } from "react";
-import { View, StyleSheet, TouchableOpacity } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
 import GameControls from "./GameControls";
 import GameBoard from "./GameBoard";
 import CluesPanel from "./CluesPanel";
@@ -14,10 +14,18 @@ import ArrowLeft from "@/assets/icon/ArrowLeft";
 import Restart from "../assets/icon/Restart";
 import ArrowRight from "@/assets/icon/ArrowRight";
 import WordLearnedModal from "./WordLearnedModal";
-import { fetchGamePronunciations } from "@/services/pronunciationService";
-import { saveFoundWordsOnce, completeGame } from "@/services/gameService";
+import {
+  fetchGamePronunciations,
+  invalidatePronunciationsCache,
+} from "@/services/pronunciationService";
+import {
+  saveFoundWordsOnce,
+  completeGame,
+  recordExtraWord,
+} from "@/services/gameService";
 import { deleteIncompleteGame } from "@/services/gameService";
 import { getLoggedInUserId } from "@/utils/auth";
+import { isValidEnglishWord } from "@/services/dictionaryService";
 
 export default function SharedGameScreen({
   mode,
@@ -37,6 +45,8 @@ export default function SharedGameScreen({
   const [awardedCoins, setAwardedCoins] = useState<number | null>(null);
   const [usedSeconds, setUsedSeconds] = useState<number | null>(null);
 
+  const [alreadyFinished, setAlreadyFinished] = useState(false);
+
   const [roundKey, setRoundKey] = useState(0);
   const startedAtRef = useRef<number>(Date.now());
 
@@ -45,6 +55,14 @@ export default function SharedGameScreen({
 
   const restartLockRef = useRef(false);
   const [resetting, setResetting] = useState(false);
+
+  const [extraWords, setExtraWords] = useState<string[]>([]);
+  const extraWordSetRef = useRef<Set<string>>(new Set());
+  const [toast, setToast] = useState<{ visible: boolean; text: string }>({
+    visible: false,
+    text: "",
+  });
+  const [extraCoinsEarned, setExtraCoinsEarned] = useState(0);
 
   useEffect(() => {
     if (!gameData?.id) return;
@@ -72,6 +90,21 @@ export default function SharedGameScreen({
     () => questionsAndAnswers.map((q) => q.answer),
     [questionsAndAnswers]
   );
+  const allAnswersLower = useMemo(() => {
+    const s = new Set<string>();
+    for (const a of allAnswers)
+      s.add(
+        String(a || "")
+          .trim()
+          .toLowerCase()
+      );
+    return s;
+  }, [allAnswers]);
+
+  const foundWordsListRef = useRef<string[]>(foundWordsList);
+  useEffect(() => {
+    foundWordsListRef.current = foundWordsList;
+  }, [foundWordsList]);
 
   const { visible: allFoundVisible, setVisible: setAllFoundVisible } =
     useAllFound(allAnswers, foundWordsList);
@@ -98,6 +131,19 @@ export default function SharedGameScreen({
     setTimeUp(false);
     setWordModalVisible(false);
 
+    foundWordsListRef.current = [];
+    setExtraWords([]);
+    extraWordSetRef.current = new Set();
+    setToast({ visible: false, text: "" });
+    setExtraCoinsEarned(0);
+    setAwardedCoins(null);
+    setUsedSeconds(null);
+    hasPostedWordsRef.current = false;
+    hasPostedCompleteRef.current = false;
+
+    if (gameData?.id != null) {
+      invalidatePronunciationsCache(gameData.id);
+    }
     resetGame();
     setActiveQuestionIndex(0);
     clearActiveHint();
@@ -107,6 +153,11 @@ export default function SharedGameScreen({
     hasPostedWordsRef.current = false;
     hasPostedCompleteRef.current = false;
     startedAtRef.current = Date.now();
+
+    setExtraWords([]);
+    extraWordSetRef.current = new Set();
+    setToast({ visible: false, text: "" });
+    setExtraCoinsEarned(0);
 
     setRoundKey((k) => k + 1);
 
@@ -166,9 +217,14 @@ export default function SharedGameScreen({
         finishedOnTime,
         wordsLearned,
         timeUsedSeconds: seconds,
+        extraWordsCount: extraWords.length,
+        extraWords,
       });
       if (typeof res?.coinsAwarded === "number") {
         setAwardedCoins(res.coinsAwarded);
+      }
+      if (typeof res?.alreadyFinished === "boolean") {
+        setAlreadyFinished(res.alreadyFinished);
       }
       hasPostedCompleteRef.current = true;
     } catch (e) {
@@ -199,7 +255,13 @@ export default function SharedGameScreen({
     hasPostedCompleteRef.current = false;
     setAwardedCoins(null);
     setUsedSeconds(null);
+    setAlreadyFinished(false);
     startedAtRef.current = Date.now();
+
+    setExtraWords([]);
+    extraWordSetRef.current = new Set();
+    setToast({ visible: false, text: "" });
+    setExtraCoinsEarned(0);
   }, [gameData?.id]);
 
   useEffect(() => {
@@ -231,14 +293,135 @@ export default function SharedGameScreen({
 
   const wordsLearnedCount = foundWordsList.length;
 
+  // Build the candidate word from a selection snapshot
+  function buildWordFromCells(
+    cells: Array<[number, number]>,
+    matrix: string[][]
+  ): string {
+    try {
+      return (cells || [])
+        .map(([r, c]) => String(matrix?.[r]?.[c] ?? ""))
+        .join("");
+    } catch {
+      return "";
+    }
+  }
+
+  // Wrap the base pan handlers to detect “extra word” on release.
+  const baseHandlers = panResponder.panHandlers;
+  const shouldBlock =
+    timeUp || wordModalVisible || allFoundVisible || resetting;
+
+  const wrappedHandlers = shouldBlock
+    ? {}
+    : {
+        ...baseHandlers,
+        onResponderRelease: (evt: any) => {
+          const beforeFound = foundWordsListRef.current.length;
+          const snapshotCells: any[] = Array.isArray(selectedCells)
+            ? (selectedCells as any[]).slice()
+            : Array.from((selectedCells as any) || []);
+
+          const candidateRaw = buildWordFromCells(snapshotCells as any, grid);
+
+          if (
+            baseHandlers &&
+            typeof baseHandlers.onResponderRelease === "function"
+          ) {
+            baseHandlers.onResponderRelease(evt);
+          }
+
+          setTimeout(async () => {
+            const afterFound = foundWordsListRef.current.length;
+
+            if (afterFound === beforeFound) {
+              const w = (candidateRaw || "").trim().toLowerCase();
+              if (!w || w.length < 3) return;
+              if (!/^[a-z]+$/.test(w)) return;
+              if (allAnswersLower.has(w)) return;
+              if (extraWordSetRef.current.has(w)) return;
+
+              // Skip if it was already learned earlier in this round
+              const learnedSet = new Set(
+                (foundWordsListRef.current || []).map((s) =>
+                  String(s).trim().toLowerCase()
+                )
+              );
+              if (learnedSet.has(w)) return;
+              let okEnglish = false;
+              try {
+                okEnglish = await isValidEnglishWord(w);
+              } catch {
+                okEnglish = false;
+              }
+              if (!okEnglish) {
+                return;
+              }
+              try {
+                if (gameData?.id) {
+                  const resp = await recordExtraWord(gameData.id, w);
+                  if (!resp) return;
+
+                  // If this word was already counted
+                  if (resp.alreadyCounted) {
+                    setToast({
+                      visible: true,
+                      text: `No coin: '${w.toUpperCase()}' already counted for this game`,
+                    });
+                    setTimeout(
+                      () => setToast({ visible: false, text: "" }),
+                      2000
+                    );
+                    return;
+                  }
+
+                  // Now it's accepted → record locally and award
+                  if (!extraWordSetRef.current.has(w)) {
+                    extraWordSetRef.current.add(w);
+                    setExtraWords((prev) => [...prev, w]);
+                  }
+
+                  const inc =
+                    typeof resp.coinsAwarded === "number"
+                      ? resp.coinsAwarded
+                      : resp.created
+                      ? 1
+                      : 0;
+
+                  if (inc > 0) {
+                    setExtraCoinsEarned((c) => c + inc);
+                    setToast({
+                      visible: true,
+                      text: `⭐ Extra word! (${w.toUpperCase()})  +${inc} coin`,
+                    });
+                    setTimeout(
+                      () => setToast({ visible: false, text: "" }),
+                      2000
+                    );
+                  }
+                }
+              } catch {}
+            }
+          }, 0);
+        },
+      };
+
   const endModalVisible =
     !resetting &&
     !wordModalVisible &&
     (allFoundVisible || (timeUp && hasTimer));
   const endVariant = allFoundVisible ? "success" : "timeout";
 
+  const displayCoins = (awardedCoins ?? 0) + extraCoinsEarned;
+
   return (
     <View style={styles.container}>
+      {toast.visible && (
+        <View style={styles.toast}>
+          <Text style={styles.toastText}>{toast.text}</Text>
+        </View>
+      )}
+
       <View style={styles.topRow}>
         <View style={styles.leftColumn}>
           <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
@@ -269,11 +452,7 @@ export default function SharedGameScreen({
             foundWords={foundWords}
             hintCell={hintCell}
             fontSize={fontSettings.fontSize}
-            panHandlers={
-              timeUp || wordModalVisible || allFoundVisible || resetting
-                ? {}
-                : panResponder.panHandlers
-            }
+            panHandlers={wrappedHandlers}
             layoutRef={layoutRef}
           />
         </View>
@@ -305,8 +484,11 @@ export default function SharedGameScreen({
           variant={endVariant}
           hasTimer={hasTimer}
           timeUsedSeconds={usedSeconds ?? undefined}
-          coinsEarned={awardedCoins ?? undefined}
+          coinsEarned={displayCoins}
           wordsLearned={wordsLearnedCount}
+          extraWordsCount={extraWords.length}
+          alreadyFinished={alreadyFinished}
+          extraCoinsEarnedThisRun={extraCoinsEarned}
           onRestart={hardResetRound}
           onContinue={openWordModal}
           restartIcon={<Restart />}
@@ -319,6 +501,7 @@ export default function SharedGameScreen({
         onClose={() => router.replace("/Home")}
         gameId={gameData?.id ?? 0}
         words={foundWordsList}
+        extraWords={extraWords}
       />
     </View>
   );
@@ -326,6 +509,18 @@ export default function SharedGameScreen({
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, justifyContent: "flex-start" },
+  toast: {
+    position: "absolute",
+    top: 12,
+    alignSelf: "center",
+    zIndex: 999,
+    backgroundColor: "#1f2937",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    opacity: 0.95,
+  },
+  toastText: { color: "#fff", fontWeight: "600" },
   topRow: { flexDirection: "row", flex: 1, paddingBottom: 20 },
   leftColumn: { width: 300, justifyContent: "center", marginRight: 30 },
   rightColumn: { flex: 1, marginTop: 20, justifyContent: "center" },
