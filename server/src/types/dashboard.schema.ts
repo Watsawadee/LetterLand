@@ -22,7 +22,12 @@ export const GamesPlayedPerWeekResponseSchema = z.object({
 
 export const AverageGamesByLevelResponseSchema = z.object({
     englishLevel: z.enum(["A1", "A2", "B1", "B2", "C1", "C2"]),
-    averageGamesPlayedThisWeek: z.number(),
+    averages: z.array(
+        z.object({
+            date: z.string(),
+            averageGamesPlayed: z.number(),
+        })
+    ),
     userCount: z.number(),
     range: z.object({
         start: z.date().or(z.string()),

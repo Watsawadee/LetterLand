@@ -9,7 +9,7 @@ import {
   AverageGamesByLevelResponseSchema,
 } from "../types/dashboard.schema";
 import {
-  TotalPlaytimeOrError, WordsLearnedOrError,
+  TotalPlaytimeOrError,
   GamesPlayedPerWeekOrError,
   AverageGamesByLevelOrError,
 } from "../types/type"
@@ -133,7 +133,7 @@ export const getUserGamesPlayedPerWeek = async (
     const result: Record<string, number> = {};
 
     days.forEach((day, idx) => {
-      const label = format(day, "E").slice(0, 2); // 'Su', 'Mo', 'Tu', etc.
+      const label = format(day, "EEE").slice(0, 2); // 'Su', 'Mo', 'Tu', etc.
       result[label] = 0;
     });
 
@@ -198,40 +198,76 @@ export const getAverageGamesPlayedByLevel = async (req: AuthenticatedRequest, re
     const start = startOfWeek(base, { weekStartsOn: 0 });
     const end = endOfWeek(base, { weekStartsOn: 0 });
 
-    const gameCounts = await prisma.game.groupBy({
-      by: ["userId"],
-      where: {
-        isFinished: true,
-        startedAt: { gte: start, lte: end },
-        user: {
-          englishLevel: level,
-          NOT: { id: userId },
-        },
-      },
-      _count: { id: true },
-    });
-
-    const userCount = await prisma.user.count({
+    const allUsers = await prisma.user.findMany({
       where: {
         englishLevel: level,
         NOT: { id: userId },
       },
+      select: { id: true }
     });
+    const userIds = allUsers.map(u => u.id);
+    const games = await prisma.game.findMany({
+      where: {
+        userId: { in: userIds },
+        isFinished: true,
+        startedAt: { gte: start, lte: end },
+      },
+      select: {
+        userId: true,
+        startedAt: true,
+      },
+    });
+    const days = eachDayOfInterval({ start, end });
+    const dayLabels = days.map(day => format(day, "yyyy-MM-dd"));
 
-    const totalGames = gameCounts.reduce((sum, g) => sum + g._count.id, 0)
-    const average = userCount > 0 ? totalGames / userCount : 0;
+    const gamesPerDay: Record<string, Record<number, number>> = {};
+    for (const label of dayLabels) {
+      gamesPerDay[label] = {};
+      for (const uid of userIds) {
+        gamesPerDay[label][uid] = 0;
+      }
+    }
+    for (const game of games) {
+      const dayLabel = format(game.startedAt, "yyyy-MM-dd");
+      if (gamesPerDay[dayLabel] && gamesPerDay[dayLabel][game.userId] !== undefined) {
+        gamesPerDay[dayLabel][game.userId]++;
+      }
+    }
+
+    // For each day, calculate average
+    const averages: { date: string; averageGamesPlayed: number }[] = [];
+    for (const label of dayLabels) {
+      const totalGames = Object.values(gamesPerDay[label]).reduce((a, b) => a + b, 0);
+      const avg = userIds.length > 0 ? totalGames / userIds.length : 0;
+      averages.push({ date: label, averageGamesPlayed: avg });
+    }
+
     const response = AverageGamesByLevelResponseSchema.parse({
       englishLevel: level,
-      averageGamesPlayedThisWeek: average,
-      userCount,
+      averages,
+      userCount: userIds.length,
       range: {
         start: start.toISOString(),
         end: end.toISOString(),
       },
       offSet,
     });
-
     res.status(200).json(response);
+
+    // const totalGames = gameCounts.reduce((sum, g) => sum + g._count.id, 0)
+    // const average = userCount > 0 ? totalGames / userCount : 0;
+    // const response = AverageGamesByLevelResponseSchema.parse({
+    //   englishLevel: level,
+    //   averageGamesPlayedThisWeek: average,
+    //   userCount,
+    //   range: {
+    //     start: start.toISOString(),
+    //     end: end.toISOString(),
+    //   },
+    //   offSet,
+    // });
+
+    // res.status(200).json(response);
 
   }
   catch (error) {
