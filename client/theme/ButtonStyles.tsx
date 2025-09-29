@@ -123,4 +123,37 @@ export const ButtonStyles: {
       color: Color.white,
     },
   },
+  extraWord: {
+    container: {
+      backgroundColor: Color.C1,
+      height: 99,
+      width: 99,
+      borderRadius: 130,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    text: {},
+  },
+  tutorial: {
+    container: {
+      backgroundColor: Color.orange,
+      height: 99,
+      width: 99,
+      borderRadius: 130,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    text: {},
+  },
+  hintshop: {
+    container: {
+      backgroundColor: Color.yellow,
+      height: 99,
+      width: 99,
+      borderRadius: 130,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    text: {},
+  },
 };

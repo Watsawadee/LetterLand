@@ -136,8 +136,8 @@ export default function HintShopModal({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <View style={styles.sheet}>
+      <Pressable style={styles.backdrop} onPress={onClose}>
+        <Pressable style={styles.sheet} onPress={() => {}}>
           <View style={styles.header}>
             <MarketHeaderBG width={530} height={78} />
             <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={10}>
@@ -187,8 +187,8 @@ export default function HintShopModal({
               </>
             )}
           </View>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }

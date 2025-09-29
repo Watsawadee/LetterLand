@@ -7,10 +7,7 @@ const cache = new Map<string, CacheEntry>();
 const inflight = new Map<string, Promise<boolean>>();
 
 function clean(word: string) {
-  return (word || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z]/g, "");
+  return (word || "").trim().toLowerCase().replace(/[^a-z]/g, "");
 }
 
 function getFromCache(w: string): boolean | null {
@@ -24,49 +21,50 @@ function setCache(w: string, ok: boolean) {
   cache.set(w, { ok, ts: Date.now() });
 }
 
-async function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
-  return await Promise.race([
-    p,
-    new Promise<T>((_, rej) => setTimeout(() => rej(new Error("timeout")), ms)),
-  ]);
-}
-
-async function checkDictionaryAPI(w: string): Promise<boolean> {
-  const url = `https://api.datamuse.com/words?sp=${encodeURIComponent(
-    w
-  )}&max=1&md=d`;
-  const res = await fetch(url);
-  if (!res.ok) return false;
-
-  const data = await res.json();
-  if (!Array.isArray(data) || data.length === 0) return false;
-
-  const hit = data[0];
-  const exact = String(hit?.word || "").toLowerCase() === w;
-  const hasDefs = Array.isArray(hit?.defs) && hit.defs.length > 0;
-
-  return exact && hasDefs;
+async function fetchWithTimeout(url: string, ms = TIMEOUT_MS): Promise<Response> {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { signal: ctrl.signal });
+  } finally {
+    clearTimeout(t);
+  }
 }
 
 export async function isValidEnglishWord(raw: string): Promise<boolean> {
   const w = clean(raw);
   if (w.length < 3) return false;
-  if (!/^[a-z]+$/.test(w)) return false;
 
   const cached = getFromCache(w);
   if (cached != null) return cached;
 
   if (inflight.has(w)) return inflight.get(w)!;
 
+  const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(w)}`;
+
   const pending = (async () => {
     try {
-      const ok = await withTimeout(checkDictionaryAPI(w), TIMEOUT_MS);
-      setCache(w, ok);
-      console.info(`[dict] '${w}' → ${ok ? "valid" : "invalid"}`);
-      return ok;
+      const res = await fetchWithTimeout(url, TIMEOUT_MS);
+
+      if (!res.ok) {
+        setCache(w, false);
+        return false;
+      }
+
+      const data = await res.json();
+      const ok =
+        Array.isArray(data) &&
+        data.length > 0 &&
+        typeof data[0]?.word === "string" &&
+        Array.isArray(data[0]?.meanings) &&
+        data[0].meanings.some(
+          (m: any) => Array.isArray(m?.definitions) && m.definitions.length > 0
+        );
+
+      setCache(w, !!ok);
+      return !!ok;
     } catch {
       setCache(w, false);
-      console.info(`[dict] '${w}' → invalid (timeout/network)`);
       return false;
     } finally {
       inflight.delete(w);

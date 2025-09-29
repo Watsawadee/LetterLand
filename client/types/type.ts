@@ -50,22 +50,15 @@ export type GameControlsProps = {
   onShowHint: () => void;
   hintCount: number | null;
   isHintDisabled: boolean;
-  fontSettings: FontSettings;
   startTimeSeconds: number;
   onTimeUp: () => void;
   paused?: boolean;
   resetKey?: unknown;
   onOpenHintShop?: () => void;
   refreshHints?: () => void;
-};
-
-export type FontSettings = {
-  fontModalVisible: boolean;
-  tempFontSize: number;
-  fontSize: number;
-  setTempFontSize: (n: number) => void;
-  setFontModalVisible: (v: boolean) => void;
-  setFontSize: (n: number) => void;
+  onRequestBuyHints?: () => void;
+  gameCode?: string | null;
+  cefr?: "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | string;
 };
 
 export interface ConfirmRestartGroup {
