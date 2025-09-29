@@ -23,6 +23,7 @@ import Stop from "@/assets/icon/Stop";
 import { CustomButton } from "@/theme/ButtonCustom";
 import * as FS from "expo-file-system/legacy";
 import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
+import GreenTape from "@/assets/icon/GreenTape";
 
 const audioCache = new Map<string, string>();
 
@@ -398,7 +399,10 @@ export default function WordLearnedModal({
     return { word: cap(key), item: effective, key };
   });
 
-  const nothingToShow = learnedList.length === 0 && extraDisplay.length === 0;
+  const hasLearned = learnedList.length > 0;
+  const hasExtra = extraDisplay.length > 0;
+  const nothingToShow = !hasLearned && !hasExtra;
+  const showCongrats = !loading && !err && hasLearned;
 
   return (
     <Modal
@@ -409,7 +413,15 @@ export default function WordLearnedModal({
     >
       <View style={styles.overlay}>
         <View style={styles.modal}>
+          <View style={styles.tape}>
+            <GreenTape width="100%" height="100%" />
+          </View>
           <Text style={styles.title}>Word Learned</Text>
+          {showCongrats && (
+            <Text style={styles.subtitle}>
+              Great job, now you have learned all these words.
+            </Text>
+          )}
 
           {loading ? (
             <View style={styles.center}>
@@ -420,17 +432,18 @@ export default function WordLearnedModal({
               <Text style={styles.error}>{err}</Text>
             </View>
           ) : nothingToShow ? (
-            <View className="center">
-              <Text>No learned words yet.</Text>
+            <View style={styles.emptyBox}>
+              <Text style={styles.emptyTitle}>No learned words yet</Text>
             </View>
           ) : (
             <ScrollView contentContainerStyle={styles.list}>
-              {learnedList.length > 0 && (
-                <Text style={styles.sectionTitle}>Words Learned</Text>
+              {hasLearned && (
+                <>
+                  <Text style={styles.sectionTitle}>Vocabulary</Text>
+                </>
               )}
               {learnedList.map(({ word, item, key }, i) => {
-                const cachedReady = !!audioCache.get(key);
-                const canPlay = !!item?.dataUrl || cachedReady;
+                const canPlay = !!item?.dataUrl || !!audioCache.get(key);
                 const isPending = !canPlay && pendingWords.has(key);
                 const rowKey = `learn:${String(word).trim().toLowerCase()}`;
                 const active = playingKey === rowKey;
@@ -438,11 +451,16 @@ export default function WordLearnedModal({
 
                 return (
                   <View key={`learn-${word}-${i}`} style={styles.row}>
-                    <Text style={styles.indexText}>{index}.</Text>
-
                     <View
                       style={[styles.chip, !canPlay && styles.chipDisabled]}
                     >
+                      <View style={styles.leftWrap}>
+                        <Text style={styles.indexText}>{index}.</Text>
+                        <Text style={styles.word} numberOfLines={1}>
+                          {cap(word)}
+                        </Text>
+                      </View>
+
                       <Pressable
                         onPress={() => canPlay && play(item, rowKey)}
                         disabled={!canPlay}
@@ -460,9 +478,6 @@ export default function WordLearnedModal({
                         )}
                       </Pressable>
 
-                      <Text style={styles.word} numberOfLines={1}>
-                        {cap(word)}
-                      </Text>
                       {!canPlay &&
                         (isPending ? null : (
                           <Text style={styles.missing}>(No audio)</Text>
@@ -472,26 +487,32 @@ export default function WordLearnedModal({
                 );
               })}
 
-              {extraDisplay.length > 0 && (
+              {hasExtra && (
                 <>
-                  <Text style={[styles.sectionTitle, { marginTop: 12 }]}>
-                    Extra Words
-                  </Text>
+                  <View
+                    style={[hasLearned && styles.sectionSpacer]}
+                  >
+                    <Text style={styles.sectionTitle}>Extra Word</Text>
+                  </View>
                   {extraDisplay.map(({ word, item, key }, i) => {
-                    const cachedReady = !!audioCache.get(key);
-                    const canPlay = !!item?.dataUrl || cachedReady;
+                    const canPlay = !!item?.dataUrl || !!audioCache.get(key);
                     const isPending = !canPlay && pendingWords.has(key);
-                    const rowKey = `extra:${String(word).trim().toLowerCase()}`;
+                    const rowKey = `learn:${String(word).trim().toLowerCase()}`;
                     const active = playingKey === rowKey;
                     const index = i + 1;
 
                     return (
                       <View key={`extra-${word}-${i}`} style={styles.row}>
-                        <Text style={styles.indexText}>{index}.</Text>
-
                         <View
                           style={[styles.chip, !canPlay && styles.chipDisabled]}
                         >
+                          <View style={styles.leftWrap}>
+                            <Text style={styles.indexText}>{index}.</Text>
+                            <Text style={styles.word} numberOfLines={1}>
+                              {cap(word)}
+                            </Text>
+                          </View>
+
                           <Pressable
                             onPress={() => canPlay && play(item, rowKey)}
                             disabled={!canPlay}
@@ -509,11 +530,8 @@ export default function WordLearnedModal({
                             )}
                           </Pressable>
 
-                          <Text style={styles.word} numberOfLines={1}>
-                            {cap(word)}
-                          </Text>
                           {!canPlay && !isPending ? (
-                            <Text style={styles.missing}>(no audio)</Text>
+                            <Text style={styles.missing}>(No audio)</Text>
                           ) : null}
                         </View>
                       </View>
@@ -547,20 +565,40 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   modal: {
-    width: "50%",
-    maxWidth: "95%",
+    position: "relative",
+    width: "90%",
+    maxWidth: 560,
     maxHeight: "85%",
     backgroundColor: Color.lightblue,
-    paddingVertical: 20,
-    paddingHorizontal: 20,
     borderRadius: 20,
-    padding: 16,
+    padding: 20,
     alignItems: "center",
+    paddingTop: 45,
+  },
+  tape: {
+    position: "absolute",
+    top: -40,
+    alignSelf: "center",
+    width: "90%",
+    aspectRatio: 6,
+    transform: [{ rotate: "-1deg" }],
+    opacity: 0.9,
+    pointerEvents: "none",
+    zIndex: 10,
   },
   title: {
-    ...Typography.header30,
+    ...Typography.popupheader,
     textAlign: "center",
     marginVertical: 10,
+    color: Color.gray,
+  },
+  subtitle: {
+    ...Typography.body20,
+    color: Color.gray,
+    textAlign: "center",
+    opacity: 0.75,
+    marginTop: 5,
+    marginBottom: 18,
   },
   center: {
     alignItems: "center",
@@ -568,39 +606,49 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   error: { color: "#c0392b" },
-  list: { paddingVertical: 8, width: "100%" },
+  list: { paddingVertical: 8, paddingHorizontal: 35, width: "100%" },
   sectionTitle: {
     ...Typography.header25,
+    color: Color.blue,
     textAlign: "left",
     width: "100%",
-    marginBottom: 6,
+    marginBottom: 15,
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
     width: "100%",
-    paddingHorizontal: 12,
     marginVertical: 6,
   },
   indexText: {
     ...Typography.header25,
     width: 50,
     textAlign: "right",
-    marginRight: 12,
-    backgroundColor: Color.grey,
+    marginRight: 40,
+    color: Color.gray,
   },
   chip: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "space-between",
     backgroundColor: Color.white,
-    borderRadius: 99,
+    borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
     flex: 1,
-    minHeight: 48,
+    minHeight: 60,
+    shadowColor: Color.black,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
   chipDisabled: { opacity: 0.8 },
+  leftWrap: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+  },
   soundBtn: {
     width: 39,
     height: 39,
@@ -611,7 +659,26 @@ const styles = StyleSheet.create({
   },
   soundBtnDisabled: { opacity: 0.5 },
   soundEmoji: { fontSize: 30 },
-  word: { ...Typography.header25, flexShrink: 1 },
+  word: { ...Typography.header25, flexShrink: 1, color: Color.gray },
   missing: { marginLeft: 8, fontSize: 12, color: "#a3a8af" },
-  footer: { marginTop: 8, alignItems: "center", flexDirection: "row", gap: 10 },
+  footer: { marginTop: 20, alignItems: "center", flexDirection: "row", gap: 10 },
+  emptyBox: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 24,
+    paddingHorizontal: 12,
+    minHeight: 160,
+  },
+  emptyTitle: {
+    ...Typography.header20,
+    color: Color.gray,
+    textAlign: "center",
+  },
+  emptySubtitle: {
+    marginTop: 8,
+    fontSize: 14,
+    opacity: 0.8,
+    textAlign: "center",
+  },
+  sectionSpacer: { marginTop: 30 },
 });

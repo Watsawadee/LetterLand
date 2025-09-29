@@ -7,6 +7,8 @@ export const Color: { [key: string]: string } = {
   gray: '#5B6073',
   pink: '#EF89C4',
   white: '#FFFFFF',
+  orange: '#FAA850',
+  yellow: '#FFE88B',
   A1: '#F2B9DD',
   A2: '#FB7FC7',
   B1: '#F19DB8',

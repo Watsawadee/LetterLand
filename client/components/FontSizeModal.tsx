@@ -1,5 +1,5 @@
 import React from "react";
-import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { Modal, View, Text, TouchableOpacity, StyleSheet, Pressable } from "react-native";
 import Slider from "@react-native-community/slider";
 import { FontSizeModalProps } from "../types/type";
 import { Color } from "@/theme/Color";
@@ -27,8 +27,8 @@ export default function FontSizeModal({
       visible={visible}
       onRequestClose={onClose}
     >
-      <View style={styles.backdrop}>
-        <View style={styles.card}>
+      <Pressable  style={styles.backdrop} onPress={onClose}>
+        <Pressable style={styles.card} onPress={() => {}}>
           <FontHeaderBG style={styles.header}>
             <Text style={styles.headerTitle}>Font size</Text>
           </FontHeaderBG>
@@ -75,8 +75,8 @@ export default function FontSizeModal({
               </Text>
             </TouchableOpacity>
           </View>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }

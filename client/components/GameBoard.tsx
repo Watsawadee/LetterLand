@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { GameBoardProps } from "../types/type";
 import { Typography } from "@/theme/Font";
+import { Color } from "@/theme/Color"
 
 export default function GameBoard(props: GameBoardProps) {
   const {
@@ -189,14 +190,21 @@ export default function GameBoard(props: GameBoardProps) {
 }
 
 const styles = StyleSheet.create({
-  grid: { marginBottom: 20 },
+  grid: {
+    // marginBottom: 20,
+    // flex: 1,
+    // minWidth: 0,
+    // justifyContent: "center",
+    // alignItems: "center",
+    // backgroundColor: "pink",
+    // width: "100%"
+  },
   row: { flexDirection: "row" },
   cell: {
-    backgroundColor: "#fff",
+    backgroundColor: Color.white,
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 4,
-    padding: 6,
     position: "relative",
     overflow: "hidden",
   },

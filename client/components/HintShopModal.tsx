@@ -7,7 +7,6 @@ import {
   Pressable,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
 } from "react-native";
 import { Typography } from "@/theme/Font";
 import MarketHeaderBG from "@/assets/backgroundTheme/MarketHeaderBG";
@@ -81,17 +80,14 @@ export default function HintShopModal({
     try {
       setBuying(true);
       const updated = await purchaseHints(userId, qty);
-      // updated is expected to be the user object { coin, hint, ... }
       const newCoin = updated?.coin ?? balance - price;
       const newHint = updated?.hint ?? 0;
 
       setBalance(newCoin);
       onPurchased?.(newHint, newCoin);
 
-      Alert.alert("Purchased!", `You bought ${qty} hint(s).`);
       onClose();
     } catch (e) {
-      Alert.alert("Purchase failed", "Please try again.");
     } finally {
       setBuying(false);
     }
@@ -136,8 +132,8 @@ export default function HintShopModal({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <View style={styles.sheet}>
+      <Pressable style={styles.backdrop} onPress={onClose}>
+        <Pressable style={styles.sheet} onPress={() => {}}>
           <View style={styles.header}>
             <MarketHeaderBG width={530} height={78} />
             <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={10}>
@@ -187,8 +183,8 @@ export default function HintShopModal({
               </>
             )}
           </View>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }
