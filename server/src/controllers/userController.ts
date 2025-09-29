@@ -236,7 +236,7 @@ export const progressLevelupController = async (req: AuthenticatedRequest, res: 
       return;
     }
 
-    const usedAnyHints = lastFiveGames.some(g => g.isHintUsed === true);
+    const usedAnyHints = lastFiveGames.some((g: { isHintUsed: boolean }) => g.isHintUsed === true);
     if (usedAnyHints) {
       res.status(400).json({ message: "Hints were used in last five games" });
       return;
