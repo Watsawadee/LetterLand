@@ -22,6 +22,7 @@ model User {
   userAchievements UserAchievement[]
   wordFound        WordFound[]
   GameTemplate     GameTemplate[]
+  extraWordFound   ExtraWordFound[]
 }
 
 model Achievement {
@@ -110,3 +111,4 @@ enum GameType {
   WORD_SEARCH
   CROSSWORD_SEARCH
 }
+

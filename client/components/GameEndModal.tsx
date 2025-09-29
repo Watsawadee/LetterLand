@@ -31,6 +31,10 @@ interface GameEndModalProps {
   coinsEarned?: number | null;
   wordsLearned?: number | null;
 
+  extraWordsCount?: number | null;
+  alreadyFinished?: boolean;
+  extraCoinsEarnedThisRun?: number;
+
   // actions
   onRestart?: () => void;
   onContinue?: () => void;
@@ -74,6 +78,10 @@ export default function GameEndModal(props: GameEndModalProps) {
     coinsEarned,
     wordsLearned,
 
+    extraWordsCount,
+    alreadyFinished = false,
+    extraCoinsEarnedThisRun = 0,
+
     onRestart,
     onContinue,
     restartIcon,
@@ -81,7 +89,6 @@ export default function GameEndModal(props: GameEndModalProps) {
     restartIconStyle,
     continueIconStyle,
 
-    // legacy support
     onConfirm,
     onClose,
     confirmIcon,
@@ -98,6 +105,10 @@ export default function GameEndModal(props: GameEndModalProps) {
   const rightIconStyleFinal = continueIconStyle ?? closeIconStyle;
 
   const showTimeCard = variant === "success" && !!hasTimer;
+
+  const baseLearned = Number(wordsLearned ?? 0);
+  const extraEarnedCt = Number(extraCoinsEarnedThisRun ?? 0);
+  const learnedDisplay = baseLearned + extraEarnedCt;
 
   return (
     <Modal visible={visible} transparent animationType="fade">
@@ -144,13 +155,19 @@ export default function GameEndModal(props: GameEndModalProps) {
                 <View style={styles.statCard}>
                   <View style={styles.topRow}>
                     <WordLearned />
-                    <Text style={styles.statValue}>
-                      {typeof wordsLearned === "number" ? wordsLearned : 0}
-                    </Text>
+                    <Text style={styles.statValue}>{learnedDisplay}</Text>
                   </View>
-                  <Text style={styles.statLabel}>New word learned</Text>
+                  <Text style={styles.statLabel}>Word learned</Text>
                 </View>
               </View>
+
+              {extraCoinsEarnedThisRun > 0 && (
+                <Text style={styles.replayNote}>
+                  You earn +{extraCoinsEarnedThisRun} coin(s) by discovering
+                  extra words
+                  {alreadyFinished ? " (replay included)" : ""}.
+                </Text>
+              )}
             </>
           ) : (
             <>
@@ -252,6 +269,13 @@ const styles = StyleSheet.create({
   statLabel: {
     ...Typography.body16,
     color: Color.grey,
+    textAlign: "center",
+  },
+  replayNote: {
+    marginTop: 6,
+    color: "#6b7280",
+    fontSize: 13,
+    lineHeight: 18,
     textAlign: "center",
   },
   buttonRow: {

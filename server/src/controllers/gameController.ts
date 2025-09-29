@@ -5,10 +5,12 @@ import {
   recordFoundWord,
   getCorrectAnswerById,
   batchRecordFoundWords,
+  recordExtraWord,
   getAllWordFound,
   completeGame,
   deleteIncompleteGame,
 } from "../services/gameService";
+import { generatePronunciation } from "../services/textToSpeechService";
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 
@@ -174,7 +176,11 @@ export const batchRecordFoundWordsController = async (
       return;
     }
 
-    const normalizedItems = [];
+    const normalizedItems: Array<{
+      userId: number;
+      wordData: { questionId: number; word: string; foundAt?: string | Date };
+    }> = [];
+
     for (const entry of foundWords) {
       const { userId, wordData } = entry ?? {};
       const { questionId, word, foundAt } = wordData ?? {};
@@ -184,7 +190,7 @@ export const batchRecordFoundWordsController = async (
         return;
       }
 
-      const q = await getCorrectAnswerById(gameTemplateId, questionId);
+      const q = await getCorrectAnswerById(gameTemplateId, Number(questionId));
       if (!q) {
         res.status(400).json({ message: `Question not found: ${questionId}` });
         return;
@@ -209,61 +215,21 @@ export const batchRecordFoundWordsController = async (
     }
 
     if (!normalizedItems.length) {
-      res
-        .status(200)
-        .json({
-          message: "No items to record",
-          data: { inserted: 0, skipped: 0, total: 0 },
-        });
-      return;
-    }
-
-    const orClauses = normalizedItems.map(({ userId, wordData }) => ({
-      userId,
-      questionId: Number(wordData.questionId),
-      word: { equals: String(wordData.word), mode: "insensitive" as const },
-    }));
-
-    const existing = await prisma.wordFound.findMany({
-      where: { gameId, OR: orClauses },
-      select: { userId: true, questionId: true, word: true },
-    });
-
-    const key = (r: { userId: number; questionId: number; word: string }) =>
-      `${r.userId}|${r.questionId}|${r.word.toLowerCase()}`;
-
-    const existingKeys = new Set(existing.map(key));
-
-    const toInsert = normalizedItems.filter(
-      ({ userId, wordData }) =>
-        !existingKeys.has(
-          key({
-            userId,
-            questionId: Number(wordData.questionId),
-            word: String(wordData.word),
-          })
-        )
-    );
-
-    if (!toInsert.length) {
       res.status(200).json({
-        message: "No new words to record",
-        data: {
-          inserted: 0,
-          skipped: normalizedItems.length,
-          total: normalizedItems.length,
-        },
+        message: "No items to record",
+        data: { inserted: 0, skipped: 0, total: 0 },
       });
       return;
     }
 
-    const result = await batchRecordFoundWords(gameId, toInsert);
-    const inserted = (result as any)?.count ?? (result as any)?.inserted ?? 0;
-    const skipped = normalizedItems.length - inserted;
+    const { inserted, skipped, total } = await batchRecordFoundWords(
+      gameId,
+      normalizedItems
+    );
 
-    res.status(201).json({
-      message: "Batch recorded",
-      data: { inserted, skipped, total: normalizedItems.length },
+    res.status(inserted ? 201 : 200).json({
+      message: inserted ? "Batch recorded" : "No new words to record",
+      data: { inserted, skipped, total },
     });
   } catch (err) {
     console.error("Batch record error:", err);
@@ -271,17 +237,79 @@ export const batchRecordFoundWordsController = async (
   }
 };
 
+const COIN_PER_EXTRA_WORD = 1;
+
+export const recordExtraWordController = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const gameId = Number(req.params.gameId);
+    const { userId, word } = req.body ?? {};
+
+    if (!Number.isFinite(gameId)) {
+      res.status(400).json({ message: "Invalid gameId" });
+      return;
+    }
+    if (!Number.isFinite(Number(userId))) {
+      res.status(400).json({ message: "Invalid userId" });
+      return;
+    }
+    if (typeof word !== "string" || !word.trim()) {
+      res.status(400).json({ message: "Invalid word" });
+      return;
+    }
+
+    let audioUrl: string | undefined;
+    try {
+      const resPron = await generatePronunciation(
+        String(word).trim().toLowerCase()
+      );
+      if (
+        resPron &&
+        typeof resPron.url === "string" &&
+        resPron.url.length > 0
+      ) {
+        audioUrl = resPron.url;
+      }
+    } catch (e) {
+      console.warn(
+        "generate Pronunciation failed, proceeding without audioUrl:",
+        e
+      );
+    }
+
+    const result = await recordExtraWord(
+      gameId,
+      Number(userId),
+      word,
+      audioUrl
+    );
+    res.status(200).json({
+      created: result.created,
+      totalExtra: result.totalExtra,
+      coinsAwarded: result.coinsAwarded,
+      newCoinBalance: result.newCoinBalance,
+      alreadyCounted: result.alreadyCounted,
+    });
+  } catch (err) {
+    console.error("Extraword controller error:", err);
+    res.status(500).json({ message: "Extraword controller failed" });
+  }
+};
+
 export const completeGameController = async (req: Request, res: Response) => {
   try {
     const gameId = Number(req.params.gameId);
-    const userId = Number(req.body.userId);
 
     const {
+      userId,
       completed,
       finishedOnTime,
       isHintUsed,
       timeUsedSeconds,
     }: {
+      userId: number;
       completed?: boolean;
       finishedOnTime?: boolean;
       isHintUsed?: boolean;

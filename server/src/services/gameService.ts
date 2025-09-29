@@ -30,7 +30,6 @@ type gameCompleteResult = {
 export const getAllGame = async () => {
   try {
     const game = await prisma.game.findMany();
-
     return game;
   } catch (err) {
     console.error("Error Game service:", err);
@@ -56,9 +55,7 @@ export const getAllGameByUserId = async (userId: number) => {
 export const getGameData = async (gameId: number) => {
   try {
     const GameData = await prisma.game.findUnique({
-      where: {
-        id: gameId,
-      },
+      where: { id: gameId },
       include: {
         gameTemplate: { include: { questions: true } },
       },
@@ -148,6 +145,7 @@ export const recordFoundWord = async ({
     throw new Error("Failed to record found word");
   }
 };
+
 export const batchRecordFoundWords = async (
   gameId: number,
   foundWords: FoundWordItem[]
@@ -167,8 +165,9 @@ export const batchRecordFoundWords = async (
   const clean = rows.filter(
     (r) => Number.isFinite(r.userId) && Number.isFinite(r.questionId) && r.word
   );
-  if (!clean.length) return { count: 0 };
-  
+  const total = clean.length;
+  if (!total) return { inserted: 0, skipped: 0, total: 0 };
+
   const orClauses = clean.map((r) => ({
     userId: r.userId,
     questionId: r.questionId,
@@ -180,18 +179,114 @@ export const batchRecordFoundWords = async (
     select: { userId: true, questionId: true, word: true },
   });
 
+  type ExistingRow = {
+    userId: number;
+    questionId: number | null;
+    word: string;
+  };
+
   const key = (r: { userId: number; questionId: number; word: string }) =>
     `${r.userId}|${r.questionId}|${r.word.toLowerCase()}`;
 
-  const existingKeys = new Set(existing.map(key));
+  const existingKeys = new Set(
+    (existing as ExistingRow[])
+      .filter(
+        (r): r is { userId: number; questionId: number; word: string } =>
+          r.questionId !== null
+      )
+      .map(key)
+  );
+
   const toInsert = clean.filter((r) => !existingKeys.has(key(r)));
+  if (!toInsert.length) return { inserted: 0, skipped: total, total };
 
-  if (!toInsert.length) return { count: 0 };
+  const result = await prisma.wordFound.createMany({ data: toInsert });
+  const inserted = (result as any)?.count ?? 0;
+  const skipped = total - inserted;
 
-  return prisma.wordFound.createMany({
-    data: toInsert,
-  });
+  return { inserted, skipped, total };
 };
+
+export async function recordExtraWord(
+  gameId: number,
+  userId: number,
+  rawWord: string,
+  audioUrl?: string
+): Promise<{
+  created: boolean;
+  totalExtra: number;
+  coinsAwarded: number;
+  newCoinBalance?: number;
+  alreadyCounted?: boolean;
+}> {
+  const word = String(rawWord || "")
+    .trim()
+    .toLowerCase();
+  if (!word) throw new Error("Word is required");
+
+  const game = await prisma.game.findUnique({
+    where: { id: gameId },
+    select: { id: true, userId: true },
+  });
+  if (!game) throw new Error("Game not found");
+  if (game.userId !== userId) throw new Error("Forbidden: game owner mismatch");
+
+  let created = false;
+  let coinsAwarded = 0;
+  let newCoinBalance: number | undefined;
+  let alreadyCounted = false;
+
+  // Single transaction: insert-if-new, then conditionally award coin or backfill audio
+  await prisma.$transaction(async (tx) => {
+    const result = await tx.extraWordFound.createMany({
+      data: [
+        {
+          gameId,
+          userId,
+          word,
+          audioUrl: audioUrl ?? undefined,
+        },
+      ],
+      skipDuplicates: true,
+    });
+
+    const insertedCount = (result as any)?.count ?? 0;
+
+    if (insertedCount > 0) {
+      // New row inserted -> award coin
+      created = true;
+      coinsAwarded = 1;
+      const user = await tx.user.update({
+        where: { id: userId },
+        data: { coin: { increment: 1 } },
+        select: { coin: true },
+      });
+      newCoinBalance = user.coin;
+    } else {
+      // Duplicate for (gameId,userId,word)
+      alreadyCounted = true;
+
+      // backfill audioUrl if previously null
+      if (audioUrl) {
+        await tx.extraWordFound.updateMany({
+          where: {
+            gameId,
+            userId,
+            word,
+            audioUrl: null,
+          },
+          data: { audioUrl },
+        });
+      }
+    }
+  });
+
+  const totalExtra = await prisma.extraWordFound.count({
+    where: { gameId, userId },
+  });
+
+  return { created, totalExtra, coinsAwarded, newCoinBalance, alreadyCounted };
+}
 
 function safeSecondsToAdd(
   timeUsedSeconds?: number | null,
@@ -356,7 +451,12 @@ export async function completeGame(
       // First-ever finish for this Game row → finalize and (optionally) award coins
       if (game.isFinished !== true) {
         const isTimerMode = game.timer !== null && game.timer !== undefined;
-        const coins = computeCoins({ isTimerMode, completed, finishedOnTime });
+
+        const coins = computeCoins({
+          isTimerMode,
+          completed,
+          finishedOnTime,
+        });
 
         const extraGameData: Record<string, any> = {};
         if (isHintUsed === true && game.isHintUsed !== true)
@@ -401,7 +501,7 @@ export async function completeGame(
       };
     }
 
-    // Not completed → just partial flags (e.g., hint used). No time increment.
+    // Not completed → partial flags only (no time increment, no coins)
     const setHintUsed = isHintUsed === true && game.isHintUsed !== true;
     const updatedGame = await applyPartialGameUpdates({
       gameId,

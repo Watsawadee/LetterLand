@@ -115,6 +115,33 @@ export async function saveFoundWordsOnce(
   }
 }
 
+export type RecordExtraWordResponse = {
+  created: boolean;
+  totalExtra?: number;
+  coinsAwarded?: number;
+  newCoinBalance?: number;
+  alreadyCounted?: boolean;
+};
+
+export async function recordExtraWord(gameId: number | string, word: string) {
+  const userId = await getLoggedInUserId();
+  if (!userId) throw new Error("Not logged in");
+
+  const body = {
+    userId: Number(userId),
+    word: String(word || "")
+      .trim()
+      .toLowerCase(),
+  };
+
+  try {
+    const { data } = await api.post(`/games/${gameId}/extraword`, body);
+    return data;
+  } catch (e) {
+    return null;
+  }
+}
+
 export const completeGame = async ({
   gameId,
   completed,
@@ -122,6 +149,8 @@ export const completeGame = async ({
   wordsLearned,
   timeUsedSeconds,
   hintUsed,
+  extraWordsCount,
+  extraWords,
 }: {
   gameId: number | string;
   completed?: boolean;
@@ -129,6 +158,8 @@ export const completeGame = async ({
   wordsLearned?: number;
   timeUsedSeconds?: number;
   hintUsed?: boolean;
+  extraWordsCount?: number;
+  extraWords?: string[];
 }) => {
   const userId = await getLoggedInUserId();
   if (!userId) throw new Error("Not logged in");
@@ -137,8 +168,13 @@ export const completeGame = async ({
   if (typeof completed === "boolean") body.completed = completed;
   if (typeof finishedOnTime === "boolean") body.finishedOnTime = finishedOnTime;
   if (typeof wordsLearned === "number") body.wordsLearned = wordsLearned;
-  if (typeof timeUsedSeconds === "number") body.timeUsedSeconds = timeUsedSeconds;
+  if (typeof timeUsedSeconds === "number")
+    body.timeUsedSeconds = timeUsedSeconds;
   if (hintUsed) body.isHintUsed = true;
+  if (typeof extraWordsCount === "number")
+    body.extraWordsCount = extraWordsCount;
+  if (Array.isArray(extraWords) && extraWords.length > 0)
+    body.extraWords = extraWords;
 
   const { data } = await api.post(`/games/${gameId}/complete`, body);
   return data;
