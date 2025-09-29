@@ -11,6 +11,4 @@ export const UserSchema = z.object({
     hint: z.number().optional(),
     created_at: z.string().optional(),
     total_playtime: z.number().optional(),
-    nextLevel: z.string().nullable().optional(),
-    canLevelUp: z.boolean().optional(),
 });

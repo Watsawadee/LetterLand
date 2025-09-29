@@ -21,7 +21,7 @@ model User {
   games            Game[]
   userAchievements UserAchievement[]
   wordFound        WordFound[]
-  gameTemplate     GameTemplate[]
+  GameTemplate     GameTemplate[]
 }
 
 model Achievement {
@@ -90,7 +90,7 @@ model WordFound {
   word       String
   foundAt    DateTime @default(now())
   gameId     Int
-  game       Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  Game       Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
   question   Question @relation(fields: [questionId], references: [id])
   user       User     @relation(fields: [userId], references: [id])
 

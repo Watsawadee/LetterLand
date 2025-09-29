@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getAverageGamesByLevel, getTotalGameThisWeek, getUserTotalPlaytime, getUserWordLearned } from "@/services/dashboardService";
+import { getTotalGameThisWeek, getUserTotalPlaytime, getUserWordLearned } from "@/services/dashboardService";
 import { WeeklyGameData } from "@/types/weeklyGamePlayedProps";
 
 export const useTotalGamesThisWeek = (offSet: number) => {
@@ -12,15 +12,6 @@ export const useTotalGamesThisWeek = (offSet: number) => {
             refetchOnWindowFocus: false,
         })
     )
-}
-export function useAverageGamesByLevel(offSet: number) {
-    return useQuery({
-        queryKey: ["dashboard", "averageGamesByLevel", offSet],
-        queryFn: () => getAverageGamesByLevel(offSet),
-        staleTime: 1000 * 60 * 5, // 5 minutes
-        retry: false,
-        refetchOnWindowFocus: false,
-    });
 }
 
 export function useUserTotalPlaytime() {

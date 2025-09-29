@@ -20,6 +20,16 @@ import api from "./api";
 import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from 'expo-file-system';
 
+// const baseUrl = "http://10.4.56.20:3000"
+const baseUrl = "http://localhost:3000"
+//     Platform.OS === "android" ? "http://10.0.2.2:3000" : "http://192.168.1.109:3000";
+// Platform.OS === "android" ? "http://10.0.2.2:3000" : "http://192.168.101.118:8081";
+// Platform.OS === "web"
+//     ? "http://localhost:3000"
+//     : Platform.OS === "android"
+//         ? "http://10.0.2.2:3000"
+//         : "http://192.168.101.118:3000";
+
 
 export const createGameFromGemini = async (
     payload: CreateGameFromGeminiRequest, file?: DocumentPicker.DocumentPickerAsset | null
@@ -33,11 +43,10 @@ export const createGameFromGemini = async (
         formData.append("file", {
             uri: file.uri,
             name: file.name || "uploaded.pdf",
-            type: "application/pdf",
-        } as any);
+            type: "application/pdf", // 🔥 hardcoded and correct
+        } as any); // 👈 required for React Native
 
         formData.append("userId", String(payload.userId));
-        formData.append("ownerId", String(payload.ownerId));
         formData.append("gameType", payload.gameType);
         formData.append("difficulty", payload.difficulty);
         if (payload.timer !== null && payload.timer !== undefined) {

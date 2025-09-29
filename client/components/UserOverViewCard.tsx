@@ -15,9 +15,8 @@ import * as SecureStore from "expo-secure-store";
 
 type Props = {
   coins?: number;
-  onOpenSettings?: () => void;
 };
-const UserOverviewCard = ({ coins, onOpenSettings }: Props) => {
+const UserOverviewCard = ({ coins }: Props) => {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
   const [gameType, setGameType] = useState<"crossword" | "wordsearch" | null>(
@@ -93,7 +92,7 @@ const UserOverviewCard = ({ coins, onOpenSettings }: Props) => {
               </View>
             </View>
             <Button
-              onPress={onOpenSettings}
+              onPress={() => router.push("/setting")}
               contentStyle={{ padding: 0 }}
               style={{ width: undefined, minWidth: 0, padding: 0, borderRadius: 50 }}
               theme={{ roundness: 1 }}
@@ -154,7 +153,6 @@ const UserOverviewCard = ({ coins, onOpenSettings }: Props) => {
           <Button onPress={() => {
             if (Platform.OS === "web") {
               localStorage.removeItem("user-token")
-              router.replace("/authentication/login");
             }
             else {
               SecureStore.deleteItemAsync("user-token")

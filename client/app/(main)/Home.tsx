@@ -20,7 +20,6 @@ import AchievementsRow from "../../components/AchievementRow";
 import { fetchUserCoins } from "@/services/achievementService";
 import { useUserProfile } from "@/hooks/useGetUserProfile";
 import { getDecodedToken } from "@/utils/auth";
-import UserSettingCard from "@/components/UserSettingCard";
 
 export default function Home() {
   const router = useRouter();
@@ -30,8 +29,6 @@ export default function Home() {
   const { width } = useWindowDimensions();
   const isWide = width >= 1024;
   const [coins, setCoins] = useState(0);
-
-  const [showSettings, setShowSettings] = useState(false);
   // Load the user’s current coins once at mount
   useEffect(() => {
     const loadCoins = async () => {
@@ -121,13 +118,9 @@ export default function Home() {
         </View>
 
         {/* RIGHT SIDEBAR */}
-        {/* <View style={styles.rightPanel}> */}
-        {showSettings ? (
-          <UserSettingCard onBack={() => setShowSettings(false)} />
-        ) : (
-          <UserOverviewCard coins={coins} onOpenSettings={() => setShowSettings(true)} />
-        )}
-        {/* </View> */}
+        <View style={styles.rightPanel}>
+          <UserOverviewCard coins={coins} />
+        </View>
       </View>
     </View>
   );

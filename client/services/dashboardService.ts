@@ -4,7 +4,7 @@ import { getLoggedInUserId, getToken } from "@/utils/auth";
 import axios from "axios";
 import api from "./api";
 import { GamesPlayedPerWeekOrError, TotalPlaytimeOrError, WordsLearnedOrError } from "@/libs/type";
-import { AverageGamesByLevelResponseSchema, GamesPlayedPerWeekOrErrorSchema, GamesPlayedPerWeekResponseSchema, TotalPlaytimeOrErrorSchema, WordsLearnedOrErrorSchema } from "../types/dashboard.schema";
+import { GamesPlayedPerWeekOrErrorSchema, GamesPlayedPerWeekResponseSchema, TotalPlaytimeOrErrorSchema, WordsLearnedOrErrorSchema } from "../types/dashboard.schema";
 import { ErrorResponseSchema } from "../types/setup.schema";
 
 async function getAuthHeader() {
@@ -30,27 +30,6 @@ export async function getTotalGameThisWeek(offSet = 0): Promise<WeeklyGameData> 
 
     throw new Error("Invalid response from server");
 }
-
-export const getAverageGamesByLevel = async (
-    userId: number,
-    offset = 0
-) => {
-    const token = await getToken();
-    if (!token) throw new Error("No token");
-
-    const res = await api.get(`/dashboard/user/${userId}/averagebylevel`, {
-        headers: { Authorization: `Bearer ${token}` },
-        params: { offSet: offset },
-    });
-
-    const parsed = AverageGamesByLevelResponseSchema.safeParse(res.data);
-    if (!parsed.success) {
-        console.error("❌ Invalid response shape", parsed.error);
-        throw new Error("Invalid response from server");
-    }
-    return res.data;
-};
-
 
 export async function getUserTotalPlaytime(): Promise<TotalPlaytimeOrError> {
     const userId = await getLoggedInUserId();

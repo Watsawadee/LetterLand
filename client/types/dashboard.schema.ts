@@ -19,25 +19,6 @@ export const GamesPlayedPerWeekResponseSchema = z.object({
     weekLabel: z.string(),
     offSet: z.number(),
 });
-export const AverageGamesByLevelResponseSchema = z.object({
-    englishLevel: z.enum(["A1", "A2", "B1", "B2", "C1", "C2"]),
-    averages: z.array(
-        z.object({
-            date: z.string(),
-            averageGamesPlayed: z.number(),
-        })
-    ),
-    userCount: z.number(),
-    range: z.object({
-        start: z.date().or(z.string()),
-        end: z.date().or(z.string()),
-    }),
-    offSet: z.number(),
-});
-export const AverageGamesByLevelOrErrorSchema = z.union([
-    AverageGamesByLevelResponseSchema,
-    ErrorResponseSchema,
-]);
 
 
 export const TotalPlaytimeOrErrorSchema = z.union([

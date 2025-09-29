@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from "react"
 import { View, Text, ScrollView, Image } from "react-native"
-import { useTotalGamesThisWeek, useAverageGamesByLevel, useUserTotalPlaytime, useUserWordLearned } from "@/hooks/useDashboard";
+import { useTotalGamesThisWeek, useUserTotalPlaytime, useUserWordLearned } from "@/hooks/useDashboard";
 import Swiper from "react-native-swiper";
 import { Color } from "@/theme/Color";
 import { Card } from "react-native-paper";
 import { ActivityIndicator } from "react-native";
 import Clock from "@/assets/icon/Clock";
 import Pencil from "@/assets/icon/Pencil";
-import { VictoryAxis, VictoryBar, VictoryChart, VictoryLabel, VictoryLine, VictoryTheme } from "victory-native";
+import { VictoryAxis, VictoryBar, VictoryChart, VictoryLabel, VictoryTheme } from "victory-native";
 
 import { Dimensions } from "react-native";
 import Carousel, { Pagination, ICarouselInstance } from "react-native-reanimated-carousel";
@@ -32,7 +32,6 @@ const UserOverviewPerformance = () => {
     }, []);
     const weekOffset = carouselIndex - (MAX_WEEKS - 1);
     const { data: TotalgamesData, isLoading: loadingChart, isError: chartError } = useTotalGamesThisWeek(weekOffset);
-    const { data: avgGames, isLoading: avgLoading } = useAverageGamesByLevel(weekOffset);
 
     const counts = TotalgamesData?.counts ?? [0, 0, 0, 0, 0, 0, 0];
     const labels = TotalgamesData?.labels ?? ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
@@ -62,10 +61,6 @@ const UserOverviewPerformance = () => {
             );
         }
         const noGamePlayed = counts.every((c) => c === 0)
-        const avgValue = avgGames && "averageGamesPlayedThisWeek" in avgGames
-            ? avgGames.averageGamesPlayedThisWeek
-            : 0;
-        const avgCounts = labels.map(() => avgValue);
         if (noGamePlayed) {
             return (
                 <View style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%" }}>
@@ -145,10 +140,6 @@ const UserOverviewPerformance = () => {
                         }}
                         labels={({ datum }) => datum.y === 0 ? "" : `${datum.y}`}
                         labelComponent={<VictoryLabel dy={-8} textAnchor="middle" />}
-                    />
-                    <VictoryLine
-                        data={avgCounts.map((y, i) => ({ x: i, y }))}
-                        style={{ data: { stroke: Color.pink, strokeWidth: 3 } }}
                     />
                 </VictoryChart>
             </Card>
