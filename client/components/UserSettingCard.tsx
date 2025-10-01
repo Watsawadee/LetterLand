@@ -32,7 +32,19 @@ const UserSettingCard = ({ onBack }: Props) => {
   const [infoDialogVisible, setInfoDialogVisible] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [token, setTokenState] = useState<string | null>(null);
-
+  const { mutate: saveSettings, isPending } = useUpdateUserSetting(async (res) => {
+    // store the fresh token re-signed by the backend
+    if (res.token) {
+      await setToken(res.token);
+    }
+    Alert.alert("Success", res.message);
+  });
+  //ProgressLevelup
+  const { mutate: levelUp, isPending: isLevelUpPending } = useProgressLevelup(
+    token ?? "",
+    (data) => Alert.alert("Success", data.message),
+    (error) => Alert.alert("Error", error.response?.data?.message || "Failed to level up")
+  );
 
 
   const router = useRouter(); // Already imported, just reuse
@@ -61,13 +73,7 @@ const UserSettingCard = ({ onBack }: Props) => {
 
   const isDirty = Object.keys(payload).length > 0;
 
-  const { mutate: saveSettings, isPending } = useUpdateUserSetting(async (res) => {
-    // store the fresh token re-signed by the backend
-    if (res.token) {
-      await setToken(res.token);
-    }
-    Alert.alert("Success", res.message);
-  });
+
 
   if (isLoading || !user) return <Text>Loading...</Text>;
   if ("error" in user) return <Text>Failed to load user data.</Text>;
@@ -85,12 +91,7 @@ const UserSettingCard = ({ onBack }: Props) => {
     saveSettings(parsed.data);
   };
 
-  //ProgressLevelup
-  const { mutate: levelUp, isPending: isLevelUpPending } = useProgressLevelup(
-    token ?? "",
-    (data) => Alert.alert("Success", data.message),
-    (error) => Alert.alert("Error", error.response?.data?.message || "Failed to level up")
-  );
+
 
   const handleLevelup = () => {
     if (!user?.id) {

@@ -15,7 +15,7 @@ const GameTypeCard = ({ question, gameType, selected, onPress }: GameTypeCardPro
       onPress={onPress}
       style={{
         width: 180,
-        height: 200,
+        height: "100%",
         padding: 15,
         borderRadius: 15,
         overflow: "hidden",
@@ -29,12 +29,10 @@ const GameTypeCard = ({ question, gameType, selected, onPress }: GameTypeCardPro
     >
       <View
         style={{
-          flex: 1,
           justifyContent: "center",
           alignItems: "center",
-          padding: 40,
-          width: "auto",
-          height: 100,
+          width: "100%",
+          minHeight: "70%",
           gap: 8,
           backgroundColor: "#D9D9D9",
           borderRadius: 20,

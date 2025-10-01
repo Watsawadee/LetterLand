@@ -7,6 +7,10 @@ import { useEffect, useState } from "react";
 import { getToken } from "@/utils/auth";
 import { ActivityIndicator } from "react-native";
 import * as SecureStore from "expo-secure-store"
+import { jwtDecode } from "jwt-decode";
+import { DecodedToken } from "@/types/decodedJwtToken";
+import { storeToken } from "@/utils/storeToken";
+import { clearToken } from "@/utils/clearToken";
 
 const queryClient = new QueryClient();
 
@@ -28,16 +32,33 @@ export default function Layout() {
       const token = await getToken();
       const inAuthGroup = segments[0] === "authentication";
 
-      if (pathName === "/") {
-        if (token) {
-          router.replace("/Home");
-        } else {
-          router.replace("/authentication/login");
-        }
-        setIsChecking(false);
-        return;
-      }
+      // if (pathName === "/") {
 
+      //   if (token) {
+      //     router.replace("/Home");
+      //   } else {
+      //     router.replace("/authentication/login");
+      //   }
+      //   setIsChecking(false);
+      //   return;
+      // }
+      if (token) {
+        try {
+          const decoded: DecodedToken = jwtDecode(token);
+
+          if (decoded.exp && Date.now() / 1000 > decoded.exp) {
+            await clearToken();
+            router.replace("/authentication/login");
+            setIsChecking(false);
+            return;
+          }
+        } catch {
+          await clearToken();
+          router.replace("/authentication/login");
+          setIsChecking(false);
+          return;
+        }
+      }
       if (!token && !inAuthGroup && pathName !== "/authentication/login") {
         router.replace("/authentication/login");
       } else if (token && inAuthGroup && pathName !== "/Home") {
