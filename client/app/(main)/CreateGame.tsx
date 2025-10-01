@@ -345,16 +345,14 @@ const CreateGameScreen = () => {
                     const isUsersLevel = user && !("error" in user) && user.englishLevel === level;
                     return (
                       <View key={level} style={{ display: "flex", flexDirection: "column", justifyContent: "flex-end", alignItems: "center", gap: 3 }}>
-                        {isActive && isUsersLevel && (
-                          <View style={{ padding: 4, borderRadius: 12, backgroundColor: levelColors[level], display: "flex" }}>
-                            <Text style={{ color: Color.white, fontWeight: "700", fontSize: 10, textAlign: "center" }}>Your Level</Text>
+                        {isUsersLevel && (
+                          <View style={{ padding: 4, borderRadius: 12, backgroundColor: isActive ? levelColors[level] : Color.white, display: "flex" }}>
+                            <Text style={{ color: isActive ? Color.white : Color.gray, fontWeight: "700", fontSize: 10, textAlign: "center" }}>Your Level</Text>
                           </View>
                         )}
                         <Button
                           onPress={() => setEnglishLevel(level as typeof englishLevel)}
                           style={{
-                            // marginRight: 8,
-                            // width: "100%",
                             marginBottom: 8,
                             borderRadius: 20,
                             borderColor: isActive ? levelColors[level] : "#ddd",
