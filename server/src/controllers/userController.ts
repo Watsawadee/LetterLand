@@ -5,9 +5,10 @@ import bcrypt from "bcrypt";
 import prisma from "../configs/db";
 import { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse } from "../types/type";
 import { LoginRequestSchema, LoginResponseSchema, RegisterRequestSchema, RegisterResponseSchema } from "../types/auth.schema";
-import { getNextLevel } from "../services/levelupService";
+import { getNextLevel, secondsBetween, startOfISOWeekUTC } from "../services/levelupService";
 import { ProgressLevelupResponseSchema } from "../types/progressLevelup.schema";
 import { AuthenticatedRequest } from "../types/authenticatedRequest";
+import { EnglishLevel } from "../types/setup.schema";
 
 
 export const getAllUserController = async (req: Request, res: Response) => {
@@ -204,26 +205,44 @@ export const useHintController = async (req: Request, res: Response) => {
 };
 
 
+
+
+
+
+
+
 export const progressLevelupController = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const TWO_HUNDRED_HOURS_SECS = 200 * 60 * 60;
+
   try {
     const userId = req.user?.id;
     if (!userId) {
       res.status(400).json({ message: "Missing userId" });
       return;
     }
-    const user = await prisma.user.findUnique({ where: { id: userId } })
 
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        englishLevel: true,
+        total_playtime: true,
+      },
+    });
     if (!user) {
-      res.status(404).json({ message: "User not found" })
+      res.status(404).json({ message: "User not found" });
       return;
     }
+
     const nextLevelup = getNextLevel(user.englishLevel);
     if (!nextLevelup) {
-      res.status(400).json({ message: "You are already at the top level" })
+      res.status(400).json({ message: "You are already at the top level" });
       return;
     }
-    const hasEnoughPlaytime = user.total_playtime >= 200 * 60 * 60;
 
+    const conditions: { name: string; passed: boolean; details?: any }[] = [];
+
+    // --- 1) Last 5 games & hints ---
     const lastFiveGames = await prisma.game.findMany({
       where: { userId },
       orderBy: { startedAt: "desc" },
@@ -231,35 +250,123 @@ export const progressLevelupController = async (req: AuthenticatedRequest, res: 
       select: { isHintUsed: true }
     });
 
-    if (lastFiveGames.length < 5) {
-      res.status(400).json({ message: "Not enough games played" });
-      return;
-    }
+    const enoughGamesPlayed = lastFiveGames.length >= 5;
+    const usedAnyHints = lastFiveGames.some(g => g.isHintUsed);
 
-    const usedAnyHints = lastFiveGames.some((g: { isHintUsed: boolean }) => g.isHintUsed === true);
-    if (usedAnyHints) {
-      res.status(400).json({ message: "Hints were used in last five games" });
-      return;
-    }
+    conditions.push({
+      name: "At least 5 games played",
+      passed: enoughGamesPlayed,
+      details: { gamesPlayed: lastFiveGames.length }
+    });
+    conditions.push({
+      name: "No hints used in last 5 games",
+      passed: !usedAnyHints,
+      details: { usedAnyHints }
+    });
 
-    const canLevelUp = hasEnoughPlaytime && !usedAnyHints;
+    // --- 2) Total playtime at current level ---
+    const levelGames = await prisma.game.findMany({
+      where: {
+        userId,
+        finishedAt: { not: null },
+        gameTemplate: { difficulty: user.englishLevel }
+      },
+      select: { startedAt: true, finishedAt: true }
+    });
 
-    if (!canLevelUp) {
-      res.status(400).json({
+    const LEVEL_THRESHOLDS: Record<EnglishLevel, number> = {
+      A1: 200 * 60 * 60,
+      A2: 400 * 60 * 60,
+      B1: 600 * 60 * 60,
+      B2: 800 * 60 * 60,
+      C1: 1000 * 60 * 60,
+      C2: Infinity,
+    };
+    const requiredPlaytime = LEVEL_THRESHOLDS[user.englishLevel];
+    const hasEnoughPlaytime = user.total_playtime >= requiredPlaytime;
+
+    conditions.push({
+      name: "200 hours playtime on current level",
+      passed: hasEnoughPlaytime,
+      details: {
+        requiredSeconds: TWO_HUNDRED_HOURS_SECS,
+        accumulatedSeconds: user.total_playtime
+      }
+    });
+
+    // --- 3) Weekly average check ---
+    const now = new Date();
+    const thisWeekStart = startOfISOWeekUTC(now);
+    const lastWeekEnd = new Date(thisWeekStart.getTime() - 1);
+    const lastWeekStart = new Date(thisWeekStart.getTime());
+    lastWeekStart.setUTCDate(lastWeekStart.getUTCDate() - 7);
+
+    const [lastWeekGames, thisWeekGames] = await Promise.all([
+      prisma.game.findMany({
+        where: {
+          userId,
+          finishedAt: { not: null },
+          startedAt: { gte: lastWeekStart, lte: lastWeekEnd }
+        },
+        select: { startedAt: true, finishedAt: true }
+      }),
+      prisma.game.findMany({
+        where: {
+          userId,
+          finishedAt: { not: null },
+          startedAt: { gte: thisWeekStart, lte: now }
+        },
+        select: { startedAt: true, finishedAt: true }
+      })
+    ]);
+
+    const avg = (games: { startedAt: Date; finishedAt: Date | null }[]) => {
+      const finished = games.filter(g => g.finishedAt);
+      if (finished.length === 0) return 0;
+      const total = finished.reduce((acc, g) => acc + secondsBetween(g.startedAt, g.finishedAt!), 0);
+      return total / finished.length;
+    };
+
+    const avgLastWeek = avg(lastWeekGames);
+    const avgThisWeek = avg(thisWeekGames);
+    const weeklyRuleOk = avgThisWeek < avgLastWeek && avgLastWeek > 0;
+
+    conditions.push({
+      name: "AvgTime_this_week < AvgTime_last_week",
+      passed: weeklyRuleOk,
+      details: {
+        avgTimeLastWeek: Math.round(avgLastWeek),
+        avgTimeThisWeek: Math.round(avgThisWeek)
+      }
+    });
+
+    // --- Final check ---
+    const allPassed = conditions.every(c => c.passed);
+
+    if (!allPassed) {
+      const failResponse = {
         message: "Level up conditions not met",
-        nextLevelup,
+        nextLevel: nextLevelup,
         canLevelUp: false,
-      });
+        conditions,
+      };
+      res.status(400).json(failResponse);
       return;
     }
 
+    // Update user level
     await prisma.user.update({
       where: { id: userId },
       data: { englishLevel: nextLevelup }
-    })
-    const response = { message: `Level up! New level: ${nextLevelup}`, nextLevelup };
+    });
+
+    const response = {
+      message: `Level up! New level: ${nextLevelup}`,
+      nextLevel: nextLevelup,
+      canLevelUp: true
+    };
     ProgressLevelupResponseSchema.parse(response);
-    res.status(200).json(response)
+    res.status(200).json(response);
   }
   catch (error) {
     console.error("ProgressLevelupController error:", error);
