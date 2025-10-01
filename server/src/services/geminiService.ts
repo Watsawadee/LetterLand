@@ -32,7 +32,6 @@ export const generateCrosswordHints = async (
       process.env.GEMINI_API_KEY ? "yes" : "NO!"
     );
     let prompt = `Generate a crossword puzzle based on this extracted text: "${extractedText}".  
-
 Your task:
 - Choose clue–answer pairs suitable for CEFR level: ${userCEFR} (A1 to C2).
 - Use **real-world, general English vocabulary**, not academic, technical, or scientific terms — even at C2.
