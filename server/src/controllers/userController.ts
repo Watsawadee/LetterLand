@@ -280,7 +280,7 @@ export const progressLevelupController = async (req: AuthenticatedRequest, res: 
       B1: 600 * 60 * 60,
       B2: 800 * 60 * 60,
       C1: 1000 * 60 * 60,
-      C2: Infinity,
+      C2: Number.POSITIVE_INFINITY,
     };
     const requiredPlaytime = LEVEL_THRESHOLDS[user.englishLevel];
     const hasEnoughPlaytime = user.total_playtime >= requiredPlaytime;
