@@ -31,6 +31,7 @@ import InfoIcon from "@/assets/icon/infoIcon";
 import { Typography } from "@/theme/Font";
 import GridIcon from "@/assets/icon/GridIcon";
 import CloseIcon from "@/assets/icon/CloseIcon";
+import UploadIcon from "@/assets/icon/UploadIcon";
 
 
 const CreateGameScreen = () => {
@@ -94,26 +95,30 @@ const CreateGameScreen = () => {
   const [infoDialogVisible, setInfoDialogVisible] = useState(false);
 
   const handleUploadTypeSelect = async (type: "text" | "link" | "pdf") => {
-    if (type === "pdf") {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: "application/pdf",
-        copyToCacheDirectory: true,
-        multiple: false,
-      });
-
-      if (!result.canceled && result.assets?.length) {
-        const file = result.assets[0];
-        setPdfFile(file);
-        setInput("");
-        setUploadType("pdf");
-      } else {
-        alert("No PDF selected.");
-      }
-    } else {
-      setUploadType(type);
+    setUploadType(type)
+    if (type !== "pdf") {
       setPdfFile(null);
+      setInput("");
     }
   };
+  const handlePdfPick = async () => {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: "application/pdf",
+      copyToCacheDirectory: true,
+      multiple: false,
+    });
+
+    if (!result.canceled && result.assets?.length) {
+      const file = result.assets[0];
+      setPdfFile(file);
+      setInput("");
+    } else {
+      alert("No PDF selected.");
+    }
+  };
+
+
+
 
 
   const handleToggle = () => {
@@ -536,26 +541,67 @@ const CreateGameScreen = () => {
                       );
                     })}
                   </View>
-                  <TextInput
-                    placeholder="Input text..."
-                    multiline
-                    style={{
-                      marginBottom: 12,
-                      backgroundColor: "#FFF",
-                      borderRadius: 20,
-                      marginTop: 10,
-                      minHeight: 125,
-                    }}
-                    value={input}
-                    onChangeText={setInput}
-                    editable={uploadType !== "pdf"}
-                    mode="outlined"
-                    outlineColor="#5B6073"
-                    autoCapitalize="none"
-                    textColor="black"
-                    activeOutlineColor={Color.blue}
+                  {uploadType === "pdf" ? (
+                    <Pressable
+                      onPress={handlePdfPick}
+                      style={{
+                        height: 150,
+                        borderRadius: 16,
+                        borderColor: Color.gray,
+                        backgroundColor: "#FFF",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginTop: 10,
+                        marginBottom: 12,
+                      }}
+                    >
+                      {pdfFile ? (
+                        <Text
+                          style={{
+                            color: Color.gray,
+                            fontWeight: "600",
+                            textAlign: "center",
+                          }}
+                        >
+                          {pdfFile.name}
+                        </Text>
+                      ) : (
+                        <>
+                          <UploadIcon size={40} color={Color.gray} />
+                          <Text
+                            style={{
+                              marginTop: 8,
+                              color: Color.gray,
+                              fontWeight: "600",
+                            }}
+                          >
+                            Tap to upload PDF
+                          </Text>
+                        </>
+                      )}
+                    </Pressable>
+                  ) : (
+                    <TextInput
+                      placeholder={uploadType === "link" ? "Paste a link..." : "Input text..."}
+                      multiline
+                      style={{
+                        marginBottom: 12,
+                        backgroundColor: "#FFF",
+                        borderRadius: 20,
+                        marginTop: 10,
+                        minHeight: 125,
+                      }}
+                      value={input}
+                      onChangeText={setInput}
+                      mode="outlined"
+                      outlineColor="#5B6073"
+                      autoCapitalize="none"
+                      textColor="black"
+                      activeOutlineColor={Color.blue}
+                    />
+                  )}
 
-                  />
+
                 </View>
               </View>
 

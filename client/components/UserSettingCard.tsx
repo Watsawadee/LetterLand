@@ -219,7 +219,12 @@ const UserSettingCard = ({ onBack }: Props) => {
             </Button>
             <Portal>
               <Dialog visible={updateLevelDialogVisible} onDismiss={() => setupdateLevelDialogVisible(false)} style={{ backgroundColor: Color.lightblue, width: "50%", display: "flex", alignSelf: 'center' }}>
-                <Dialog.Title style={{ fontWeight: "800", color: Color.gray }}>Upgrade Level</Dialog.Title>
+                <View style={{ display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20 }}>
+                  <Dialog.Title style={{ fontWeight: "800", color: Color.gray }}>Upgrade Level</Dialog.Title>
+                  <IconButton icon={CloseIcon} onPress={() => {
+                    setupdateLevelDialogVisible(false)
+                  }} />
+                </View>
                 <Dialog.Content>
                   <View
                     style={{
@@ -231,7 +236,7 @@ const UserSettingCard = ({ onBack }: Props) => {
                     }}
                   >
                     <Text style={{ color: Color.gray, fontSize: Typography.body20.fontSize, fontWeight: Typography.body20.fontWeight, textAlign: "center", lineHeight: 30 }}>
-                      To level up, you need to do better this week than last week, use no hints in your last five games, and have at least 200 hours of total playtime.
+                      To advance to the next level, your performance for the current week must exceed that of the previous week, no hints should have been used in the last five games, and a minimum of 200 total play hours must be accumulated.
                     </Text>
                   </View>
                 </Dialog.Content>

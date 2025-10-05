@@ -15,10 +15,12 @@ import PublicGames from "@/components/publicgame";
 import UserOverviewCard from "@/components/UserOverViewCard";
 import Book from "@/assets/icon/Book";
 import ArrowLeft from "@/assets/icon/ArrowLeft";
+import UserSettingCard from "@/components/UserSettingCard";
 
 export default function Public() {
   const router = useRouter();
   const [showBook, setShowBook] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const { width } = useWindowDimensions();
   const isWide = width >= 1024;
 
@@ -86,7 +88,11 @@ export default function Public() {
 
         {/* RIGHT PANEL */}
         <View style={styles.rightPanel}>
-          <UserOverviewCard />
+          {showSettings ? (
+            <UserSettingCard onBack={() => setShowSettings(false)} />
+          ) : (
+            <UserOverviewCard onOpenSettings={() => setShowSettings(true)} />
+          )}
         </View>
       </View>
     </View>
