@@ -29,6 +29,8 @@ import { isValidEnglishWord } from "@/services/dictionaryService";
 import SideToolbar from "./SideToolBar";
 import HintShopModal from "../components/HintShopModal";
 import FontSizeModal from "./FontSizeModal";
+import { Typography } from "@/theme/Font";
+import { Color } from "@/theme/Color";
 
 export default function SharedGameScreen({
   mode,
@@ -531,8 +533,13 @@ export default function SharedGameScreen({
       <HintShopModal
         visible={shopVisible}
         onClose={() => setShopVisible(false)}
-        onPurchased={() => {
+        onPurchased={(newHint) => {
           resetHints?.();
+          setToast({
+            visible: true,
+            text: `✨ Hint added!`,
+          });
+          setTimeout(() => setToast({ visible: false, text: "" }), 1500);
           setShopVisible(false);
         }}
       />
@@ -553,12 +560,12 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     zIndex: 999,
     backgroundColor: "#1f2937",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
     borderRadius: 999,
     opacity: 0.95,
   },
-  toastText: { color: "#fff", fontWeight: "600" },
+  toastText: { ...Typography.header13, color: Color.white },
   topRow: { flexDirection: "row", flex: 1, paddingBottom: 20 },
   leftColumn: {
     width: 280,

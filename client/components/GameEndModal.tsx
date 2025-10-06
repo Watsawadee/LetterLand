@@ -187,6 +187,9 @@ export default function GameEndModal(props: GameEndModalProps) {
 
                 <View style={styles.cardWrap}>
                   <View style={[styles.statCard, getStatCardColor("word")]}>
+                    <View style={styles.pinkTapeTopRight} pointerEvents="none">
+                      <PinkTape />
+                    </View>
                     <View style={styles.topRow}>
                       <WordLearned />
                       <Text style={styles.statValue}>
@@ -207,9 +210,6 @@ export default function GameEndModal(props: GameEndModalProps) {
                       </Text>
                     ) : null}
                   </View>
-                </View>
-                <View style={styles.pinkTapeTopRight} pointerEvents="none">
-                  <PinkTape />
                 </View>
               </View>
             </>
@@ -293,6 +293,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     // width: "31%",
+    position: "relative",
     height: 150,
     backgroundColor: Color.white,
     borderRadius: 16,
@@ -343,7 +344,7 @@ const styles = StyleSheet.create({
   pinkTapeTopRight: {
     position: "absolute",
     top: -15,
-    right: -14,
+    right: -33,
     transform: [{ rotate: "20deg" }],
     zIndex: 10,
     elevation: 8,
