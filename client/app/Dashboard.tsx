@@ -8,6 +8,7 @@ import TotalGameThisWeek from "@/components/UserOverViewPerformance";
 import { Text } from "react-native-paper";
 import UserOverviewPerformance from "@/components/UserOverViewPerformance";
 import UserSettingCard from "@/components/UserSettingCard";
+import { fetchUserCoins } from "@/services/achievementService";
 
 type Props = {
     coins?: number;
@@ -17,6 +18,17 @@ const Dashboard = () => {
     const screenWidth = Dimensions.get("window").width;
     const [coins, setCoins] = useState(0);
     const [showSettings, setShowSettings] = useState(false);
+    useEffect(() => {
+        const loadCoins = async () => {
+            try {
+                const balance = await fetchUserCoins();
+                setCoins(balance);
+            } catch (e) {
+                console.error("Failed to load coins:", e);
+            }
+        };
+        loadCoins();
+    }, []);
 
     const { data: profile, isLoading, error } = useUserProfile();
     if (isLoading) return <Text>Loading...</Text>;

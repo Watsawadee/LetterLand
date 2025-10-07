@@ -1,4 +1,4 @@
-import { View, Image, Platform } from "react-native";
+import { View, Image, Platform, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import GameTypeCard from "./GameTypeModal";
 import { useEffect, useState } from "react";
@@ -6,12 +6,18 @@ import { getLoggedInUserId } from "@/utils/auth";
 import { useUserProfile } from "@/hooks/useGetUserProfile";
 import coinIcon from "../assets/images/coin.png"
 import Explore from "../assets/images/Explore.png"
-import { Button, Card, Dialog, Portal, Text } from "react-native-paper";
+import { Button, Card, Dialog, IconButton, Portal, Text } from "react-native-paper";
 import mascot from "@/assets/images/mascot.png";
 import SettingIcon from "@/assets/icon/settingIcon";
 import { Color } from "@/theme/Color";
 import { Typography } from "@/theme/Font";
 import * as SecureStore from "expo-secure-store";
+import CloseIcon from "@/assets/icon/CloseIcon";
+import InfoIcon from "@/assets/icon/infoIcon";
+import { ImageBackground } from "expo-image";
+import GardenBackground from "@/assets/backgroundTheme/GardenBackground";
+import GameTypeBackground from "@/assets/backgroundTheme/GameTypeBackground";
+import GameTypeGrid from "@/assets/icon/GameTypeGrid";
 
 type Props = {
   coins?: number;
@@ -24,6 +30,9 @@ const UserOverviewCard = ({ coins, onOpenSettings }: Props) => {
     null
   );
   const [dialogVisible, setDialogVisible] = useState(false);
+
+  const [infoDialogVisible, setInfoDialogVisible] = useState(false);
+
 
 
   useEffect(() => {
@@ -196,8 +205,34 @@ const UserOverviewCard = ({ coins, onOpenSettings }: Props) => {
           </Button>
 
           <Portal>
-            <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)} style={{ backgroundColor: Color.white, width: "50%", display: "flex", alignSelf: 'center' }}>
-              <Dialog.Title style={{ fontWeight: "800", color: Color.gray }}>Game Types Selection</Dialog.Title>
+            <Dialog visible={dialogVisible && !infoDialogVisible} dismissable={!infoDialogVisible} onDismiss={() => setDialogVisible(false)} style={{ backgroundColor: Color.white, width: "50%", display: "flex", alignSelf: 'center', height: "50%" }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  paddingRight: 10,
+                }}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Dialog.Title style={{ fontWeight: "800", color: Color.gray }}>Game Types Selection</Dialog.Title>
+                  <IconButton
+                    icon={(p) => <InfoIcon size={16} color={p.color ?? Color.gray} />}
+                    size={16}
+                    onPress={() => setInfoDialogVisible(true)}
+                    iconColor={Color.gray}
+                    containerColor="transparent"
+                    style={{ margin: 0 }}
+                    accessibilityLabel="Game Types info"
+                  />
+                </View>
+                <IconButton
+                  icon={(p) => <CloseIcon width={18} height={18} fillColor={Color.gray} {...p} />}
+                  onPress={() => setDialogVisible(false)}
+                  style={{ margin: 0 }}
+                  accessibilityLabel="Close dialog"
+                />
+              </View>
               <Dialog.Content>
                 <View
                   style={{
@@ -205,7 +240,7 @@ const UserOverviewCard = ({ coins, onOpenSettings }: Props) => {
                     justifyContent: "center",
                     alignItems: "center",
                     gap: 16,
-                    marginTop: 12,
+                    height: "75%"
                   }}
                 >
                   {gameOptions.map(({ type, question, label }) => (
@@ -217,6 +252,86 @@ const UserOverviewCard = ({ coins, onOpenSettings }: Props) => {
                       onPress={() => handleSelect(type)}
                     />
                   ))}
+                </View>
+              </Dialog.Content>
+            </Dialog>
+            <Dialog visible={infoDialogVisible} onDismiss={() => { setInfoDialogVisible(false) }} style={{
+              width: Platform.OS === "web" ? "60%" : "35%", display: "flex", alignSelf: 'center', height: "90%", backgroundColor: Color.white
+              , borderRadius: "5%",
+              overflow: "hidden"
+
+            }}>
+              <View
+                style={{
+                  position: "absolute",
+                  bottom: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "50%",
+                  zIndex: 0,
+                }}
+              >
+                <GameTypeBackground pointerEvents="none" style={{ width: "100%", height: "100%" }} />
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 5 }}>
+                <Dialog.Title style={{ fontWeight: "800", color: Color.gray }}>Game Type</Dialog.Title>
+                <IconButton
+                  icon={(p) => <CloseIcon width={18} height={18} fillColor={Color.gray} {...p} />}
+                  onPress={() => setInfoDialogVisible(false)}
+                  style={{ margin: 0 }}
+                  accessibilityLabel="Close dialog"
+                />
+              </View>
+              <Dialog.Content>
+                <View style={{ flexDirection: "column", justifyContent: "space-between", height: "93%" }}>
+                  <View style={{ flexDirection: "column" }}>
+                    <Text style={{ fontWeight: "800", fontSize: Typography.header20.fontSize, color: Color.gray }}>Crossword search</Text>
+                    <View style={{ flexDirection: "column", gap: 20 }}>
+                      <View style={{ flexDirection: "row", backgroundColor: "#AEAEAE", padding: 15, borderRadius: "5%", gap: 20 }}>
+                        <GameTypeGrid emptyColor="#FFFF" />
+                        <View style={{ flexDirection: "column", justifyContent: "space-around" }}>
+                          <Text style={{ fontSize: Typography.body13.fontSize, color: Color.white }}>Q. What pet purrs?</Text>
+                          <Text style={{ fontSize: Typography.body13.fontSize, color: Color.white }}>Q. What pet barks?</Text>
+                          <Text style={{ fontSize: Typography.body13.fontSize, color: Color.white }}>Q. What gives milk?</Text>
+                          <Text style={{ fontSize: Typography.body13.fontSize, color: Color.white }}>Q. What makes honey?</Text>
+                        </View>
+                      </View>
+                      <Text style={{ fontSize: 15, color: Color.gray, fontWeight: "bold", width: "95%" }}>
+                        A puzzle where words are hidden in a grid of random letters, and you must find and circle them and the question is in form of sentence
+                      </Text>
+                    </View>
+
+                  </View>
+                  <View style={{ flexDirection: "column" }}>
+                    <Text style={{ fontWeight: "800", fontSize: Typography.header20.fontSize, color: Color.white }}>Word Search</Text>
+                    <View style={{ flexDirection: "column", gap: 20 }}>
+                      <View style={{ flexDirection: "row", backgroundColor: Color.white, padding: 15, borderRadius: "5%", gap: 20 }}>
+                        <GameTypeGrid emptyColor="#AEAEAE" />
+                        <View style={{ flexDirection: "column", justifyContent: "space-around" }}>
+                          <View style={{ flexDirection: "row", justifyContent: "space-around", width: "80%" }}>
+                            <View style={{ backgroundColor: "#AEAEAE", width: "40%", padding: 10, display: "flex", justifyContent: "center", alignItems: "center", borderRadius: "23%" }}>
+                              <Text style={{ fontSize: 15, color: Color.white, fontWeight: "bold" }}>Dog</Text>
+                            </View>
+                            <View style={{ backgroundColor: "#AEAEAE", width: "40%", padding: 10, display: "flex", justifyContent: "center", alignItems: "center", borderRadius: "23%" }}>
+                              <Text style={{ fontSize: 15, color: Color.white, fontWeight: "bold" }}>Bee</Text>
+                            </View>
+                          </View>
+                          <View style={{ flexDirection: "row", justifyContent: "space-around", width: "80%" }}>
+                            <View style={{ backgroundColor: "#AEAEAE", width: "40%", padding: 10, display: "flex", justifyContent: "center", alignItems: "center", borderRadius: "23%" }}>
+                              <Text style={{ fontSize: 15, color: Color.white, fontWeight: "bold" }}>Cat</Text>
+                            </View>
+                            <View style={{ backgroundColor: "#AEAEAE", width: "40%", padding: 10, display: "flex", justifyContent: "center", alignItems: "center", borderRadius: "23%" }}>
+                              <Text style={{ fontSize: 15, color: Color.white, fontWeight: "bold" }}>Cow</Text>
+                            </View>
+                          </View>
+                        </View>
+                      </View>
+                      <Text style={{ fontSize: 15, fontWeight: "bold", color: Color.white, width: "95%" }}>
+                        A puzzle where words are hidden in a grid of random letters, and you must find and circle them. The list of words to find is usually given, not as clues in sentence form.
+                      </Text>
+                    </View>
+
+                  </View>
                 </View>
               </Dialog.Content>
             </Dialog>

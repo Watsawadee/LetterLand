@@ -2,7 +2,7 @@ import axios from "axios";
 import dotenv from "dotenv";
 dotenv.config();
 
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
 
 
 export const getSynonyms = async (word: string): Promise<string[]> => {
@@ -26,8 +26,12 @@ export const generateCrosswordHints = async (
   userCEFR: "A1" | "A2" | "B1" | "B2" | "C1" | "C2"
 ) => {
   try {
+    console.log("Gemini URL:", GEMINI_API_URL);
+    console.log(
+      "Gemini key loaded:",
+      process.env.GEMINI_API_KEY ? "yes" : "NO!"
+    );
     let prompt = `Generate a crossword puzzle based on this extracted text: "${extractedText}".  
-
 Your task:
 - Choose clue–answer pairs suitable for CEFR level: ${userCEFR} (A1 to C2).
 - Use **real-world, general English vocabulary**, not academic, technical, or scientific terms — even at C2.
