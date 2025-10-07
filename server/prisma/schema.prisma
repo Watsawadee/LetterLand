@@ -18,11 +18,11 @@ model User {
   hint             Int               @default(3)
   created_at       DateTime          @default(now())
   total_playtime   Int               @default(0)
+  extraWordFound   ExtraWordFound[]
   games            Game[]
   gameTemplate     GameTemplate[]
   userAchievements UserAchievement[]
   wordFound        WordFound[]
-  extraWordFound   ExtraWordFound[]
 }
 
 model Achievement {
@@ -68,19 +68,18 @@ model Game {
   isHintUsed     Boolean          @default(false)
   isFinished     Boolean          @default(false)
   timer          Int?
+  extraWordFound ExtraWordFound[]
   gameTemplate   GameTemplate     @relation(fields: [gameTemplateId], references: [id])
   user           User             @relation(fields: [userId], references: [id])
   wordFound      WordFound[]
-  extraWordFound ExtraWordFound[]
 }
 
 model GameTemplateQuestion {
-  id             Int @id @default(autoincrement())
   gameTemplateId Int
   questionId     Int
-
-  gameTemplate GameTemplate @relation(fields: [gameTemplateId], references: [id], onDelete: Cascade)
-  question     Question     @relation(fields: [questionId], references: [id], onDelete: Restrict)
+  id             Int          @id @default(autoincrement())
+  gameTemplate   GameTemplate @relation(fields: [gameTemplateId], references: [id], onDelete: Cascade)
+  question       Question     @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   @@unique([gameTemplateId, questionId])
   @@index([questionId])
@@ -93,8 +92,8 @@ model Question {
   answer                String
   hint                  String
   audioUrl              String?
-  wordFound             WordFound[]
   gameTemplateQuestions GameTemplateQuestion[]
+  wordFound             WordFound[]
 }
 
 model WordFound {
@@ -119,9 +118,8 @@ model ExtraWordFound {
   foundAt  DateTime @default(now())
   gameId   Int
   audioUrl String?
-
-  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id])
+  game     Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id])
 
   @@unique([gameId, userId, word])
   @@index([gameId, userId, foundAt])
