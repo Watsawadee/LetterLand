@@ -89,20 +89,21 @@ export const getCorrectAnswerById = async (
   questionId: number
 ) => {
   try {
-    const question = await prisma.question.findFirst({
-      where: {
-        id: questionId,
-        gameTemplateId: gameTemplateId,
-      },
-      select: {
-        id: true,
-        answer: true,
+    const link = await prisma.gameTemplateQuestion.findFirst({
+      where: { gameTemplateId, questionId },
+      include: {
+        question: {
+          select: { id: true, answer: true },
+        },
       },
     });
 
-    return question;
+    return link?.question ?? null;
   } catch (err) {
-    console.error("Error fetching question by gameId:", err);
+    console.error(
+      "Error fetching question by gameTemplateId via join table:",
+      err
+    );
     throw new Error("Failed to get question");
   }
 };
@@ -301,7 +302,7 @@ function safeSecondsToAdd(
 }
 
 export async function getGameForCompletion(gameId: number) {
-  return prisma.game.findUnique({
+  const game = await prisma.game.findUnique({
     where: { id: gameId },
     select: {
       id: true,
@@ -312,9 +313,12 @@ export async function getGameForCompletion(gameId: number) {
       gameTemplateId: true,
       startedAt: true,
       finishedAt: true,
-      gameCode: true,
+      gameTemplate: { select: { gameCode: true } },
     },
   });
+  if (!game) return null;
+  const { gameTemplate, ...rest } = game;
+  return { ...rest, gameCode: gameTemplate?.gameCode ?? null };
 }
 
 export function computeCoins(args: {
