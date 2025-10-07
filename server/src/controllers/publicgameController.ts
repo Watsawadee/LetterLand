@@ -1,4 +1,4 @@
-
+// controllers/publicgameController.ts
 import { RequestHandler, Request } from "express";
 import prisma from "../configs/db";
 import {
@@ -6,19 +6,31 @@ import {
   StartPublicGameResponse,
 } from "../types/publicgame";
 
-/** A minimal type to read req.user without changing req.params type */
+/** Minimal type to read req.user without changing req.params type */
 type WithUser = { user?: { id: number } };
+type PublicGamesQuery = { limit?: string; offset?: string };
+
+const toPositiveInt = (value: unknown, fallback: number) => {
+  const n =
+    typeof value === "string" && value.trim() !== ""
+      ? parseInt(value, 10)
+      : Number(value);
+  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : fallback;
+};
 
 export const listPublicGames: RequestHandler<
-  any,
-  ListPublicGamesResponse | { error: string }
+  // Params
+  Record<string, never>,
+  // ResBody
+  ListPublicGamesResponse | { error: string },
+  // ReqBody
+  unknown,
+  // ReqQuery
+  PublicGamesQuery
 > = async (req, res) => {
   try {
-    const rawLimit = Number(req.query.limit ?? 20);
-    const rawOffset = Number(req.query.offset ?? 0);
-
-    const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.floor(rawLimit) : 20;
-    const offset = Number.isFinite(rawOffset) && rawOffset > 0 ? Math.floor(rawOffset) : 0;
+    const limit = toPositiveInt(req.query.limit, 20) || 20;
+    const offset = toPositiveInt(req.query.offset, 0);
 
     const [templates, total] = await Promise.all([
       prisma.gameTemplate.findMany({
@@ -29,6 +41,7 @@ export const listPublicGames: RequestHandler<
           gameType: true,
           difficulty: true,
           imageUrl: true,
+          gameCode: true, // include if UI needs it
         },
         orderBy: { id: "desc" },
         take: limit,
@@ -37,38 +50,36 @@ export const listPublicGames: RequestHandler<
       prisma.gameTemplate.count({ where: { isPublic: true } }),
     ]);
 
-    console.log("Total Public Games:", total);  // Log total
-    console.log("Fetched Games:", templates.length);  // Log how many games we actually fetched
-
     const items = templates.map((t) => ({
       id: t.id,
       title: t.gameTopic,
       gameType: t.gameType,
       difficulty: t.difficulty,
       imageUrl: t.imageUrl ?? null,
+      gameCode: t.gameCode ?? null,
     }));
 
     res.status(200).json({ total, items });
   } catch (err) {
-    console.error(err);
+    console.error("[listPublicGames] Error:", err);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
-
 export const startPublicGame: RequestHandler<
-  { templateId: string },                                   // params typed here
+  // Params
+  { templateId: string },
+  // ResBody
   StartPublicGameResponse | { error: string }
 > = async (req, res) => {
   try {
-    // Access user in a structural way without changing req.params type
     const userId = (req as Request & WithUser).user?.id;
     if (!userId) {
-      res.status(401).json({ error: "Unauthorised" });
+      res.status(401).json({ error: "Unauthorized" });
       return;
     }
 
-    const templateId = Number(req.params.templateId);
+    const templateId = parseInt(req.params.templateId, 10);
     if (!Number.isFinite(templateId)) {
       res.status(400).json({ error: "Invalid templateId" });
       return;
@@ -83,6 +94,7 @@ export const startPublicGame: RequestHandler<
         gameType: true,
         difficulty: true,
         imageUrl: true,
+        gameCode: true, // <-- required by response type
       },
     });
 
@@ -91,6 +103,7 @@ export const startPublicGame: RequestHandler<
       return;
     }
 
+    // Create a new Game for this user from the template
     const game = await prisma.game.create({
       data: {
         userId,
@@ -102,12 +115,11 @@ export const startPublicGame: RequestHandler<
         finishedAt: true,
         isHintUsed: true,
         isFinished: true,
-        gameCode: true,
-        timer: true,
+        timer: true, // Int? in Game model
       },
     });
 
-    res.status(201).json({
+    const payload: StartPublicGameResponse = {
       id: game.id,
       templateId: template.id,
       title: template.gameTopic,
@@ -118,11 +130,13 @@ export const startPublicGame: RequestHandler<
       finishedAt: game.finishedAt,
       isHintUsed: game.isHintUsed,
       isFinished: game.isFinished,
-      gameCode: game.gameCode ?? null,
       timer: game.timer ?? null,
-    });
+      gameCode: template.gameCode ?? null, // from GameTemplate
+    };
+
+    res.status(201).json(payload);
   } catch (err) {
-    console.error(err);
+    console.error("[startPublicGame] Error:", err);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };

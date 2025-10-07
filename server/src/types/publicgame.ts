@@ -1,30 +1,31 @@
-export type PublicGameType = "WORD_SEARCH" | "CROSSWORD_SEARCH";
-export type EnglishLevel = "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+// types/publicgame.ts
+import { GameType, EnglishLevel } from "@prisma/client";
 
-export interface PublicGameItem {
+export type PublicGameItem = {
   id: number;
   title: string;
-  gameType: PublicGameType;
+  gameType: GameType;
   difficulty: EnglishLevel;
   imageUrl: string | null;
-}
+  gameCode: string | null; // from GameTemplate
+};
 
-export interface ListPublicGamesResponse {
+export type ListPublicGamesResponse = {
   total: number;
   items: PublicGameItem[];
-}
+};
 
-export interface StartPublicGameResponse {
+export type StartPublicGameResponse = {
   id: number;
   templateId: number;
   title: string;
-  gameType: PublicGameType;
+  gameType: GameType;
   difficulty: EnglishLevel;
   imageUrl: string | null;
-  startedAt: string | Date;
-  finishedAt: string | Date | null;
+  startedAt: Date;
+  finishedAt: Date | null;
   isHintUsed: boolean;
   isFinished: boolean;
-  gameCode: string | null;
-  timer: number | null;
-}
+  timer: number | null;      // Int? in Game
+  gameCode: string | null;   // from GameTemplate
+};
