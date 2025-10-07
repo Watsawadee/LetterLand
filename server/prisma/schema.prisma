@@ -80,7 +80,7 @@ model GameTemplateQuestion {
   questionId     Int
 
   gameTemplate GameTemplate @relation(fields: [gameTemplateId], references: [id], onDelete: Cascade)
-  question     Question     @relation(fields: [questionId], references: [id], onDelete: Restrict)
+  question     Question     @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   @@unique([gameTemplateId, questionId])
   @@index([questionId])
