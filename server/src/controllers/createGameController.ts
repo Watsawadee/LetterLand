@@ -149,6 +149,7 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
       message: "Game created successfully from Gemini",
       game: {
         ...game,
+        gameCode: game.gameTemplate.gameCode, // <-- Add this line
         imagePrompt: geminiResult.imagePrompt,
         image: imageData,
         gameTemplate: {
