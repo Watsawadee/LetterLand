@@ -46,16 +46,17 @@ model UserAchievement {
 }
 
 model GameTemplate {
-  id         Int          @id @default(autoincrement())
+  id         Int                    @id @default(autoincrement())
   gameTopic  String
   gameType   GameType
   difficulty EnglishLevel
-  isPublic   Boolean      @default(false)
+  isPublic   Boolean                @default(false)
   imageUrl   String?
   ownerId    Int
+  gameCode   String?                @unique
   games      Game[]
-  owner      User         @relation(fields: [ownerId], references: [id])
-  questions  Question[]
+  owner      User                   @relation(fields: [ownerId], references: [id])
+  questions  GameTemplateQuestion[]
 }
 
 model Game {
@@ -66,7 +67,6 @@ model Game {
   finishedAt     DateTime?
   isHintUsed     Boolean          @default(false)
   isFinished     Boolean          @default(false)
-  gameCode       String?          @unique
   timer          Int?
   gameTemplate   GameTemplate     @relation(fields: [gameTemplateId], references: [id])
   user           User             @relation(fields: [userId], references: [id])
@@ -74,15 +74,27 @@ model Game {
   extraWordFound ExtraWordFound[]
 }
 
-model Question {
-  id             Int          @id @default(autoincrement())
+model GameTemplateQuestion {
+  id             Int @id @default(autoincrement())
   gameTemplateId Int
-  name           String
-  answer         String
-  hint           String
-  audioUrl       String?
-  gameTemplate   GameTemplate @relation(fields: [gameTemplateId], references: [id])
-  wordFound      WordFound[]
+  questionId     Int
+
+  gameTemplate GameTemplate @relation(fields: [gameTemplateId], references: [id], onDelete: Cascade)
+  question     Question     @relation(fields: [questionId], references: [id], onDelete: Restrict)
+
+  @@unique([gameTemplateId, questionId])
+  @@index([questionId])
+  @@index([gameTemplateId])
+}
+
+model Question {
+  id                    Int                    @id @default(autoincrement())
+  name                  String
+  answer                String
+  hint                  String
+  audioUrl              String?
+  wordFound             WordFound[]
+  gameTemplateQuestions GameTemplateQuestion[]
 }
 
 model WordFound {
