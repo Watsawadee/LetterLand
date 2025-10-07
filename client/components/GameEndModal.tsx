@@ -10,11 +10,13 @@ import {
 import { CustomButton } from "../theme/ButtonCustom";
 import { Color } from "@/theme/Color";
 import Coin from "@/assets/icon/Coin";
-import Timer from "@/assets/icon/Timer";
+import ClockTimer from "@/assets/icon/ClockTimer";
 import WordLearned from "@/assets/icon/WordLearned";
 import { Typography } from "@/theme/Font";
 import ExcellentComplete from "@/assets/backgroundTheme/ExcellentComplete";
 import DontGiveUpNotComplete from "@/assets/backgroundTheme/DontGiveUpNotComplete";
+import PinkTape from "@/assets/icon/PinkTape";
+import BlueTape from "@/assets/icon/BlueTape";
 
 type Variant = "success" | "timeout";
 
@@ -67,6 +69,17 @@ function mmss(total?: number | null) {
   return `${mm}:${ss}`;
 }
 
+function getStatCardColor(type: "timer" | "coin" | "word") {
+  switch (type) {
+    case "timer":
+      return { borderColor: "rgba(88, 167, 248, 0.7)" };
+    case "coin":
+      return { borderColor: "rgba(113, 203, 134, 0.7)" };
+    case "word":
+      return { borderColor: "rgba(239, 137, 196, 0.7)" };
+  }
+}
+
 export default function GameEndModal(props: GameEndModalProps) {
   const {
     visible,
@@ -106,10 +119,13 @@ export default function GameEndModal(props: GameEndModalProps) {
 
   const showTimeCard = variant === "success" && !!hasTimer;
 
+  const baseCoins = Number(coinsEarned ?? 0);
+  const extraCoins = Math.max(0, Number(extraCoinsEarnedThisRun ?? 0));
   const baseLearned = Number(wordsLearned ?? 0);
-  const extraEarnedCt = Number(extraCoinsEarnedThisRun ?? 0);
-  const learnedDisplay = baseLearned + extraEarnedCt;
+  const extraLearned = Math.max(0, Number(extraWordsCount ?? 0));
 
+  const showCoinsBreakdown = extraCoins > 0;
+  const showLearnedBreakdown = extraLearned > 0;
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
@@ -119,55 +135,83 @@ export default function GameEndModal(props: GameEndModalProps) {
               <View style={styles.icon}>
                 <ExcellentComplete />
               </View>
-
               <Text style={styles.subtitle}>
                 {subtitle ??
                   (hasTimer
                     ? "You have completed on time"
                     : "You have found all the words")}
               </Text>
-
               <View style={styles.statsRow}>
                 {showTimeCard && (
-                  <View style={styles.statCard}>
-                    <View style={styles.topRow}>
-                      <Timer size={35} />
-                      <Text style={styles.statValue}>
-                        {mmss(timeUsedSeconds)}
-                      </Text>
+                  <View style={styles.cardWrap}>
+                    <View style={[styles.statCard, getStatCardColor("timer")]}>
+                      <View style={styles.topRow}>
+                        <ClockTimer />
+                        <Text style={styles.statValue}>
+                          {mmss(timeUsedSeconds)}
+                        </Text>
+                      </View>
+                      <Text style={styles.statLabel}>Time you have taken</Text>
                     </View>
-                    <Text style={styles.statLabel}>Time you have taken</Text>
+                    <View
+                      style={styles.blueTapeBottomLeft}
+                      pointerEvents="none"
+                    >
+                      <BlueTape />
+                    </View>
                   </View>
                 )}
 
-                <View style={styles.statCard}>
-                  <View style={styles.topRow}>
-                    <Coin />
-                    <Text style={styles.statValue}>
-                      {typeof coinsEarned === "number"
-                        ? `+${coinsEarned}`
-                        : "-"}
-                    </Text>
+                <View style={styles.cardWrap}>
+                  <View style={[styles.statCard, getStatCardColor("coin")]}>
+                    <View style={styles.topRow}>
+                      <Coin />
+                      <Text style={styles.statValue}>
+                        {baseCoins}
+                        {showCoinsBreakdown && (
+                          <Text style={[styles.inlineBonus, styles.coinsColor]}>
+                            {" "}
+                            (+{extraCoins})
+                          </Text>
+                        )}
+                      </Text>
+                    </View>
+                    <Text style={styles.statLabel}>Coins Earn</Text>
+                    {showCoinsBreakdown ? (
+                      <Text style={[styles.statSub, styles.coinsColor]}>
+                        +{extraCoins} from extra word{extraCoins > 1 ? "s" : ""}
+                      </Text>
+                    ) : null}
                   </View>
-                  <Text style={styles.statLabel}>Coins Earn</Text>
                 </View>
 
-                <View style={styles.statCard}>
-                  <View style={styles.topRow}>
-                    <WordLearned />
-                    <Text style={styles.statValue}>{learnedDisplay}</Text>
+                <View style={styles.cardWrap}>
+                  <View style={[styles.statCard, getStatCardColor("word")]}>
+                    <View style={styles.pinkTapeTopRight} pointerEvents="none">
+                      <PinkTape />
+                    </View>
+                    <View style={styles.topRow}>
+                      <WordLearned />
+                      <Text style={styles.statValue}>
+                        {baseLearned}
+                        {showLearnedBreakdown && (
+                          <Text style={[styles.inlineBonus, styles.wordsColor]}>
+                            {" "}
+                            (+{extraLearned})
+                          </Text>
+                        )}
+                      </Text>
+                    </View>
+                    <Text style={styles.statLabel}>Word learned</Text>
+                    {showLearnedBreakdown ? (
+                      <Text style={[styles.statSub, styles.wordsColor]}>
+                        +{extraLearned} from extra word
+                        {extraLearned > 1 ? "s" : ""}
+                      </Text>
+                    ) : null}
                   </View>
-                  <Text style={styles.statLabel}>Word learned</Text>
                 </View>
               </View>
-
-              {extraCoinsEarnedThisRun > 0 && (
-                <Text style={styles.replayNote}>
-                  You earn +{extraCoinsEarnedThisRun} coin(s) by discovering
-                  extra words
-                  {alreadyFinished ? " (replay included)" : ""}.
-                </Text>
-              )}
             </>
           ) : (
             <>
@@ -227,7 +271,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     ...Typography.header25,
-    color: "#3B3B3B",
+    color: Color.gray,
     marginBottom: 20,
     textAlign: "center",
     textOverflow: "wrapup",
@@ -241,14 +285,23 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     paddingHorizontal: 8,
   },
-  statCard: {
+  cardWrap: {
+    position: "relative",
     width: "31%",
+    alignItems: "stretch",
+    overflow: "visible",
+  },
+  statCard: {
+    // width: "31%",
+    position: "relative",
+    height: 150,
     backgroundColor: Color.white,
     borderRadius: 16,
+    borderWidth: 2,
     paddingVertical: 14,
     paddingHorizontal: 16,
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "space-around",
     elevation: 4,
     shadowColor: Color.black,
     shadowOpacity: 0.08,
@@ -256,10 +309,10 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
   },
   topRow: {
-    flexDirection: "row",
+    flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    gap: 12,
+    gap: 6,
     marginBottom: 6,
   },
   statValue: {
@@ -267,15 +320,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   statLabel: {
-    ...Typography.body16,
-    color: Color.grey,
-    textAlign: "center",
-  },
-  replayNote: {
-    marginTop: 6,
-    color: "#6b7280",
-    fontSize: 13,
-    lineHeight: 18,
+    ...Typography.header16,
+    color: Color.gray,
     textAlign: "center",
   },
   buttonRow: {
@@ -284,5 +330,30 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: "100%",
     marginTop: 12,
+  },
+  inlineBonus: {
+    ...Typography.header25,
+    opacity: 0.9,
+  },
+  statSub: {
+    ...Typography.body13,
+    marginTop: 6,
+  },
+  coinsColor: { color: Color.green },
+  wordsColor: { color: Color.pink },
+  pinkTapeTopRight: {
+    position: "absolute",
+    top: -15,
+    right: -33,
+    transform: [{ rotate: "20deg" }],
+    zIndex: 10,
+    elevation: 8,
+  },
+  blueTapeBottomLeft: {
+    position: "absolute",
+    bottom: -28,
+    left: -28,
+    zIndex: 10,
+    elevation: 8,
   },
 });

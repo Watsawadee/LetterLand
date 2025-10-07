@@ -26,6 +26,11 @@ import {
 import { deleteIncompleteGame } from "@/services/gameService";
 import { getLoggedInUserId } from "@/utils/auth";
 import { isValidEnglishWord } from "@/services/dictionaryService";
+import SideToolbar from "./SideToolBar";
+import HintShopModal from "../components/HintShopModal";
+import FontSizeModal from "./FontSizeModal";
+import { Typography } from "@/theme/Font";
+import { Color } from "@/theme/Color";
 
 export default function SharedGameScreen({
   mode,
@@ -63,6 +68,7 @@ export default function SharedGameScreen({
     text: "",
   });
   const [extraCoinsEarned, setExtraCoinsEarned] = useState(0);
+  const [shopVisible, setShopVisible] = useState(false);
 
   useEffect(() => {
     if (!gameData?.id) return;
@@ -422,15 +428,16 @@ export default function SharedGameScreen({
         </View>
       )}
 
+      <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+        <ArrowLeft />
+      </TouchableOpacity>
+
       <View style={styles.topRow}>
         <View style={styles.leftColumn}>
-          <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-            <ArrowLeft />
-          </TouchableOpacity>
-
           <GameControls
             title={title}
-            fontSettings={fontSettings}
+            gameCode={gameData?.gameCode}
+            cefr={gameData?.gameTemplate.difficulty}
             onShowHint={onShowHint}
             hintCount={hintCount ?? 0}
             isHintDisabled={isHintDisabled}
@@ -438,9 +445,17 @@ export default function SharedGameScreen({
             onTimeUp={() => {
               if (hasTimer) setTimeUp(true);
             }}
-            paused={allFoundVisible || timeUp || wordModalVisible || resetting}
+            paused={
+              allFoundVisible ||
+              timeUp ||
+              wordModalVisible ||
+              resetting ||
+              confirmExitVisible ||
+              shopVisible ||
+              fontSettings.fontModalVisible
+            }
             resetKey={roundKey}
-            refreshHints={resetHints}
+            onRequestBuyHints={() => setShopVisible(true)}
           />
         </View>
 
@@ -503,10 +518,40 @@ export default function SharedGameScreen({
         words={foundWordsList}
         extraWords={extraWords}
       />
+
+      <FontSizeModal
+        visible={fontSettings.fontModalVisible}
+        tempFontSize={fontSettings.tempFontSize}
+        setTempFontSize={fontSettings.setTempFontSize}
+        onConfirm={() => {
+          fontSettings.setFontSize(fontSettings.tempFontSize);
+          fontSettings.setFontModalVisible(false);
+        }}
+        onClose={() => fontSettings.setFontModalVisible(false)}
+      />
+
+      <HintShopModal
+        visible={shopVisible}
+        onClose={() => setShopVisible(false)}
+        onPurchased={(newHint) => {
+          resetHints?.();
+          setToast({
+            visible: true,
+            text: `✨ Hint added!`,
+          });
+          setTimeout(() => setToast({ visible: false, text: "" }), 1500);
+          setShopVisible(false);
+        }}
+      />
+
+      <SideToolbar
+        onOpenFont={() => fontSettings.setFontModalVisible(true)}
+        onOpenShop={() => setShopVisible(true)}
+        // onOpenTutorial={() => setTutorialVisible(true)}
+      />
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, justifyContent: "flex-start" },
   toast: {
@@ -515,15 +560,25 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     zIndex: 999,
     backgroundColor: "#1f2937",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
     borderRadius: 999,
     opacity: 0.95,
   },
-  toastText: { color: "#fff", fontWeight: "600" },
+  toastText: { ...Typography.header13, color: Color.white },
   topRow: { flexDirection: "row", flex: 1, paddingBottom: 20 },
-  leftColumn: { width: 300, justifyContent: "center", marginRight: 30 },
-  rightColumn: { flex: 1, marginTop: 20, justifyContent: "center" },
+  leftColumn: {
+    width: 280,
+    justifyContent: "center",
+    marginRight: 30,
+    // backgroundColor: "red",
+  },
+  rightColumn: {
+    flex: 1,
+    marginTop: 20,
+    justifyContent: "center",
+    // backgroundColor: "blue",
+  },
   itemWrapper: {
     flexDirection: "row",
     justifyContent: "center",

@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet } from "react-native";
-import FontSizeModal from "./FontSizeModal";
+import { View, Text, StyleSheet, Pressable } from "react-native";
 import { CustomButton } from "../theme/ButtonCustom";
-import { Magnify } from "../assets/icon/Magnify";
-import FontIcon from "@/assets/icon/FontIcon";
+import { Magnify } from "@/assets/icon/Magnify";
 import Timer from "@/assets/icon/Timer";
 import { Typography } from "@/theme/Font";
 import { useTime } from "@/hooks/useTime";
 import { GameControlsProps } from "@/types/type";
-import HintShopModal from "../components/HintShopModal";
+import { CEFR } from "@/components/CEFR";
+import { Color } from "@/theme/Color";
+import * as Clipboard from "expo-clipboard";
+import CopyIcon from "@/assets/icon/CopyIcon";
 
 export default function GameControls({
   title,
-  fontSettings,
   onShowHint,
   hintCount,
   isHintDisabled,
@@ -20,15 +20,14 @@ export default function GameControls({
   onTimeUp,
   paused = false,
   resetKey,
-  refreshHints,
+  onRequestBuyHints,
+  gameCode,
+  cefr,
 }: GameControlsProps) {
-  const {
-    fontModalVisible,
-    tempFontSize,
-    setTempFontSize,
-    setFontModalVisible,
-    setFontSize,
-  } = fontSettings;
+  const [copied, setCopied] = useState(false);
+  const [currentHints, setCurrentHints] = useState<number>(
+    typeof hintCount === "number" ? hintCount : 0
+  );
 
   const { secondsLeft } = useTime({
     startTimeSeconds,
@@ -36,11 +35,6 @@ export default function GameControls({
     onTimeUp,
     resetSignal: resetKey,
   });
-
-  const [shopVisible, setShopVisible] = useState(false);
-  const [currentHints, setCurrentHints] = useState<number>(
-    typeof hintCount === "number" ? hintCount : 0
-  );
 
   useEffect(() => {
     if (typeof hintCount === "number") {
@@ -57,10 +51,7 @@ export default function GameControls({
   };
 
   const hasHints = currentHints > 0;
-
-  // Ignore stale "no hints" disable when we locally have hints (just after purchase)
-  const parentThinksNoHints =
-    typeof hintCount === "number" && hintCount === 0;
+  const parentThinksNoHints = typeof hintCount === "number" && hintCount === 0;
 
   const computedDisabled = hasHints
     ? Boolean(isHintDisabled && !parentThinksNoHints)
@@ -68,17 +59,52 @@ export default function GameControls({
 
   const onPressHint = () => {
     if (!hasHints) {
-      setShopVisible(true);
+      onRequestBuyHints?.();
       return;
     }
     if (computedDisabled) return;
     onShowHint();
   };
 
+  const copyCode = async () => {
+    if (!gameCode) return;
+    await Clipboard.setStringAsync(gameCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1200);
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.box}>
         <Text style={styles.title}>{title}</Text>
+        <View style={styles.row}>
+          {gameCode ? (
+            <Pressable
+              onPress={copyCode}
+              style={({ pressed }) => [
+                styles.pill,
+                styles.chip,
+                pressed && { opacity: 0.85 },
+              ]}
+              hitSlop={8}
+            >
+              <Text style={styles.pillText} numberOfLines={1}>
+                {gameCode}
+              </Text>
+              {copied ? (
+                <Text style={[styles.iconGap]}>✓</Text>
+              ) : (
+                <View style={styles.iconGap}>
+                  <CopyIcon />
+                </View>
+              )}
+            </Pressable>
+          ) : null}
+
+          <View style={styles.chip}>
+            <CEFR level={cefr} />
+          </View>
+        </View>
       </View>
 
       {startTimeSeconds > 0 && (
@@ -92,46 +118,17 @@ export default function GameControls({
 
       <View style={styles.buttonsRow}>
         <CustomButton
-          onPress={() => setFontModalVisible(true)}
-          type="fontSize"
-          icon={<FontIcon />}
+          onPress={onPressHint}
+          type={hasHints ? "buyHint" : "useHint"}
+          icon={
+            <View style={{ opacity: computedDisabled ? 0.5 : 1 }}>
+              <Magnify />
+            </View>
+          }
+          disabled={computedDisabled}
+          number={Math.max(0, currentHints)}
         />
-
-        <View>
-          <CustomButton
-            onPress={onPressHint}
-            type={hasHints ? "buyHint" : "useHint"}
-            icon={
-              <View style={{ opacity: computedDisabled ? 0.5 : 1 }}>
-                <Magnify />
-              </View>
-            }
-            disabled={computedDisabled}
-            number={Math.max(0, currentHints)}
-          />
-        </View>
       </View>
-
-      <FontSizeModal
-        visible={fontModalVisible}
-        tempFontSize={tempFontSize}
-        setTempFontSize={setTempFontSize}
-        onConfirm={() => {
-          setFontSize(tempFontSize);
-          setFontModalVisible(false);
-        }}
-        onClose={() => setFontModalVisible(false)}
-      />
-
-      <HintShopModal
-        visible={shopVisible}
-        onClose={() => setShopVisible(false)}
-        onPurchased={(newHint) => {
-          setCurrentHints(newHint);
-          setShopVisible(false);
-          refreshHints?.();
-        }}
-      />
     </View>
   );
 }
@@ -149,6 +146,49 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
     elevation: 2,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 8,
+  },
+  chip: {
+    minHeight: 32,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "flex-start",
+  },
+  pill: {
+    borderRadius: 999,
+    alignSelf: "flex-start",
+    backgroundColor: Color.green,
+    flexDirection: "row",
+    alignItems: "center",
+    maxWidth: 220,
+  },
+  pillText: {
+    ...Typography.header16,
+    color: Color.white,
+  },
+  iconGap: {
+    marginLeft: 6,
+    color: Color.white,
+  },
+  codeWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  copyBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  copiedText: {
+    ...Typography.header13,
+    color: Color.green,
   },
   time: { marginTop: 4, ...Typography.header30 },
   buttonsRow: {
