@@ -142,6 +142,7 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
       answer: gtq.question.answer,
       hint: gtq.question.hint,
       pronunciationUrl: pronunciationResults[idx]?.url,
+
     }));
 
     const result = CreateGameFromGeminiResponseSchema.safeParse({
