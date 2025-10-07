@@ -19,7 +19,6 @@ export interface GameData {
   finishedAt: string | null;
   isHintUsed: boolean;
   isFinished: boolean;
-  gameCode: string | null;
   timer: number | null;
   gameTemplate: GameTemplate;
 }
@@ -31,13 +30,13 @@ export interface GameTemplate {
   difficulty: string;
   isPublic: boolean;
   questions: QuestionAnswer[];
+  gameCode: string | null;
   imageUrl?: string;
 }
 
 // gameData.ts
 export interface QuestionAnswer {
   id: number;
-  gameTemplateId: number;
   name: string;
   answer: string;
   hint: string;
