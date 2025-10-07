@@ -47,6 +47,19 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
       difficulty
     );
 
+    const createdQuestions = await Promise.all(
+      geminiResult.game.questions.map((q: any) =>
+        prisma.question.create({
+          data: {
+            name: q.question,
+            answer: q.answer,
+            hint: q.hint ?? "",
+          },
+        })
+      )
+    );
+    const gameCode = isPublic ? await generateGameCode() : null;
+
     const gameTemplate = await prisma.gameTemplate.create({
       data: {
         gameTopic: geminiResult.game.gameTopic,
@@ -54,17 +67,21 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
         difficulty: difficulty,
         isPublic: isPublic,
         ownerId: userId,
-        questions: {
-          create: geminiResult.game.questions.map((q: any) => ({
-            name: q.question,
-            answer: q.answer,
-            hint: q.hint ?? "",
-          })),
-        },
+        gameCode: gameCode
       },
     });
 
-    const gameCode = isPublic ? await generateGameCode() : null
+    await Promise.all(
+      createdQuestions.map((question) =>
+        prisma.gameTemplateQuestion.create({
+          data: {
+            gameTemplateId: gameTemplate.id,
+            questionId: question.id,
+          },
+        })
+      )
+    );
+
     const game = await prisma.game.create({
       data: {
         userId,
@@ -72,25 +89,26 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
         isHintUsed: false,
         isFinished: false,
         timer: timer ?? null,
-        gameCode,
       },
       include: {
         gameTemplate: {
-          include: { questions: true },
+          include: {
+            questions: {
+              include: { question: true },
+            },
+          },
         },
       },
     });
 
-    let imageData = null;
-    let fileName: string | null = null;
 
-    const answers = geminiResult.game.questions.map((q: any) => q.answer);
-    console.log("answer", answers)
+
+    const answers = createdQuestions.map((q) => q.answer);
     const pronunciationResults = await Promise.all(
       answers.map((answer: string) => generatePronunciation(answer))
     );
     await Promise.all(
-      game.gameTemplate.questions.map((q: any, idx: number) =>
+      createdQuestions.map((q, idx) =>
         prisma.question.update({
           where: { id: q.id },
           data: { audioUrl: pronunciationResults[idx]?.url },
@@ -98,7 +116,8 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
       )
     );
 
-
+    let imageData = null;
+    let fileName: string | null = null;
     //Create Game
     if (geminiResult.imagePrompt) {
       const sanitizedTopic = geminiResult.game.gameTopic.toLowerCase().replace(/\s+/g, "_");
@@ -117,11 +136,11 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
       });
     }
 
-    const questionsWithPronunciation = game.gameTemplate.questions.map((q: any, idx: number) => ({
-      id: q.id,
-      name: q.name,
-      answer: q.answer,
-      hint: q.hint,
+    const questionsWithPronunciation = game.gameTemplate.questions.map((gtq: any, idx: number) => ({
+      id: gtq.question.id,
+      name: gtq.question.name,
+      answer: gtq.question.answer,
+      hint: gtq.question.hint,
       pronunciationUrl: pronunciationResults[idx]?.url,
     }));
 
@@ -137,6 +156,7 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
         },
       },
     });
+
 
     if (!result.success) {
       console.error("Response validation error:", z.treeifyError(result.error));
