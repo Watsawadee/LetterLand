@@ -1,4 +1,3 @@
-// types/publicgame.ts
 import { GameType, EnglishLevel } from "@prisma/client";
 
 export type PublicGameItem = {
@@ -7,12 +6,19 @@ export type PublicGameItem = {
   gameType: GameType;
   difficulty: EnglishLevel;
   imageUrl: string | null;
-  gameCode: string | null; // from GameTemplate
+  gameCode: string | null;
 };
 
 export type ListPublicGamesResponse = {
   total: number;
   items: PublicGameItem[];
+};
+
+export type StartPublicGameRequest = {
+  /** ถ้าไม่ส่ง จะใช้ type เดิมของ template */
+  newType?: GameType;
+  /** นาที (>=0). ถ้าไม่ส่ง จะไม่ตั้งค่า timer */
+  timerMinutes?: number;
 };
 
 export type StartPublicGameResponse = {
@@ -26,6 +32,8 @@ export type StartPublicGameResponse = {
   finishedAt: Date | null;
   isHintUsed: boolean;
   isFinished: boolean;
-  timer: number | null;      // Int? in Game
-  gameCode: string | null;   // from GameTemplate
+  /** เก็บเป็นวินาที */
+  timer: number | null;
+  /** ของ template ที่ถูกใช้จริง (อาจเป็น variant) */
+  gameCode: string | null;
 };
