@@ -436,7 +436,7 @@ export default function SharedGameScreen({
         <View style={styles.leftColumn}>
           <GameControls
             title={title}
-            gameCode={gameData?.gameCode}
+            gameCode={gameData?.gameTemplate.gameCode}
             cefr={gameData?.gameTemplate.difficulty}
             onShowHint={onShowHint}
             hintCount={hintCount ?? 0}

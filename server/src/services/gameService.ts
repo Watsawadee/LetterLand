@@ -54,13 +54,40 @@ export const getAllGameByUserId = async (userId: number) => {
 
 export const getGameData = async (gameId: number) => {
   try {
-    const GameData = await prisma.game.findUnique({
+    const rawGameData = await prisma.game.findUnique({
       where: { id: gameId },
       include: {
-        gameTemplate: { include: { questions: true } },
+        gameTemplate: {
+          include: {
+            questions: {
+              select: {
+                question: {
+                  select: {
+                    id: true,
+                    name: true,
+                    answer: true,
+                    hint: true,
+                    audioUrl: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
-    return GameData;
+    if (!rawGameData) return null;
+    const normalized = {
+      ...rawGameData,
+      gameTemplate: rawGameData.gameTemplate
+        ? {
+            ...rawGameData.gameTemplate,
+            questions: rawGameData.gameTemplate.questions.map((q) => q.question),
+          }
+        : null,
+    };
+
+    return normalized;
   } catch (err) {
     console.error("Error Game service:", err);
     throw new Error("Failed to getGameData");
