@@ -85,11 +85,15 @@ export const startPublicGame: RequestHandler<
 > = async (req, res) => {
   try {
     const userId = (req as Request & WithUser).user?.id;
-    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" })
+      return;
+    };
 
     const templateId = parseInt(req.params.templateId, 10);
     if (!Number.isFinite(templateId)) {
-      return res.status(400).json({ error: "Invalid templateId" });
+      res.status(400).json({ error: "Invalid templateId" });
+      return;
     }
 
     const tpl = await prisma.gameTemplate.findUnique({
@@ -103,8 +107,14 @@ export const startPublicGame: RequestHandler<
         gameCode: true,
       },
     });
-    if (!tpl) return res.status(404).json({ error: "Template not found" });
-    if (!tpl.isPublic) return res.status(403).json({ error: "Template not public" });
+    if (!tpl) {
+      res.status(404).json({ error: "Template not found" })
+      return;
+    };
+    if (!tpl.isPublic) {
+      res.status(403).json({ error: "Template not public" })
+      return;
+    };
 
     const body = (req.body || {}) as StartBody;
 
@@ -116,8 +126,8 @@ export const startPublicGame: RequestHandler<
       body.timerSeconds !== undefined && body.timerSeconds !== null
         ? clampSeconds(body.timerSeconds)
         : body.timerMinutes !== undefined && body.timerMinutes !== null
-        ? clampSeconds(Number(body.timerMinutes) * 60)
-        : null;
+          ? clampSeconds(Number(body.timerMinutes) * 60)
+          : null;
 
     // Create the game row – IMPORTANT: write gameType here
     const game = await prisma.game.create({
@@ -168,11 +178,15 @@ export const checkPublicGamePlayed: RequestHandler<
 > = async (req, res) => {
   try {
     const userId = (req as Request & WithUser).user?.id;
-    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" })
+      return;
+    };
 
     const templateId = parseInt(req.params.templateId, 10);
     if (!Number.isFinite(templateId)) {
-      return res.status(400).json({ error: "Invalid templateId" });
+      res.status(400).json({ error: "Invalid templateId" });
+      return;
     }
 
     const usedType: GameType = (req.query.newType as GameType) ?? "WORD_SEARCH";
