@@ -109,6 +109,19 @@ const UserOverviewPerformance = () => {
                     style={{ alignItems: "center", paddingBottom: 0 }}
                 />
 
+                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
+                    <View style={{
+                        width: 24,
+                        height: 4,
+                        backgroundColor: Color.pink,
+                        borderRadius: 2,
+                        marginRight: 8,
+                        borderWidth: 1,
+                        borderColor: Color.pink,
+                        borderStyle: "dashed"
+                    }} />
+                    <Text style={{ color: Color.pink, fontWeight: "bold" }}>Average games played</Text>
+                </View>
                 <VictoryChart
                     theme={VictoryTheme.material}
                     width={CHART_W}
@@ -148,7 +161,30 @@ const UserOverviewPerformance = () => {
                     />
                     <VictoryLine
                         data={avgCounts.map((y, i) => ({ x: i, y }))}
-                        style={{ data: { stroke: Color.pink, strokeWidth: 3, strokeDasharray: "6,6", } }}
+                        labels={({ index }) =>
+                            index === avgCounts.length - 1 && avgGames?.averageGamesPlayedThisWeek
+                                ? `Avg: ${avgGames.averageGamesPlayedThisWeek.toFixed(1)}`
+                                : ""
+                        }
+                        labelComponent={
+                            <VictoryLabel
+                                dx={20} // move slightly right
+                                dy={-10}
+                                textAnchor="start"
+                                style={{
+                                    fill: Color.pink,
+                                    fontSize: 14,
+                                    fontWeight: "bold",
+                                }}
+                            />
+                        }
+                        style={{
+                            data: {
+                                stroke: Color.pink,
+                                strokeWidth: 3,
+                                strokeDasharray: "6,6",
+                            },
+                        }}
                     />
                 </VictoryChart>
             </Card>
