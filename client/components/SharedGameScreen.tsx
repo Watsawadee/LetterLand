@@ -410,7 +410,7 @@ export default function SharedGameScreen({
     !wordModalVisible &&
     (allFoundVisible || (timeUp && hasTimer));
   const endVariant = allFoundVisible ? "success" : "timeout";
-  const displayCoins = (awardedCoins ?? 0) + extraCoinsEarned;
+
 
   return (
     <View style={styles.container}>
@@ -501,7 +501,8 @@ export default function SharedGameScreen({
           variant={endVariant}
           hasTimer={hasTimer}
           timeUsedSeconds={usedSeconds ?? undefined}
-          coinsEarned={displayCoins}
+          coinsEarned={awardedCoins}
+          extraCoinsEarnedThisRun={extraCoinsEarned}
           wordsLearned={wordsLearnedCount}
           extraWordsCount={extraWords.length}
           alreadyFinished={alreadyFinished}
