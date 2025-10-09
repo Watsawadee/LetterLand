@@ -13,11 +13,11 @@ export const useTotalGamesThisWeek = (offSet: number) => {
         })
     )
 }
-export function useAverageGamesByLevel(offSet: number) {
+export function useAverageGamesByLevel(offset: number) {
     return useQuery({
-        queryKey: ["dashboard", "averageGamesByLevel", offSet],
-        queryFn: () => getAverageGamesByLevel(offSet),
-        staleTime: 1000 * 60 * 5, // 5 minutes
+        queryKey: ["dashboard", "averageGamesByLevel", offset],
+        queryFn: () => getAverageGamesByLevel(offset),
+        staleTime: 1000 * 60 * 5,
         retry: false,
         refetchOnWindowFocus: false,
     });

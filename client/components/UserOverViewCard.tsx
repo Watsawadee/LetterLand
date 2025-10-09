@@ -18,6 +18,7 @@ import { ImageBackground } from "expo-image";
 import GardenBackground from "@/assets/backgroundTheme/GardenBackground";
 import GameTypeBackground from "@/assets/backgroundTheme/GameTypeBackground";
 import GameTypeGrid from "@/assets/icon/GameTypeGrid";
+import { useQueryClient } from "@tanstack/react-query";
 
 type Props = {
   coins?: number;
@@ -32,6 +33,8 @@ const UserOverviewCard = ({ coins, onOpenSettings }: Props) => {
   const [dialogVisible, setDialogVisible] = useState(false);
 
   const [infoDialogVisible, setInfoDialogVisible] = useState(false);
+
+  const queryClient = useQueryClient();
 
 
 
@@ -162,16 +165,18 @@ const UserOverviewCard = ({ coins, onOpenSettings }: Props) => {
           </View>
           <Button onPress={() => {
             if (Platform.OS === "web") {
-              localStorage.removeItem("user-token")
+              localStorage.removeItem("user-token");
+              queryClient.clear(); // ✅ clear cached data
               router.replace("/authentication/login");
-            }
-            else {
+            } else {
               SecureStore.deleteItemAsync("user-token")
                 .then(() => {
                   console.log("token cleared");
+                  queryClient.clear(); // ✅ clear cached data
                   router.replace("/authentication/login");
-                })
+                });
             }
+
           }}
             rippleColor={"transparent"}
             style={{ backgroundColor: Color.blue }}

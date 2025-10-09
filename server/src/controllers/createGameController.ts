@@ -63,7 +63,6 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
     const gameTemplate = await prisma.gameTemplate.create({
       data: {
         gameTopic: geminiResult.game.gameTopic,
-        gameType: gameType,
         difficulty: difficulty,
         isPublic: isPublic,
         ownerId: userId,
@@ -89,6 +88,7 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
         isHintUsed: false,
         isFinished: false,
         timer: timer ?? null,
+        gameType: gameType
       },
       include: {
         gameTemplate: {
