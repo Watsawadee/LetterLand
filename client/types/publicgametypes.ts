@@ -7,6 +7,7 @@ export interface PublicGameItem {
   gameType: PublicGameType;
   difficulty: EnglishLevel;
   imageUrl: string | null;
+  gameCode: string | null;   // <--- add this
 }
 
 export interface ListPublicGamesResponse {
@@ -25,6 +26,6 @@ export interface StartPublicGameResponse {
   finishedAt: string | Date | null;
   isHintUsed: boolean;
   isFinished: boolean;
-  gameCode: number | null;
+  gameCode: string | null;   // (you already had this)
   timer: number | null;
 }
