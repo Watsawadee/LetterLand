@@ -166,12 +166,15 @@ export const getUserGamesPlayedPerWeek = async (
 };
 
 //Average Gameplayed of others user 
-export const getAverageGamesPlayedByLevel = async (req: AuthenticatedRequest, res: Response<AverageGamesByLevelOrError>): Promise<void> => {
+export const getAverageGamesPlayedByLevel = async (
+  req: AuthenticatedRequest,
+  res: Response<AverageGamesByLevelOrError>
+): Promise<void> => {
   try {
-    const userId = Number(req.params.userId)
+    const userId = req.user?.id;
     const loggedInUserId = req.user?.id;
 
-    if (isNaN(userId)) {
+    if (!userId) {
       res.status(400).json({ error: "Invalid user ID" });
       return;
     }
@@ -180,50 +183,72 @@ export const getAverageGamesPlayedByLevel = async (req: AuthenticatedRequest, re
       res.status(403).json({ error: "Forbidden: Cannot access others’ stats" });
       return;
     }
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { englishLevel: true }
-    })
+      select: { englishLevel: true },
+    });
+
     if (!user) {
       res.status(404).json({ error: "User not found" });
       return;
     }
+
     const level = user.englishLevel;
     const offSet = Number(req.query.offSet ?? 0);
     if (Number.isNaN(offSet)) {
-      res.status(400).json({ error: "Invalid Offset" })
+      res.status(400).json({ error: "Invalid offset" });
       return;
     }
+
     const base = addWeeks(new Date(), offSet);
     const start = startOfWeek(base, { weekStartsOn: 0 });
     const end = endOfWeek(base, { weekStartsOn: 0 });
 
-    const gameCounts = await prisma.game.groupBy({
-      by: ["userId"],
-      where: {
-        isFinished: true,
-        startedAt: { gte: start, lte: end },
-        user: {
-          englishLevel: level,
-          NOT: { id: userId },
-        },
-      },
-      _count: { id: true },
-    });
-
-    const userCount = await prisma.user.count({
+    // Step 1: get all users at the same level (excluding self)
+    const sameLevelUsers = await prisma.user.findMany({
       where: {
         englishLevel: level,
         NOT: { id: userId },
       },
+      select: { id: true },
     });
 
-    const totalGames = gameCounts.reduce((sum, g) => sum + g._count.id, 0)
-    const average = userCount > 0 ? totalGames / userCount : 0;
+    const sameLevelUserIds = sameLevelUsers.map((u) => u.id);
+
+    if (sameLevelUserIds.length === 0) {
+      res.status(200).json({
+        englishLevel: level,
+        averageGamesPlayedThisWeek: 0,
+        userCount: 0,
+        range: {
+          start: start.toISOString(),
+          end: end.toISOString(),
+        },
+        offSet,
+      });
+      return;
+    }
+
+    // Step 2: count games per user for those IDs
+    const gameCounts = await prisma.game.groupBy({
+      by: ["userId"],
+      where: {
+        userId: { in: sameLevelUserIds },
+        isFinished: true,
+        startedAt: { gte: start, lte: end },
+      },
+      _count: { id: true },
+    });
+
+    const totalGames = gameCounts.reduce((sum, g) => sum + g._count.id, 0);
+    const average = totalGames / sameLevelUserIds.length;
+
+    // Step 3: return parsed response
     const response = AverageGamesByLevelResponseSchema.parse({
       englishLevel: level,
       averageGamesPlayedThisWeek: average,
-      userCount,
+      userCount: sameLevelUserIds.length,
       range: {
         start: start.toISOString(),
         end: end.toISOString(),
@@ -232,9 +257,8 @@ export const getAverageGamesPlayedByLevel = async (req: AuthenticatedRequest, re
     });
 
     res.status(200).json(response);
-
+  } catch (error) {
+    console.error("❌ Error computing average:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
-  catch (error) {
-
-  }
-}
+};

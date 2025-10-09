@@ -148,7 +148,7 @@ const UserOverviewPerformance = () => {
                     />
                     <VictoryLine
                         data={avgCounts.map((y, i) => ({ x: i, y }))}
-                        style={{ data: { stroke: Color.pink, strokeWidth: 3 } }}
+                        style={{ data: { stroke: Color.pink, strokeWidth: 3, strokeDasharray: "6,6", } }}
                     />
                 </VictoryChart>
             </Card>

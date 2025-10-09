@@ -16,7 +16,7 @@ router.get(
 );
 
 router.get(
-  "/user/:userId/averagebylevel",
+  "/user/averagebylevel",
   authenticatedUser,
   getAverageGamesPlayedByLevel
 );
