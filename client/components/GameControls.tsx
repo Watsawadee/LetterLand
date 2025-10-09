@@ -1,4 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, {
+  useState,
+  useEffect,
+  forwardRef,
+  useImperativeHandle,
+  useRef,
+} from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { CustomButton } from "../theme/ButtonCustom";
 import { Magnify } from "@/assets/icon/Magnify";
@@ -11,127 +17,196 @@ import { Color } from "@/theme/Color";
 import * as Clipboard from "expo-clipboard";
 import CopyIcon from "@/assets/icon/CopyIcon";
 
-export default function GameControls({
-  title,
-  onShowHint,
-  hintCount,
-  isHintDisabled,
-  startTimeSeconds,
-  onTimeUp,
-  paused = false,
-  resetKey,
-  onRequestBuyHints,
-  gameCode,
-  cefr,
-}: GameControlsProps) {
-  const [copied, setCopied] = useState(false);
-  const [currentHints, setCurrentHints] = useState<number>(
-    typeof hintCount === "number" ? hintCount : 0
-  );
+export type GameControlsHandle = {
+  measureGameTitle: () => Promise<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>;
+  measureGameCode: () => Promise<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>;
+  measureTimer: () => Promise<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>;
+  measureHintButton: () => Promise<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>;
+  measureCefr: () => Promise<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>;
+};
 
-  const { secondsLeft } = useTime({
-    startTimeSeconds,
-    paused,
-    onTimeUp,
-    resetSignal: resetKey,
+function measure(
+  ref: React.RefObject<View | null>
+): Promise<{ x: number; y: number; width: number; height: number } | null> {
+  return new Promise((resolve) => {
+    const node = ref.current as View | null;
+    if (!node) return resolve(null);
+    (node as any).measureInWindow?.(
+      (x: number, y: number, w: number, h: number) => {
+        resolve({ x, y, width: w, height: h });
+      }
+    );
+    setTimeout(() => resolve(null), 120);
   });
-
-  useEffect(() => {
-    if (typeof hintCount === "number") {
-      setCurrentHints(hintCount);
-    }
-  }, [hintCount]);
-
-  const formatTime = (sec: number) => {
-    const minutes = Math.floor(sec / 60);
-    const seconds = sec % 60;
-    return `${minutes.toString().padStart(2, "0")}:${seconds
-      .toString()
-      .padStart(2, "0")}`;
-  };
-
-  const hasHints = currentHints > 0;
-  const parentThinksNoHints = typeof hintCount === "number" && hintCount === 0;
-
-  const computedDisabled = hasHints
-    ? Boolean(isHintDisabled && !parentThinksNoHints)
-    : false;
-
-  const onPressHint = () => {
-    if (!hasHints) {
-      onRequestBuyHints?.();
-      return;
-    }
-    if (computedDisabled) return;
-    onShowHint();
-  };
-
-  const copyCode = async () => {
-    if (!gameCode) return;
-    await Clipboard.setStringAsync(gameCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1200);
-  };
-
-  return (
-    <View style={styles.container}>
-      <View style={styles.box}>
-        <Text style={styles.title}>{title}</Text>
-        <View style={styles.row}>
-          {gameCode ? (
-            <Pressable
-              onPress={copyCode}
-              style={({ pressed }) => [
-                styles.pill,
-                styles.chip,
-                pressed && { opacity: 0.85 },
-              ]}
-              hitSlop={8}
-            >
-              <Text style={styles.pillText} numberOfLines={1}>
-                {gameCode}
-              </Text>
-              {copied ? (
-                <Text style={[styles.iconGap]}>✓</Text>
-              ) : (
-                <View style={styles.iconGap}>
-                  <CopyIcon />
-                </View>
-              )}
-            </Pressable>
-          ) : null}
-
-          <View style={styles.chip}>
-            <CEFR level={cefr} />
-          </View>
-        </View>
-      </View>
-
-      {startTimeSeconds > 0 && (
-        <View style={styles.box}>
-          <View style={styles.timerRow}>
-            <Timer />
-            <Text style={styles.time}>{formatTime(secondsLeft)}</Text>
-          </View>
-        </View>
-      )}
-
-      <View style={styles.buttonsRow}>
-        <CustomButton
-          onPress={onPressHint}
-          type={hasHints ? "buyHint" : "useHint"}
-          icon={
-            <View style={{ opacity: computedDisabled ? 0.5 : 1 }}>
-              <Magnify />
-            </View>
-          }
-          disabled={computedDisabled}
-          number={Math.max(0, currentHints)}
-        />
-      </View>
-    </View>
-  );
 }
+
+const GameControls = forwardRef<GameControlsHandle, GameControlsProps>(
+  function GameControls(
+    {
+      title,
+      onShowHint,
+      hintCount,
+      isHintDisabled,
+      startTimeSeconds,
+      onTimeUp,
+      paused = false,
+      resetKey,
+      onRequestBuyHints,
+      gameCode,
+      cefr,
+    },
+    ref
+  ) {
+    const [copied, setCopied] = useState(false);
+    const [currentHints, setCurrentHints] = useState<number>(
+      typeof hintCount === "number" ? hintCount : 0
+    );
+
+    const gameTitleWrapRef = useRef<View>(null);
+    const codePillWrapRef = useRef<View>(null);
+    const timerWrapRef = useRef<View>(null);
+    const hintBtnWrapRef = useRef<View>(null);
+    const cefrChipRef = useRef<View>(null);
+
+    useImperativeHandle(ref, () => ({
+      measureGameTitle: () => measure(gameTitleWrapRef),
+      measureGameCode: () => measure(codePillWrapRef),
+      measureTimer: () => measure(timerWrapRef),
+      measureHintButton: () => measure(hintBtnWrapRef),
+      measureCefr: () => measure(cefrChipRef),
+    }));
+
+    const { secondsLeft } = useTime({
+      startTimeSeconds,
+      paused,
+      onTimeUp,
+      resetSignal: resetKey,
+    });
+
+    useEffect(() => {
+      if (typeof hintCount === "number") setCurrentHints(hintCount);
+    }, [hintCount]);
+
+    const formatTime = (sec: number) => {
+      const minutes = Math.floor(sec / 60);
+      const seconds = sec % 60;
+      return `${minutes.toString().padStart(2, "0")}:${seconds
+        .toString()
+        .padStart(2, "0")}`;
+    };
+
+    const hasHints = currentHints > 0;
+    const parentThinksNoHints =
+      typeof hintCount === "number" && hintCount === 0;
+    const computedDisabled = hasHints
+      ? Boolean(isHintDisabled && !parentThinksNoHints)
+      : false;
+
+    const onPressHint = () => {
+      if (!hasHints) return onRequestBuyHints?.();
+      if (computedDisabled) return;
+      onShowHint();
+    };
+
+    const copyCode = async () => {
+      if (!gameCode) return;
+      await Clipboard.setStringAsync(gameCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    };
+
+    return (
+      <View style={styles.container}>
+        <View style={styles.box}>
+          <View ref={gameTitleWrapRef}>
+            <Text style={styles.title}>{title}</Text>
+          </View>
+          <View style={styles.row}>
+            {gameCode ? (
+              <Pressable
+                ref={codePillWrapRef}
+                onPress={copyCode}
+                style={({ pressed }) => [
+                  styles.pill,
+                  styles.chip,
+                  pressed && { opacity: 0.85 },
+                ]}
+                hitSlop={8}
+              >
+                <Text style={styles.pillText} numberOfLines={1}>
+                  {gameCode}
+                </Text>
+                {copied ? (
+                  <Text style={[styles.iconGap]}>✓</Text>
+                ) : (
+                  <View style={styles.iconGap}>
+                    <CopyIcon />
+                  </View>
+                )}
+              </Pressable>
+            ) : null}
+
+            <View ref={cefrChipRef} style={styles.chip}>
+              <CEFR level={cefr} />
+            </View>
+          </View>
+        </View>
+
+        {startTimeSeconds > 0 && (
+          <View style={styles.box}>
+            <View ref={timerWrapRef} style={styles.timerRow}>
+              <Timer />
+              <Text style={styles.time}>{formatTime(secondsLeft)}</Text>
+            </View>
+          </View>
+        )}
+
+        <View style={styles.buttonsRow}>
+          <View ref={hintBtnWrapRef}>
+            <CustomButton
+              onPress={onPressHint}
+              type={hasHints ? "buyHint" : "useHint"}
+              icon={
+                <View style={{ opacity: computedDisabled ? 0.5 : 1 }}>
+                  <Magnify />
+                </View>
+              }
+              disabled={computedDisabled}
+              number={Math.max(0, currentHints)}
+            />
+          </View>
+        </View>
+      </View>
+    );
+  }
+);
+
+export default GameControls;
 
 const styles = StyleSheet.create({
   container: { width: "100%", padding: 16 },
@@ -141,7 +216,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     marginBottom: 12,
-    shadowColor: "#000",
+    shadowColor: Color.black,
     shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
@@ -155,7 +230,7 @@ const styles = StyleSheet.create({
   },
   chip: {
     minHeight: 32,
-    paddingHorizontal: 12,
+    marginHorizontal: 4,
     borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
@@ -163,33 +238,15 @@ const styles = StyleSheet.create({
   },
   pill: {
     borderRadius: 999,
+    paddingHorizontal: 12,
     alignSelf: "flex-start",
     backgroundColor: Color.green,
     flexDirection: "row",
     alignItems: "center",
     maxWidth: 220,
   },
-  pillText: {
-    ...Typography.header16,
-    color: Color.white,
-  },
-  iconGap: {
-    marginLeft: 6,
-    color: Color.white,
-  },
-  codeWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  copyBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-  },
-  copiedText: {
-    ...Typography.header13,
-    color: Color.green,
-  },
+  pillText: { ...Typography.header16, color: Color.white },
+  iconGap: { marginLeft: 6, color: Color.white },
   time: { marginTop: 4, ...Typography.header30 },
   buttonsRow: {
     flexDirection: "row",
@@ -206,12 +263,5 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: "100%",
     padding: 16,
-  },
-  hintCaption: {
-    fontSize: 12,
-    opacity: 0.7,
-    marginTop: 4,
-    width: "100%",
-    textAlign: "center",
   },
 });
