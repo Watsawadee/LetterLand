@@ -3,19 +3,22 @@ import prisma from "../configs/db";
 import { GameType } from "@prisma/client";
 import { ListPublicGamesResponse, StartPublicGameResponse } from "../types/publicgame";
 
-/** Minimal type to read req.user without changing req.params type */
+/** read req.user without changing Request type */
 type WithUser = { user?: { id: number } };
 type PublicGamesQuery = { limit?: string; offset?: string };
 
-/** Body for starting/playing checks (seconds preferred; minutes kept for back-compat) */
+/** Body for starting/played checks (seconds preferred; minutes kept for back-compat) */
 type StartBody = {
   newType?: GameType;
-  timerSeconds?: number | null;   // preferred: seconds
-  timerMinutes?: number | null;   // optional legacy
+  timerSeconds?: number | null;  // preferred: seconds
+  timerMinutes?: number | null;  // optional legacy
 };
 
 const toPositiveInt = (value: unknown, fallback: number) => {
-  const n = typeof value === "string" && value.trim() !== "" ? parseInt(value, 10) : Number(value);
+  const n =
+    typeof value === "string" && value.trim() !== ""
+      ? parseInt(value, 10)
+      : Number(value);
   return Number.isFinite(n) && n >= 0 ? Math.floor(n) : fallback;
 };
 
@@ -26,65 +29,10 @@ const clampSeconds = (n: unknown): number | null => {
   return Math.max(0, Math.floor(v));
 };
 
-const variantCode = (baseId: number, type: GameType) => `base:${baseId}:type:${type}`;
-
-const copyQuestionMappings = async (fromTemplateId: number, toTemplateId: number) => {
-  const qids = await prisma.gameTemplateQuestion.findMany({
-    where: { gameTemplateId: fromTemplateId },
-    select: { questionId: true },
-  });
-  if (qids.length === 0) return;
-  await prisma.gameTemplateQuestion.createMany({
-    data: qids.map((q) => ({ gameTemplateId: toTemplateId, questionId: q.questionId })),
-    skipDuplicates: true,
-  });
-};
-
-const resolveOrCloneVariant = async (baseId: number, newType: GameType | undefined | null) => {
-  const base = await prisma.gameTemplate.findUnique({
-    where: { id: baseId },
-    select: { id: true, isPublic: true, gameTopic: true, gameType: true, difficulty: true, imageUrl: true, ownerId: true },
-  });
-  if (!base) throw new Error("Template not found");
-  if (!base.isPublic) throw new Error("Template not public");
-
-  if (!newType || newType === base.gameType) {
-    return { usedTemplateId: base.id, usedType: base.gameType };
-  }
-
-  const code = variantCode(base.id, newType);
-  const existing = await prisma.gameTemplate.findUnique({ where: { gameCode: code }, select: { id: true } });
-  if (existing) return { usedTemplateId: existing.id, usedType: newType };
-
-  const clone = await prisma.gameTemplate.create({
-    data: {
-      gameTopic: base.gameTopic,
-      gameType: newType,
-      difficulty: base.difficulty,
-      isPublic: base.isPublic,
-      imageUrl: base.imageUrl,
-      ownerId: base.ownerId,
-      gameCode: code,
-    },
-    select: { id: true },
-  });
-
-  await copyQuestionMappings(base.id, clone.id);
-  return { usedTemplateId: clone.id, usedType: newType };
-};
-
-const maybeResolveVariantId = async (baseId: number, newType: GameType | undefined | null): Promise<number | null> => {
-  const base = await prisma.gameTemplate.findUnique({ where: { id: baseId }, select: { id: true, isPublic: true, gameType: true } });
-  if (!base || !base.isPublic) return null;
-  if (!newType || newType === base.gameType) return base.id;
-
-  const code = variantCode(base.id, newType);
-  const variant = await prisma.gameTemplate.findUnique({ where: { gameCode: code }, select: { id: true } });
-  return variant ? variant.id : null;
-};
-
+/** Build a public URL for an image key stored in DB (adjust base to your setup) *
 /* ================== HANDLERS ================== */
 
+/** GET /publicgame/games */
 export const listPublicGames: RequestHandler<
   Record<string, never>,
   ListPublicGamesResponse | { error: string },
@@ -98,7 +46,13 @@ export const listPublicGames: RequestHandler<
     const [templates, total] = await Promise.all([
       prisma.gameTemplate.findMany({
         where: { isPublic: true },
-        select: { id: true, gameTopic: true, gameType: true, difficulty: true, imageUrl: true, gameCode: true },
+        select: {
+          id: true,
+          gameTopic: true,
+          difficulty: true,
+          imageUrl: true,
+          gameCode: true,
+        },
         orderBy: { id: "desc" },
         take: limit,
         skip: offset,
@@ -106,12 +60,13 @@ export const listPublicGames: RequestHandler<
       prisma.gameTemplate.count({ where: { isPublic: true } }),
     ]);
 
+    // Template has no gameType in this schema; send a default for display
     const items = templates.map((t) => ({
       id: t.id,
       title: t.gameTopic,
-      gameType: t.gameType,
+      gameType: "WORD_SEARCH" as const,      // default label on the card
       difficulty: t.difficulty,
-      imageUrl: t.imageUrl ?? null,
+      imageUrl: t.imageUrl,// make it loadable in RN <Image>
       gameCode: t.gameCode ?? null,
     }));
 
@@ -122,6 +77,7 @@ export const listPublicGames: RequestHandler<
   }
 };
 
+/** POST /publicgame/games/:templateId/start */
 export const startPublicGame: RequestHandler<
   { templateId: string },
   StartPublicGameResponse | { error: string },
@@ -132,12 +88,30 @@ export const startPublicGame: RequestHandler<
     if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
     const templateId = parseInt(req.params.templateId, 10);
-    if (!Number.isFinite(templateId)) return res.status(400).json({ error: "Invalid templateId" });
+    if (!Number.isFinite(templateId)) {
+      return res.status(400).json({ error: "Invalid templateId" });
+    }
+
+    const tpl = await prisma.gameTemplate.findUnique({
+      where: { id: templateId },
+      select: {
+        id: true,
+        isPublic: true,
+        gameTopic: true,
+        difficulty: true,
+        imageUrl: true,
+        gameCode: true,
+      },
+    });
+    if (!tpl) return res.status(404).json({ error: "Template not found" });
+    if (!tpl.isPublic) return res.status(403).json({ error: "Template not public" });
 
     const body = (req.body || {}) as StartBody;
-    const requestedType = body.newType;
 
-    // Prefer seconds; if only minutes provided, convert
+    // chosen game type lives on Game (not on template in this schema)
+    const usedType: GameType = body.newType ?? "WORD_SEARCH";
+
+    // prefer seconds; fallback to minutes
     const timerSeconds =
       body.timerSeconds !== undefined && body.timerSeconds !== null
         ? clampSeconds(body.timerSeconds)
@@ -145,31 +119,36 @@ export const startPublicGame: RequestHandler<
         ? clampSeconds(Number(body.timerMinutes) * 60)
         : null;
 
-    const { usedTemplateId } = await resolveOrCloneVariant(templateId, requestedType);
-
-    const tpl = await prisma.gameTemplate.findUnique({
-      where: { id: usedTemplateId },
-      select: { id: true, gameTopic: true, gameType: true, difficulty: true, imageUrl: true, gameCode: true },
-    });
-    if (!tpl) return res.status(404).json({ error: "Template not found" });
-
+    // Create the game row – IMPORTANT: write gameType here
     const game = await prisma.game.create({
-      data: { userId, gameTemplateId: usedTemplateId, timer: timerSeconds }, // store SECONDS
-      select: { id: true, startedAt: true, finishedAt: true, isHintUsed: true, isFinished: true, timer: true },
+      data: {
+        userId,
+        gameTemplateId: tpl.id,
+        gameType: usedType,
+        timer: timerSeconds,       // store SECONDS
+      },
+      select: {
+        id: true,
+        startedAt: true,
+        finishedAt: true,
+        isHintUsed: true,
+        isFinished: true,
+        timer: true,
+      },
     });
 
     const payload: StartPublicGameResponse = {
       id: game.id,
       templateId: tpl.id,
       title: tpl.gameTopic,
-      gameType: tpl.gameType,
+      gameType: usedType,
       difficulty: tpl.difficulty,
-      imageUrl: tpl.imageUrl ?? null,
+      imageUrl: tpl.imageUrl,
       startedAt: game.startedAt,
       finishedAt: game.finishedAt,
       isHintUsed: game.isHintUsed,
       isFinished: game.isFinished,
-      timer: game.timer ?? null,      // return SECONDS to client
+      timer: game.timer ?? null,      // seconds back to client
       gameCode: tpl.gameCode ?? null,
     };
 
@@ -180,39 +159,39 @@ export const startPublicGame: RequestHandler<
   }
 };
 
-/**
- * GET /publicgame/games/:templateId/played?newType=&timerSeconds=
- * Returns { alreadyPlayed: boolean }
- */
+/** GET /publicgame/games/:templateId/played?newType=&timerSeconds= */
 export const checkPublicGamePlayed: RequestHandler<
   { templateId: string },
   { alreadyPlayed: boolean } | { error: string },
   unknown,
-  { newType?: GameType; timerSeconds?: string; timerMinutes?: string } // accepts either
+  { newType?: GameType; timerSeconds?: string; timerMinutes?: string }
 > = async (req, res) => {
   try {
     const userId = (req as Request & WithUser).user?.id;
     if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
     const templateId = parseInt(req.params.templateId, 10);
-    if (!Number.isFinite(templateId)) return res.status(400).json({ error: "Invalid templateId" });
+    if (!Number.isFinite(templateId)) {
+      return res.status(400).json({ error: "Invalid templateId" });
+    }
 
-    const newType = req.query.newType as GameType | undefined;
+    const usedType: GameType = (req.query.newType as GameType) ?? "WORD_SEARCH";
 
-    // Prefer seconds; fall back to minutes
+    // seconds preferred, fallback to minutes
     let timerSeconds: number | null = null;
     if (req.query.timerSeconds !== undefined) {
       timerSeconds = clampSeconds(req.query.timerSeconds);
     } else if (req.query.timerMinutes !== undefined) {
-      const mins = clampSeconds(String(Number(req.query.timerMinutes) * 60));
-      timerSeconds = mins;
+      timerSeconds = clampSeconds(Number(req.query.timerMinutes) * 60);
     }
 
-    const maybeId = await maybeResolveVariantId(templateId, newType);
-    if (!maybeId) return res.json({ alreadyPlayed: false });
-
     const count = await prisma.game.count({
-      where: { userId, gameTemplateId: maybeId, timer: timerSeconds === null ? null : timerSeconds },
+      where: {
+        userId,
+        gameTemplateId: templateId,
+        gameType: usedType,
+        timer: timerSeconds === null ? null : timerSeconds,
+      },
     });
 
     res.json({ alreadyPlayed: count > 0 });
