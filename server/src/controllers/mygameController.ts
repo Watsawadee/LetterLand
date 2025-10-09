@@ -23,6 +23,7 @@ export const getUserGames = async (
         select: {
           id: true,
           gameTopic: true,
+          gameType: true,
           difficulty: true,
           imageUrl: true,
         },
