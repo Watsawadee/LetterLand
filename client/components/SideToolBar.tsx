@@ -1,4 +1,9 @@
-import React, { useRef, useState } from "react";
+import React, {
+  useRef,
+  useState,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import { View, Pressable, StyleSheet, Animated, Easing } from "react-native";
 import { Color } from "@/theme/Color";
 import SettingIcon from "@/assets/icon/settingIcon";
@@ -10,14 +15,56 @@ import TutorialIcon from "@/assets/icon/Tutorial";
 type Props = {
   onOpenFont?: () => void;
   onOpenShop?: () => void;
-  onOpenTutorial?: () => void; // optional
+  onOpenTutorial?: () => void;
+  highlight?: boolean;
+};
+export type SideToolBarHandle = {
+  measureSettingButton: () => Promise<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>;
+  measureFont?: () => Promise<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>;
+  measureShop?: () => Promise<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>;
+  measureTutorial?: () => Promise<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>;
+  open?: () => void;
 };
 
-export default function SideToolBar({
-  onOpenFont,
-  onOpenShop,
-  onOpenTutorial,
-}: Props) {
+function measure(
+  ref: React.RefObject<View | null>
+): Promise<{ x: number; y: number; width: number; height: number } | null> {
+  return new Promise((resolve) => {
+    const node = ref.current as View | null;
+    if (!node) return resolve(null);
+    (node as any).measureInWindow?.(
+      (x: number, y: number, w: number, h: number) => {
+        resolve({ x, y, width: w, height: h });
+      }
+    );
+    setTimeout(() => resolve(null), 120);
+  });
+}
+
+const SideToolBar = forwardRef<SideToolBarHandle, Props>(function SideToolBar(
+  { onOpenFont, onOpenShop, onOpenTutorial, highlight },
+  ref
+) {
   const [open, setOpen] = useState(false);
   const slide = useRef(new Animated.Value(0)).current;
 
@@ -37,8 +84,10 @@ export default function SideToolBar({
     });
   };
 
+  const openPanel = () => {
+    animateTo(1, () => setOpen(true));
+  };
   const close = () => animateTo(0, () => setOpen(false));
-
   const handle = (fn?: () => void) => () => {
     fn?.();
     close();
@@ -53,9 +102,38 @@ export default function SideToolBar({
     outputRange: [0, 1],
   });
 
+  // existing settings button
+  const buttonRef = useRef<View>(null);
+
+  const fontRef = useRef<View>(null);
+  const shopRef = useRef<View>(null);
+  const tutorialRef = useRef<View>(null);
+
+  useImperativeHandle(ref, () => ({
+    measureSettingButton: () =>
+      new Promise((resolve) => {
+        requestAnimationFrame(() => {
+          measure(buttonRef).then(resolve);
+        });
+        setTimeout(() => {
+          measure(buttonRef).then(resolve);
+        }, 120);
+      }),
+      
+    measureFont: () => measure(fontRef),
+    measureShop: () => measure(shopRef),
+    measureTutorial: () => measure(tutorialRef),
+    open: openPanel,
+  }));
+
   return (
     <View pointerEvents="box-none" style={styles.wrap}>
-      <Pressable style={styles.fab} onPress={toggle}>
+      <Pressable
+        ref={buttonRef}
+        collapsable={false}
+        style={styles.fab}
+        onPress={toggle}
+      >
         <SettingIcon fill="white" />
       </Pressable>
 
@@ -64,28 +142,34 @@ export default function SideToolBar({
         style={[styles.panel, { transform: [{ translateX }], opacity }]}
       >
         <View style={styles.stack}>
-          <CustomButton
-            onPress={handle(onOpenFont)}
-            type="fontSize"
-            icon={<FontIcon />}
-          />
-
-          <CustomButton
-            onPress={handle(onOpenShop)}
-            type="hintshop"
-            icon={<ShopIcon />}
-          />
-
-          <CustomButton
-            onPress={handle(onOpenFont)}
-            type="tutorial"
-            icon={<TutorialIcon />}
-          />
+          <View ref={fontRef}>
+            <CustomButton
+              onPress={handle(onOpenFont)}
+              type="fontSize"
+              icon={<FontIcon />}
+            />
+          </View>
+          <View ref={shopRef}>
+            <CustomButton
+              onPress={handle(onOpenShop)}
+              type="hintshop"
+              icon={<ShopIcon />}
+            />
+          </View>
+          <View ref={tutorialRef}>
+            <CustomButton
+              onPress={handle(onOpenTutorial)}
+              type="tutorial"
+              icon={<TutorialIcon />}
+            />
+          </View>
         </View>
       </Animated.View>
     </View>
   );
-}
+});
+
+export default SideToolBar;
 
 const styles = StyleSheet.create({
   wrap: {
@@ -116,5 +200,5 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 10,
   },
-  stack: { gap: 14, alignItems: "center", justifyContent: "center",},
+  stack: { gap: 14, alignItems: "center", justifyContent: "center" },
 });

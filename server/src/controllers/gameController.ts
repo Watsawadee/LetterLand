@@ -306,13 +306,11 @@ export const completeGameController = async (req: Request, res: Response) => {
       userId,
       completed,
       finishedOnTime,
-      isHintUsed,
       timeUsedSeconds,
     }: {
       userId: number;
       completed?: boolean;
       finishedOnTime?: boolean;
-      isHintUsed?: boolean;
       timeUsedSeconds?: number;
     } = req.body ?? {};
 
@@ -321,7 +319,6 @@ export const completeGameController = async (req: Request, res: Response) => {
       userId,
       completed,
       finishedOnTime,
-      isHintUsed,
       timeUsedSeconds,
     });
 

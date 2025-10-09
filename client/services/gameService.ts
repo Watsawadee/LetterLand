@@ -32,7 +32,7 @@ export const getBGImage = async (imgName: string) => {
 };
 
 export const useHint = async (userId: number, gameId?: number | string) => {
-  await api.post(`/users/${userId}/useHint`);
+  await api.post(`/users/${userId}/useHint`, { gameId});
 
   if (gameId != null) {
     try {

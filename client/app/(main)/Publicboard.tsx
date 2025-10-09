@@ -24,7 +24,6 @@ export default function Public() {
   const { width } = useWindowDimensions();
   const isWide = width >= 1024;
 
-  // Navigate back to Home
   const handleBackPress = () => {
     router.push("/Home");
   };
@@ -43,10 +42,7 @@ export default function Public() {
         >
           {/* Header with back button */}
           <View style={styles.headerRow}>
-            <TouchableOpacity
-              onPress={handleBackPress}
-              style={styles.backButton}
-            >
+            <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
               <ArrowLeft width={24} height={24} />
               <Text style={[Typography.header30, { marginLeft: 4 }]}>
                 Public Board
@@ -62,22 +58,13 @@ export default function Public() {
               onPress={() => setShowBook(true)}
             >
               <Book width={50} height={50} style={{ marginRight: 4 }} />
-              <View
-                style={{
-                  flexDirection: "column",
-                  alignItems: "flex-start",
-                  paddingLeft: 8,
-                }}
-              >
+              <View style={{ flexDirection: "column", alignItems: "flex-start", paddingLeft: 8 }}>
                 <Text style={ButtonStyles.wordBank.text}>Word</Text>
                 <Text style={ButtonStyles.wordBank.text}>Bank</Text>
               </View>
             </TouchableOpacity>
 
-            <WordBankModal
-              visible={showBook}
-              onClose={() => setShowBook(false)}
-            />
+            <WordBankModal visible={showBook} onClose={() => setShowBook(false)} />
           </View>
 
           {/* Public Games Scroll */}
@@ -123,11 +110,13 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 24,
     flexDirection: "row",
+    minHeight: 0, // 👈 allow children to shrink
   },
   leftPanel: {
     flex: 2.5,
     borderRadius: 20,
     padding: 16,
+    minHeight: 0, // 👈 critical for nested FlatList
   },
   rightPanel: {
     flex: 1,
@@ -149,14 +138,14 @@ const styles = StyleSheet.create({
     flexDirection: "column",
     gap: 16,
     flex: 1,
-    minHeight: 0,
+    minHeight: 0, // 👈 allow the FlatList to get height
   },
   backButton: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4, // smaller gap between arrow and text
+    gap: 4,
     paddingVertical: 8,
-    paddingHorizontal: 0, // remove horizontal padding to shift left
-    marginLeft: -8, // nudge it to the left
+    paddingHorizontal: 0,
+    marginLeft: -8,
   },
 });

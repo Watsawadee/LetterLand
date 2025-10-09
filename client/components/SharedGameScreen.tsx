@@ -1,8 +1,8 @@
 import React, { useMemo, useState, useRef, useEffect } from "react";
 import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
-import GameControls from "./GameControls";
-import GameBoard from "./GameBoard";
-import CluesPanel from "./CluesPanel";
+import GameControls, { GameControlsHandle } from "./GameControls";
+import GameBoard, { GameBoardHandle } from "./GameBoard";
+import CluesPanel, { CluesPanelHandle } from "./CluesPanel";
 import GameEndModal from "./GameEndModal";
 import ConfirmModal from "./ConfirmModal";
 import { useRouter } from "expo-router";
@@ -26,11 +26,13 @@ import {
 import { deleteIncompleteGame } from "@/services/gameService";
 import { getLoggedInUserId } from "@/utils/auth";
 import { isValidEnglishWord } from "@/services/dictionaryService";
-import SideToolbar from "./SideToolBar";
+import SideToolBar, { SideToolBarHandle } from "./SideToolBar";
 import HintShopModal from "../components/HintShopModal";
 import FontSizeModal from "./FontSizeModal";
 import { Typography } from "@/theme/Font";
 import { Color } from "@/theme/Color";
+import TutorialOverlay from "./TutorialOverlay";
+import { useTutorial, useGameTutorial } from "@/hooks/useTutorial";
 
 export default function SharedGameScreen({
   mode,
@@ -69,6 +71,10 @@ export default function SharedGameScreen({
   });
   const [extraCoinsEarned, setExtraCoinsEarned] = useState(0);
   const [shopVisible, setShopVisible] = useState(false);
+  const controlsRef = useRef<GameControlsHandle | null>(null);
+  const boardRef = useRef<GameBoardHandle | null>(null);
+  const cluesRef = useRef<CluesPanelHandle | null>(null);
+  const sideToolRef = useRef<SideToolBarHandle | null>(null);
 
   useEffect(() => {
     if (!gameData?.id) return;
@@ -147,9 +153,8 @@ export default function SharedGameScreen({
     hasPostedWordsRef.current = false;
     hasPostedCompleteRef.current = false;
 
-    if (gameData?.id != null) {
-      invalidatePronunciationsCache(gameData.id);
-    }
+    if (gameData?.id != null) invalidatePronunciationsCache(gameData.id);
+
     resetGame();
     setActiveQuestionIndex(0);
     clearActiveHint();
@@ -189,7 +194,6 @@ export default function SharedGameScreen({
         console.warn("[deleteIncompleteGame] failed:", e);
       }
     }
-
     router.replace("/Home");
   };
   const handleExitCancel = () => setConfirmExitVisible(false);
@@ -200,7 +204,6 @@ export default function SharedGameScreen({
       typeof gameData?.timer === "number" && gameData.timer > 0
         ? Math.min(elapsed, gameData.timer)
         : elapsed;
-
     if (usedSeconds == null) setUsedSeconds(cap);
     return usedSeconds ?? cap;
   };
@@ -226,12 +229,10 @@ export default function SharedGameScreen({
         extraWordsCount: extraWords.length,
         extraWords,
       });
-      if (typeof res?.coinsAwarded === "number") {
+      if (typeof res?.coinsAwarded === "number")
         setAwardedCoins(res.coinsAwarded);
-      }
-      if (typeof res?.alreadyFinished === "boolean") {
+      if (typeof res?.alreadyFinished === "boolean")
         setAlreadyFinished(res.alreadyFinished);
-      }
       hasPostedCompleteRef.current = true;
     } catch (e) {
       console.warn("[completeGame] post failed:", e);
@@ -250,7 +251,6 @@ export default function SharedGameScreen({
     try {
       await postCompletionOnce();
     } catch {}
-
     setWordModalVisible(true);
     setTimeUp(false);
     setAllFoundVisible(false);
@@ -272,16 +272,13 @@ export default function SharedGameScreen({
 
   useEffect(() => {
     if (!(allFoundVisible || timeUp)) return;
-
     captureTimeUsedOnce();
-
     saveFoundWordsOnce(
       hasPostedWordsRef,
       gameData?.id,
       foundWordsList,
       questionsAndAnswers
     ).catch((err) => console.error("[wordfound] post failed:", err));
-
     postCompletionOnce().catch((err) =>
       console.error("[completeGame] post failed:", err)
     );
@@ -299,7 +296,7 @@ export default function SharedGameScreen({
 
   const wordsLearnedCount = foundWordsList.length;
 
-  // Build the candidate word from a selection snapshot
+  // Extra-word logic
   function buildWordFromCells(
     cells: Array<[number, number]>,
     matrix: string[][]
@@ -313,11 +310,9 @@ export default function SharedGameScreen({
     }
   }
 
-  // Wrap the base pan handlers to detect “extra word” on release.
   const baseHandlers = panResponder.panHandlers;
   const shouldBlock =
     timeUp || wordModalVisible || allFoundVisible || resetting;
-
   const wrappedHandlers = shouldBlock
     ? {}
     : {
@@ -327,27 +322,20 @@ export default function SharedGameScreen({
           const snapshotCells: any[] = Array.isArray(selectedCells)
             ? (selectedCells as any[]).slice()
             : Array.from((selectedCells as any) || []);
-
           const candidateRaw = buildWordFromCells(snapshotCells as any, grid);
-
           if (
             baseHandlers &&
             typeof baseHandlers.onResponderRelease === "function"
-          ) {
+          )
             baseHandlers.onResponderRelease(evt);
-          }
-
           setTimeout(async () => {
             const afterFound = foundWordsListRef.current.length;
-
             if (afterFound === beforeFound) {
               const w = (candidateRaw || "").trim().toLowerCase();
               if (!w || w.length < 3) return;
               if (!/^[a-z]+$/.test(w)) return;
               if (allAnswersLower.has(w)) return;
               if (extraWordSetRef.current.has(w)) return;
-
-              // Skip if it was already learned earlier in this round
               const learnedSet = new Set(
                 (foundWordsListRef.current || []).map((s) =>
                   String(s).trim().toLowerCase()
@@ -360,15 +348,11 @@ export default function SharedGameScreen({
               } catch {
                 okEnglish = false;
               }
-              if (!okEnglish) {
-                return;
-              }
+              if (!okEnglish) return;
               try {
                 if (gameData?.id) {
                   const resp = await recordExtraWord(gameData.id, w);
                   if (!resp) return;
-
-                  // If this word was already counted
                   if (resp.alreadyCounted) {
                     setToast({
                       visible: true,
@@ -380,20 +364,16 @@ export default function SharedGameScreen({
                     );
                     return;
                   }
-
-                  // Now it's accepted → record locally and award
                   if (!extraWordSetRef.current.has(w)) {
                     extraWordSetRef.current.add(w);
                     setExtraWords((prev) => [...prev, w]);
                   }
-
                   const inc =
                     typeof resp.coinsAwarded === "number"
                       ? resp.coinsAwarded
                       : resp.created
                       ? 1
                       : 0;
-
                   if (inc > 0) {
                     setExtraCoinsEarned((c) => c + inc);
                     setToast({
@@ -412,13 +392,25 @@ export default function SharedGameScreen({
         },
       };
 
+  // ===== Tutorial integration =====
+  const tutorial = useTutorial();
+  const { openTutorial } = useGameTutorial({
+    mode,
+    gameData,
+    tutorial,
+    controlsRef,
+    boardRef,
+    cluesRef,
+    sideToolRef,
+  });
+  const tutorialBlocking = tutorial.visible;
+
   const endModalVisible =
     !resetting &&
     !wordModalVisible &&
     (allFoundVisible || (timeUp && hasTimer));
   const endVariant = allFoundVisible ? "success" : "timeout";
 
-  const displayCoins = (awardedCoins ?? 0) + extraCoinsEarned;
 
   return (
     <View style={styles.container}>
@@ -432,12 +424,16 @@ export default function SharedGameScreen({
         <ArrowLeft />
       </TouchableOpacity>
 
-      <View style={styles.topRow}>
+      <View
+        style={styles.topRow}
+        pointerEvents={tutorialBlocking ? "none" : "auto"}
+      >
         <View style={styles.leftColumn}>
           <GameControls
+            ref={controlsRef}
             title={title}
-            gameCode={gameData?.gameTemplate.gameCode}
-            cefr={gameData?.gameTemplate.difficulty}
+            gameCode={gameData?.gameTemplate?.gameCode}
+            cefr={gameData?.gameTemplate?.difficulty}
             onShowHint={onShowHint}
             hintCount={hintCount ?? 0}
             isHintDisabled={isHintDisabled}
@@ -446,6 +442,7 @@ export default function SharedGameScreen({
               if (hasTimer) setTimeUp(true);
             }}
             paused={
+              tutorialBlocking ||
               allFoundVisible ||
               timeUp ||
               wordModalVisible ||
@@ -461,20 +458,25 @@ export default function SharedGameScreen({
 
         <View style={styles.rightColumn}>
           <GameBoard
+            ref={boardRef}
             grid={grid}
             CELL_SIZE={CELL_SIZE}
             selectedCells={selectedCells}
             foundWords={foundWords}
             hintCell={hintCell}
             fontSize={fontSettings.fontSize}
-            panHandlers={wrappedHandlers}
+            panHandlers={tutorialBlocking ? {} : wrappedHandlers}
             layoutRef={layoutRef}
           />
         </View>
       </View>
 
-      <View style={styles.itemWrapper}>
+      <View
+        style={styles.itemWrapper}
+        pointerEvents={tutorialBlocking ? "none" : "auto"}
+      >
         <CluesPanel
+          ref={cluesRef}
           mode={mode}
           questionsAndAnswers={questionsAndAnswers}
           foundWordsList={foundWordsList}
@@ -486,7 +488,7 @@ export default function SharedGameScreen({
 
       <ConfirmModal
         visible={confirmExitVisible}
-        message="If you exit now, your progress in this grid will be lost. Are you sure?"
+        message="You haven’t finished yet — leaving will delete your progress. Do you want to continue?"
         confirmText="Yes"
         cancelText="No"
         onConfirm={handleExitConfirm}
@@ -499,11 +501,11 @@ export default function SharedGameScreen({
           variant={endVariant}
           hasTimer={hasTimer}
           timeUsedSeconds={usedSeconds ?? undefined}
-          coinsEarned={displayCoins}
+          coinsEarned={awardedCoins}
+          extraCoinsEarnedThisRun={extraCoinsEarned}
           wordsLearned={wordsLearnedCount}
           extraWordsCount={extraWords.length}
           alreadyFinished={alreadyFinished}
-          extraCoinsEarnedThisRun={extraCoinsEarned}
           onRestart={hardResetRound}
           onContinue={openWordModal}
           restartIcon={<Restart />}
@@ -533,25 +535,51 @@ export default function SharedGameScreen({
       <HintShopModal
         visible={shopVisible}
         onClose={() => setShopVisible(false)}
-        onPurchased={(newHint) => {
+        onPurchased={() => {
           resetHints?.();
-          setToast({
-            visible: true,
-            text: `✨ Hint added!`,
-          });
+          setToast({ visible: true, text: `✨ Hint added!` });
           setTimeout(() => setToast({ visible: false, text: "" }), 1500);
           setShopVisible(false);
         }}
       />
 
-      <SideToolbar
+      <SideToolBar
+        ref={sideToolRef}
         onOpenFont={() => fontSettings.setFontModalVisible(true)}
         onOpenShop={() => setShopVisible(true)}
-        // onOpenTutorial={() => setTutorialVisible(true)}
+        onOpenTutorial={openTutorial}
+        highlight={!tutorial.visible}
+      />
+
+      <TutorialOverlay
+        visible={tutorial.visible}
+        steps={tutorial.steps.map((s) => ({
+          id: s.id,
+          title: s.title,
+          description: s.description,
+          rect: s.rect,
+        }))}
+        index={tutorial.index}
+        onNext={async () => {
+          if (!tutorial.visible) return;
+          const step = tutorial.steps[tutorial.index];
+          if (step?.id === "settings") {
+            const opened =
+              !!(await sideToolRef.current?.measureFont?.()) ||
+              !!(await sideToolRef.current?.measureShop?.()) ||
+              !!(await sideToolRef.current?.measureTutorial?.());
+            if (!opened) return;
+          }
+          if (tutorial.index >= tutorial.steps.length - 1) tutorial.close();
+          else tutorial.next();
+        }}
+        onPrev={tutorial.prev}
+        onClose={tutorial.close}
       />
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, justifyContent: "flex-start" },
   toast: {
@@ -567,18 +595,8 @@ const styles = StyleSheet.create({
   },
   toastText: { ...Typography.header13, color: Color.white },
   topRow: { flexDirection: "row", flex: 1, paddingBottom: 20 },
-  leftColumn: {
-    width: 280,
-    justifyContent: "center",
-    marginRight: 30,
-    // backgroundColor: "red",
-  },
-  rightColumn: {
-    flex: 1,
-    marginTop: 20,
-    justifyContent: "center",
-    // backgroundColor: "blue",
-  },
+  leftColumn: { width: 280, justifyContent: "center", marginRight: 30 },
+  rightColumn: { flex: 1, marginTop: 20, justifyContent: "center" },
   itemWrapper: {
     flexDirection: "row",
     justifyContent: "center",

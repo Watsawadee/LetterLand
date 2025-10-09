@@ -1,15 +1,33 @@
-import { getAllUser, getUserById, useHint, buyHint } from "../services/userService";
+import {
+  getAllUser,
+  getUserById,
+  useHint,
+  buyHint,
+} from "../services/userService";
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import prisma from "../configs/db";
-import { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse } from "../types/type";
-import { LoginRequestSchema, LoginResponseSchema, RegisterRequestSchema, RegisterResponseSchema } from "../types/auth.schema";
-import { getNextLevel, secondsBetween, startOfISOWeekUTC } from "../services/levelupService";
+import {
+  LoginRequest,
+  LoginResponse,
+  RegisterRequest,
+  RegisterResponse,
+} from "../types/type";
+import {
+  LoginRequestSchema,
+  LoginResponseSchema,
+  RegisterRequestSchema,
+  RegisterResponseSchema,
+} from "../types/auth.schema";
+import {
+  getNextLevel,
+  secondsBetween,
+  startOfISOWeekUTC,
+} from "../services/levelupService";
 import { ProgressLevelupResponseSchema } from "../types/progressLevelup.schema";
 import { AuthenticatedRequest } from "../types/authenticatedRequest";
 import { EnglishLevel } from "../types/setup.schema";
-
 
 export const getAllUserController = async (req: Request, res: Response) => {
   try {
@@ -186,32 +204,84 @@ export const loginUserController = async (req: Request, res: Response) => {
 export const useHintController = async (req: Request, res: Response) => {
   try {
     const userId = Number(req.params.userId);
+    const gameId = Number(req.body?.gameId);
 
     if (!userId) {
       res.status(400).json({ message: "Missing userId" });
       return;
     }
+    if (!gameId) {
+      res.status(400).json({ message: "Missing gameId" });
+      return;
+    }
 
-    const updatedUser = await useHint(userId);
+    const game = await prisma.game.findUnique({
+      where: { id: gameId },
+      select: {
+        id: true,
+        userId: true,
+        isFinished: true,
+        isHintUsed: true,
+      },
+    });
+
+    if (!game) {
+      res.status(404).json({ message: "Game not found" });
+      return;
+    }
+    if (game.userId !== userId) {
+      res.status(403).json({ message: "Forbidden: not your game" });
+      return;
+    }
+    if (game.isFinished) {
+      res
+        .status(409)
+        .json({ message: "Game is already finished; cannot use hint" });
+      return;
+    }
+
+    if (game.isHintUsed) {
+      res.status(200).json({
+        message: "Hint already marked as used",
+        data: {
+          user: null,
+          game: { id: game.id, isHintUsed: true },
+          alreadyUsed: true,
+        },
+      });
+      return;
+    }
+
+    const [updatedUser, updatedGame] = await prisma.$transaction(async (tx) => {
+      const newUser = await useHint(userId);
+
+      const newGame = await tx.game.update({
+        where: { id: gameId },
+        data: { isHintUsed: true },
+        select: { id: true, isHintUsed: true },
+      });
+
+      return [newUser, newGame] as const;
+    });
 
     res.status(200).json({
       message: "Hint used successfully",
-      data: updatedUser,
+      data: {
+        user: updatedUser,
+        game: updatedGame,
+        alreadyUsed: false,
+      },
     });
   } catch (error) {
     console.error("Use Hint Controller error:", error);
-    res.status(400).json("Failed to use hint");
+    res.status(500).json({ message: "Failed to use hint" });
   }
 };
 
-
-
-
-
-
-
-
-export const progressLevelupController = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const progressLevelupController = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> => {
   const TWO_HUNDRED_HOURS_SECS = 200 * 60 * 60;
 
   try {
@@ -247,21 +317,21 @@ export const progressLevelupController = async (req: AuthenticatedRequest, res: 
       where: { userId },
       orderBy: { startedAt: "desc" },
       take: 5,
-      select: { isHintUsed: true }
+      select: { isHintUsed: true },
     });
 
     const enoughGamesPlayed = lastFiveGames.length >= 5;
-    const usedAnyHints = lastFiveGames.some(g => g.isHintUsed);
+    const usedAnyHints = lastFiveGames.some((g) => g.isHintUsed);
 
     conditions.push({
       name: "At least 5 games played",
       passed: enoughGamesPlayed,
-      details: { gamesPlayed: lastFiveGames.length }
+      details: { gamesPlayed: lastFiveGames.length },
     });
     conditions.push({
       name: "No hints used in last 5 games",
       passed: !usedAnyHints,
-      details: { usedAnyHints }
+      details: { usedAnyHints },
     });
 
     // --- 2) Total playtime at current level ---
@@ -269,9 +339,9 @@ export const progressLevelupController = async (req: AuthenticatedRequest, res: 
       where: {
         userId,
         finishedAt: { not: null },
-        gameTemplate: { difficulty: user.englishLevel }
+        gameTemplate: { difficulty: user.englishLevel },
       },
-      select: { startedAt: true, finishedAt: true }
+      select: { startedAt: true, finishedAt: true },
     });
 
     const LEVEL_THRESHOLDS: Record<EnglishLevel, number> = {
@@ -290,8 +360,8 @@ export const progressLevelupController = async (req: AuthenticatedRequest, res: 
       passed: hasEnoughPlaytime,
       details: {
         requiredSeconds: TWO_HUNDRED_HOURS_SECS,
-        accumulatedSeconds: user.total_playtime
-      }
+        accumulatedSeconds: user.total_playtime,
+      },
     });
 
     // --- 3) Weekly average check ---
@@ -306,24 +376,27 @@ export const progressLevelupController = async (req: AuthenticatedRequest, res: 
         where: {
           userId,
           finishedAt: { not: null },
-          startedAt: { gte: lastWeekStart, lte: lastWeekEnd }
+          startedAt: { gte: lastWeekStart, lte: lastWeekEnd },
         },
-        select: { startedAt: true, finishedAt: true }
+        select: { startedAt: true, finishedAt: true },
       }),
       prisma.game.findMany({
         where: {
           userId,
           finishedAt: { not: null },
-          startedAt: { gte: thisWeekStart, lte: now }
+          startedAt: { gte: thisWeekStart, lte: now },
         },
-        select: { startedAt: true, finishedAt: true }
-      })
+        select: { startedAt: true, finishedAt: true },
+      }),
     ]);
 
     const avg = (games: { startedAt: Date; finishedAt: Date | null }[]) => {
-      const finished = games.filter(g => g.finishedAt);
+      const finished = games.filter((g) => g.finishedAt);
       if (finished.length === 0) return 0;
-      const total = finished.reduce((acc, g) => acc + secondsBetween(g.startedAt, g.finishedAt!), 0);
+      const total = finished.reduce(
+        (acc, g) => acc + secondsBetween(g.startedAt, g.finishedAt!),
+        0
+      );
       return total / finished.length;
     };
 
@@ -336,12 +409,12 @@ export const progressLevelupController = async (req: AuthenticatedRequest, res: 
       passed: weeklyRuleOk,
       details: {
         avgTimeLastWeek: Math.round(avgLastWeek),
-        avgTimeThisWeek: Math.round(avgThisWeek)
-      }
+        avgTimeThisWeek: Math.round(avgThisWeek),
+      },
     });
 
     // --- Final check ---
-    const allPassed = conditions.every(c => c.passed);
+    const allPassed = conditions.every((c) => c.passed);
 
     if (!allPassed) {
       const failResponse = {
@@ -357,22 +430,21 @@ export const progressLevelupController = async (req: AuthenticatedRequest, res: 
     // Update user level
     await prisma.user.update({
       where: { id: userId },
-      data: { englishLevel: nextLevelup }
+      data: { englishLevel: nextLevelup },
     });
 
     const response = {
       message: `Level up! New level: ${nextLevelup}`,
       nextLevel: nextLevelup,
-      canLevelUp: true
+      canLevelUp: true,
     };
     ProgressLevelupResponseSchema.parse(response);
     res.status(200).json(response);
-  }
-  catch (error) {
+  } catch (error) {
     console.error("ProgressLevelupController error:", error);
-    res.status(500).json("Failed to levelup")
+    res.status(500).json("Failed to levelup");
   }
-}
+};
 
 export const buyHintController = async (req: Request, res: Response) => {
   try {
@@ -451,5 +523,4 @@ export const getUserLastFinishedGame = async (
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
-
 
