@@ -14,6 +14,7 @@ export interface GameProps {
 export interface GameData {
   id: number;
   userId: number;
+  gameType: "WORD_SEARCH" | "CROSSWORD_SEARCH";
   gameTemplateId: number;
   startedAt: string;
   finishedAt: string | null;
@@ -26,7 +27,6 @@ export interface GameData {
 export interface GameTemplate {
   id: number;
   gameTopic: string;
-  gameType: "WORD_SEARCH" | "CROSSWORD_SEARCH";
   difficulty: string;
   isPublic: boolean;
   questions: QuestionAnswer[];
