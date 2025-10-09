@@ -79,7 +79,8 @@ const styles = StyleSheet.create({
     ...Typography.popupbody20,
     color: Color.gray,
     textAlign: "center",
-    marginBottom: 18,
+    marginBottom: 20,
+     lineHeight: 30,
   },
   buttons: {
     flexDirection: "row",

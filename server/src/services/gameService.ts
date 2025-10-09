@@ -16,7 +16,6 @@ type gameCompleteInput = {
   userId: number;
   completed?: boolean;
   finishedOnTime?: boolean;
-  isHintUsed?: boolean;
   timeUsedSeconds?: number;
 };
 
@@ -82,7 +81,9 @@ export const getGameData = async (gameId: number) => {
       gameTemplate: rawGameData.gameTemplate
         ? {
             ...rawGameData.gameTemplate,
-            questions: rawGameData.gameTemplate.questions.map((q) => q.question),
+            questions: rawGameData.gameTemplate.questions.map(
+              (q) => q.question
+            ),
           }
         : null,
     };
@@ -316,18 +317,6 @@ export async function recordExtraWord(
   return { created, totalExtra, coinsAwarded, newCoinBalance, alreadyCounted };
 }
 
-function safeSecondsToAdd(
-  timeUsedSeconds?: number | null,
-  timer?: number | null
-): number {
-  const raw = Number.isFinite(timeUsedSeconds as number)
-    ? Math.max(0, Math.floor(timeUsedSeconds as number))
-    : 0;
-
-  if (!Number.isFinite(timer as number) || (timer as number) <= 0) return raw;
-  return Math.min(raw, Math.floor(timer as number));
-}
-
 export async function getGameForCompletion(gameId: number) {
   const game = await prisma.game.findUnique({
     where: { id: gameId },
@@ -348,6 +337,28 @@ export async function getGameForCompletion(gameId: number) {
   return { ...rest, gameCode: gameTemplate?.gameCode ?? null };
 }
 
+async function hasFinishedBefore(opts: {
+  userId: number;
+  gameTemplateId: number;
+  timer: number | null;
+  excludeGameId?: number;
+}): Promise<boolean> {
+  const { userId, gameTemplateId, timer, excludeGameId } = opts;
+
+  const found = await prisma.game.findFirst({
+    where: {
+      userId,
+      gameTemplateId,
+      isFinished: true,
+      timer: timer === null ? null : timer,
+      ...(excludeGameId ? { NOT: { id: excludeGameId } } : {}),
+    },
+    select: { id: true },
+  });
+
+  return !!found;
+}
+
 export function computeCoins(args: {
   isTimerMode: boolean;
   completed?: boolean;
@@ -359,7 +370,7 @@ export function computeCoins(args: {
   }
   return completed ? 50 : 0;
 }
-
+// service.ts
 export async function finalizeGame(opts: {
   gameId: number;
   userId: number;
@@ -369,19 +380,31 @@ export async function finalizeGame(opts: {
 }) {
   const { gameId, userId, coins, extraGameData = {}, secondsToAdd } = opts;
 
-  const updated = await prisma.$transaction(async (tx) => {
-    const game = await tx.game.update({
-      where: { id: gameId },
-      data: {
-        isFinished: true,
-        finishedAt: new Date(),
-        ...(Object.keys(extraGameData).length ? extraGameData : {}),
-      },
-      include: {
-        user: { select: { id: true, coin: true, total_playtime: true } },
-      },
-    });
+  const hasGameChanges = Object.keys(extraGameData).length > 0;
 
+  const result = await prisma.$transaction(async (tx) => {
+    // 1) Update the game row ONLY if caller provided fields to change
+    let gameRecord: { id: number } & { [k: string]: any };
+    if (hasGameChanges) {
+      gameRecord = await tx.game.update({
+        where: { id: gameId },
+        data: { ...extraGameData }, // <-- no forced isFinished/finishedAt here
+        include: {
+          user: { select: { id: true, coin: true, total_playtime: true } },
+        },
+      });
+    } else {
+      // Nothing to update on the game; just read it for returning a snapshot
+      // (use findUnique instead of update({data:{}}) which would throw)
+      gameRecord = await tx.game.findUniqueOrThrow({
+        where: { id: gameId },
+        include: {
+          user: { select: { id: true, coin: true, total_playtime: true } },
+        },
+      });
+    }
+
+    // 2) Increment coins if any
     if (coins > 0) {
       await tx.user.update({
         where: { id: userId },
@@ -389,6 +412,7 @@ export async function finalizeGame(opts: {
       });
     }
 
+    // 3) Increment total playtime if any
     if (secondsToAdd > 0) {
       await tx.user.update({
         where: { id: userId },
@@ -396,62 +420,19 @@ export async function finalizeGame(opts: {
       });
     }
 
-    const user = await tx.user.findUnique({
+    // 4) Read the latest user snapshot to return
+    const userSnapshot = await tx.user.findUnique({
       where: { id: userId },
       select: { id: true, coin: true, total_playtime: true },
     });
 
-    return { game, user, secondsAdded: secondsToAdd };
+    return { game: gameRecord, user: userSnapshot, secondsAdded: secondsToAdd };
   });
 
   return {
-    ...updated.game,
-    user: updated.user,
-    secondsAdded: updated.secondsAdded,
-  };
-}
-
-async function applyPartialGameUpdates(opts: {
-  gameId: number;
-  userId: number;
-  setHintUsed?: boolean;
-  timeUsedSeconds?: number;
-}) {
-  const { gameId, userId, setHintUsed } = opts;
-
-  const updated = await prisma.$transaction(async (tx) => {
-    let gameUpdateData: Record<string, any> | undefined;
-    if (setHintUsed) {
-      gameUpdateData = { isHintUsed: true };
-    }
-
-    const game =
-      gameUpdateData && Object.keys(gameUpdateData).length
-        ? await tx.game.update({
-            where: { id: gameId },
-            data: gameUpdateData,
-            include: {
-              user: { select: { id: true, coin: true, total_playtime: true } },
-            },
-          })
-        : await tx.game.findUnique({
-            where: { id: gameId },
-            include: {
-              user: { select: { id: true, coin: true, total_playtime: true } },
-            },
-          });
-
-    const user = await tx.user.findUnique({
-      where: { id: userId },
-      select: { id: true, coin: true, total_playtime: true },
-    });
-
-    return { game, user };
-  });
-
-  return {
-    ...updated.game!,
-    user: updated.user,
+    ...result.game,
+    user: result.user,
+    secondsAdded: result.secondsAdded,
   };
 }
 
@@ -459,93 +440,83 @@ export async function completeGame(
   input: gameCompleteInput
 ): Promise<gameCompleteResult> {
   try {
-    const {
-      gameId,
-      userId,
-      completed,
-      finishedOnTime,
-      isHintUsed,
-      timeUsedSeconds,
-    } = input;
+    const { gameId, userId, completed, finishedOnTime, timeUsedSeconds } =
+      input;
 
     if (!Number.isFinite(gameId)) throw new Error("Invalid gameId");
     if (!Number.isFinite(userId)) throw new Error("Invalid or missing userId");
 
     const game = await getGameForCompletion(gameId);
     if (!game) throw new Error("Game not found");
-    if (game.userId !== userId)
-      throw new Error("Forbidden: user does not own this game");
 
-    const secondsToAdd = safeSecondsToAdd(timeUsedSeconds, game.timer);
-
-    if (completed === true) {
-      // First-ever finish for this Game row → finalize and (optionally) award coins
-      if (game.isFinished !== true) {
-        const isTimerMode = game.timer !== null && game.timer !== undefined;
-
-        const coins = computeCoins({
-          isTimerMode,
-          completed,
-          finishedOnTime,
-        });
-
-        const extraGameData: Record<string, any> = {};
-        if (isHintUsed === true && game.isHintUsed !== true)
-          extraGameData.isHintUsed = true;
-
-        const updatedGame = await finalizeGame({
-          gameId,
-          userId,
-          coins,
-          extraGameData,
-          secondsToAdd,
-        });
-
-        return {
-          coinsAwarded: coins,
-          alreadyFinished: false,
-          updatedGame,
-          secondsAdded: updatedGame.secondsAdded ?? secondsToAdd,
-        };
-      }
-
-      // Replay completion: game already finished → just add playtime, no coins
-      const updatedUser = await prisma.user.update({
-        where: { id: userId },
-        data:
-          secondsToAdd > 0
-            ? { total_playtime: { increment: secondsToAdd } }
-            : {},
-        select: { id: true, coin: true, total_playtime: true },
+    // If the game was already finished earlier, do NOT re-award coins.
+    if (game.isFinished) {
+      // Still add playtime
+      const secondsToAdd = Number.isFinite(timeUsedSeconds)
+        ? (timeUsedSeconds as number)
+        : 0;
+      const updatedGame = await finalizeGame({
+        gameId,
+        userId,
+        coins: 0,
+        extraGameData: {},
+        secondsToAdd,
       });
 
       return {
         coinsAwarded: 0,
         alreadyFinished: true,
-        updatedGame: {
-          id: gameId,
-          userId,
-          isFinished: true,
-          user: updatedUser,
-        },
+        updatedGame,
         secondsAdded: secondsToAdd,
       };
     }
 
-    // Not completed → partial flags only (no time increment, no coins)
-    const setHintUsed = isHintUsed === true && game.isHintUsed !== true;
-    const updatedGame = await applyPartialGameUpdates({
+    const isTimerMode = !!game.timer;
+    const baseCoins = computeCoins({
+      isTimerMode,
+      completed,
+      finishedOnTime,
+    });
+
+    let coinsToAward = 0;
+
+    if (baseCoins > 0) {
+      const alreadyFinishedSameTemplateTimer = await hasFinishedBefore({
+        userId,
+        gameTemplateId: game.gameTemplateId!,
+        timer: game.timer ?? null,
+        excludeGameId: gameId,
+      });
+
+      // Only award if user has NOT previously finished this template+timer
+      coinsToAward = alreadyFinishedSameTemplateTimer ? 0 : baseCoins;
+    }
+
+    // We finalize the current game (set finished = true, finishedAt, add playtime, and increment coins)
+    const secondsToAdd = Number.isFinite(timeUsedSeconds)
+      ? (timeUsedSeconds as number)
+      : 0;
+    const extraGameData: Record<string, any> = {};
+
+    // Mark finished only when completed
+    if (completed) {
+      extraGameData.isFinished = true;
+      extraGameData.finishedAt = new Date();
+    }
+
+    const updatedGame = await finalizeGame({
       gameId,
       userId,
-      setHintUsed,
-      timeUsedSeconds,
+      coins: coinsToAward,
+      extraGameData,
+      secondsToAdd,
     });
 
     return {
-      coinsAwarded: 0,
-      alreadyFinished: game.isFinished === true,
+      coinsAwarded: coinsToAward,
+      alreadyFinished: false,
       updatedGame,
-      secondsAdded: 0,
+      secondsAdded: secondsToAdd,
     };
   } catch (err) {
     console.error("Error completing game:", err);

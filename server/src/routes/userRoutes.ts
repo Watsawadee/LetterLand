@@ -7,6 +7,7 @@ import {
   useHintController,
   progressLevelupController,
   buyHintController,
+  getUserLastFinishedGame,
 } from "../controllers/userController";
 import { authenticatedUser } from "../middleware/authMiddleware";
 const router = express.Router();
@@ -21,5 +22,7 @@ router.post("/:userId/usehint", useHintController);
 //progress Level up route
 router.put("/progress", authenticatedUser, progressLevelupController)
 router.post("/:userId/buyhint", buyHintController);
+router.get("/user/:userId/lastfinishedgame", authenticatedUser, getUserLastFinishedGame);
+
 
 export default router;

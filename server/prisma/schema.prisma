@@ -48,7 +48,6 @@ model UserAchievement {
 model GameTemplate {
   id         Int                    @id @default(autoincrement())
   gameTopic  String
-  gameType   GameType
   difficulty EnglishLevel
   isPublic   Boolean                @default(false)
   imageUrl   String?
@@ -68,6 +67,7 @@ model Game {
   isHintUsed     Boolean          @default(false)
   isFinished     Boolean          @default(false)
   timer          Int?
+  gameType       GameType
   extraWordFound ExtraWordFound[]
   gameTemplate   GameTemplate     @relation(fields: [gameTemplateId], references: [id])
   user           User             @relation(fields: [userId], references: [id])
