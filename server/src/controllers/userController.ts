@@ -427,12 +427,8 @@ export const getUserLastFinishedGame = async (
     const lastGame = await prisma.game.findFirst({
       where: { userId, isFinished: true },
       orderBy: { finishedAt: "desc" },
-      select: {
-        id: true,
-        finishedAt: true,
-        gameTemplate: {
-          select: { gameTopic: true, gameType: true, difficulty: true },
-        },
+      include: {
+        gameTemplate: true,
       },
     });
 
@@ -446,7 +442,7 @@ export const getUserLastFinishedGame = async (
         id: lastGame.id,
         finishedAt: lastGame.finishedAt,
         topic: lastGame.gameTemplate?.gameTopic ?? "Unknown",
-        type: lastGame.gameTemplate?.gameType ?? "Unknown",
+        type: lastGame.gameType ?? "Unknown",
         difficulty: lastGame.gameTemplate?.difficulty ?? "Unknown",
       },
     });
