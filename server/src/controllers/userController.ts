@@ -407,3 +407,53 @@ export const buyHintController = async (req: Request, res: Response) => {
   }
 };
 
+export const getUserLastFinishedGame = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> => {
+  const userId = Number(req.params.userId);
+  const loggedInUserId = req.user?.id;
+
+  if (isNaN(userId)) {
+    res.status(400).json({ error: "Invalid user ID" });
+    return;
+  }
+  if (userId !== loggedInUserId) {
+    res.status(403).json({ error: "Forbidden: Cannot access other user's data" });
+    return;
+  }
+
+  try {
+    const lastGame = await prisma.game.findFirst({
+      where: { userId, isFinished: true },
+      orderBy: { finishedAt: "desc" },
+      select: {
+        id: true,
+        finishedAt: true,
+        gameTemplate: {
+          select: { gameTopic: true, gameType: true, difficulty: true },
+        },
+      },
+    });
+
+    if (!lastGame) {
+      res.status(200).json({ message: "No finished games yet" });
+      return;
+    }
+
+    res.status(200).json({
+      lastFinishedGame: {
+        id: lastGame.id,
+        finishedAt: lastGame.finishedAt,
+        topic: lastGame.gameTemplate?.gameTopic ?? "Unknown",
+        type: lastGame.gameTemplate?.gameType ?? "Unknown",
+        difficulty: lastGame.gameTemplate?.difficulty ?? "Unknown",
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching last finished game:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+

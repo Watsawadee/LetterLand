@@ -7,7 +7,7 @@ import { GamesPlayedPerWeekOrError, TotalPlaytimeOrError, WordsLearnedOrError } 
 import { AverageGamesByLevelResponseSchema, GamesPlayedPerWeekOrErrorSchema, GamesPlayedPerWeekResponseSchema, TotalPlaytimeOrErrorSchema, WordsLearnedOrErrorSchema } from "../types/dashboard.schema";
 import { ErrorResponseSchema } from "../types/setup.schema";
 
-async function getAuthHeader() {
+export async function getAuthHeader() {
     const token = await getToken();
     return {
         headers: {
