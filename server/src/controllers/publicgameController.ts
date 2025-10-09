@@ -1,23 +1,18 @@
-// controllers/publicgameController.ts
 import { Request, RequestHandler } from "express";
 import prisma from "../configs/db";
 import { GameType } from "@prisma/client";
-import {
-  ListPublicGamesResponse,
-  StartPublicGameResponse,
-} from "../types/publicgame";
+import { ListPublicGamesResponse, StartPublicGameResponse } from "../types/publicgame";
 
+/** read req.user without changing Request type */
 type WithUser = { user?: { id: number } };
 type PublicGamesQuery = { limit?: string; offset?: string };
 
-/** Body sent by the client (seconds preferred; minutes accepted for legacy) */
+/** Body for starting/played checks (seconds preferred; minutes kept for back-compat) */
 type StartBody = {
   newType?: GameType;
-  timerSeconds?: number | null;
-  timerMinutes?: number | null;
+  timerSeconds?: number | null;  // preferred: seconds
+  timerMinutes?: number | null;  // optional legacy
 };
-
-/* ---------------- helpers ---------------- */
 
 const toPositiveInt = (value: unknown, fallback: number) => {
   const n =
@@ -34,15 +29,10 @@ const clampSeconds = (n: unknown): number | null => {
   return Math.max(0, Math.floor(v));
 };
 
-const DEFAULT_TYPE: GameType = "WORD_SEARCH";
+/** Build a public URL for an image key stored in DB (adjust base to your setup) *
+/* ================== HANDLERS ================== */
 
-/* ---------------- handlers ---------------- */
-
-/**
- * GET /publicgame/games
- * Returns the public templates list.
- * (Since GameTemplate has no gameType anymore, we return a default so the UI can show a label.)
- */
+/** GET /publicgame/games */
 export const listPublicGames: RequestHandler<
   Record<string, never>,
   ListPublicGamesResponse | { error: string },
@@ -70,13 +60,13 @@ export const listPublicGames: RequestHandler<
       prisma.gameTemplate.count({ where: { isPublic: true } }),
     ]);
 
-    // PublicGameItem still expects a gameType field -> provide a default for display
+    // Template has no gameType in this schema; send a default for display
     const items = templates.map((t) => ({
       id: t.id,
       title: t.gameTopic,
-      gameType: DEFAULT_TYPE, // purely for UI display / preselect
+      gameType: "WORD_SEARCH" as const,      // default label on the card
       difficulty: t.difficulty,
-      imageUrl: t.imageUrl ?? null,
+      imageUrl: t.imageUrl,// make it loadable in RN <Image>
       gameCode: t.gameCode ?? null,
     }));
 
@@ -87,10 +77,7 @@ export const listPublicGames: RequestHandler<
   }
 };
 
-/**
- * POST /publicgame/games/:templateId/start
- * Creates a Game pointing to the selected template, with chosen type and timer (in seconds).
- */
+/** POST /publicgame/games/:templateId/start */
 export const startPublicGame: RequestHandler<
   { templateId: string },
   StartPublicGameResponse | { error: string },
@@ -98,23 +85,33 @@ export const startPublicGame: RequestHandler<
 > = async (req, res) => {
   try {
     const userId = (req as Request & WithUser).user?.id;
-    if (!userId) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
     const templateId = parseInt(req.params.templateId, 10);
     if (!Number.isFinite(templateId)) {
-      res.status(400).json({ error: "Invalid templateId" });
-      return;
+      return res.status(400).json({ error: "Invalid templateId" });
     }
+
+    const tpl = await prisma.gameTemplate.findUnique({
+      where: { id: templateId },
+      select: {
+        id: true,
+        isPublic: true,
+        gameTopic: true,
+        difficulty: true,
+        imageUrl: true,
+        gameCode: true,
+      },
+    });
+    if (!tpl) return res.status(404).json({ error: "Template not found" });
+    if (!tpl.isPublic) return res.status(403).json({ error: "Template not public" });
 
     const body = (req.body || {}) as StartBody;
 
-    // Decide the game type to use for this Game row
-    const usedType: GameType = body.newType ?? DEFAULT_TYPE;
+    // chosen game type lives on Game (not on template in this schema)
+    const usedType: GameType = body.newType ?? "WORD_SEARCH";
 
-    // Prefer seconds; accept minutes (legacy)
+    // prefer seconds; fallback to minutes
     const timerSeconds =
       body.timerSeconds !== undefined && body.timerSeconds !== null
         ? clampSeconds(body.timerSeconds)
@@ -122,29 +119,13 @@ export const startPublicGame: RequestHandler<
         ? clampSeconds(Number(body.timerMinutes) * 60)
         : null;
 
-    // Ensure the template exists & is public
-    const tpl = await prisma.gameTemplate.findFirst({
-      where: { id: templateId, isPublic: true },
-      select: {
-        id: true,
-        gameTopic: true,
-        difficulty: true,
-        imageUrl: true,
-        gameCode: true,
-      },
-    });
-    if (!tpl) {
-      res.status(404).json({ error: "Template not found or not public" });
-      return;
-    }
-
-    // Create the Game — NOTE: we set both gameTemplateId and gameType here
+    // Create the game row – IMPORTANT: write gameType here
     const game = await prisma.game.create({
       data: {
         userId,
         gameTemplateId: tpl.id,
         gameType: usedType,
-        timer: timerSeconds, // store SECONDS (null = no timer)
+        timer: timerSeconds,       // store SECONDS
       },
       select: {
         id: true,
@@ -162,12 +143,12 @@ export const startPublicGame: RequestHandler<
       title: tpl.gameTopic,
       gameType: usedType,
       difficulty: tpl.difficulty,
-      imageUrl: tpl.imageUrl ?? null,
+      imageUrl: tpl.imageUrl,
       startedAt: game.startedAt,
       finishedAt: game.finishedAt,
       isHintUsed: game.isHintUsed,
       isFinished: game.isFinished,
-      timer: game.timer ?? null, // seconds
+      timer: game.timer ?? null,      // seconds back to client
       gameCode: tpl.gameCode ?? null,
     };
 
@@ -178,10 +159,7 @@ export const startPublicGame: RequestHandler<
   }
 };
 
-/**
- * GET /publicgame/games/:templateId/played?newType=&timerSeconds=
- * Checks if the user already has a Game for (templateId, gameType, timerSeconds).
- */
+/** GET /publicgame/games/:templateId/played?newType=&timerSeconds= */
 export const checkPublicGamePlayed: RequestHandler<
   { templateId: string },
   { alreadyPlayed: boolean } | { error: string },
@@ -190,20 +168,16 @@ export const checkPublicGamePlayed: RequestHandler<
 > = async (req, res) => {
   try {
     const userId = (req as Request & WithUser).user?.id;
-    if (!userId) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
     const templateId = parseInt(req.params.templateId, 10);
     if (!Number.isFinite(templateId)) {
-      res.status(400).json({ error: "Invalid templateId" });
-      return;
+      return res.status(400).json({ error: "Invalid templateId" });
     }
 
-    const usedType: GameType = (req.query.newType as GameType | undefined) ?? DEFAULT_TYPE;
+    const usedType: GameType = (req.query.newType as GameType) ?? "WORD_SEARCH";
 
-    // Prefer seconds; accept minutes
+    // seconds preferred, fallback to minutes
     let timerSeconds: number | null = null;
     if (req.query.timerSeconds !== undefined) {
       timerSeconds = clampSeconds(req.query.timerSeconds);
