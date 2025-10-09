@@ -7,6 +7,9 @@ export const Typography: { [key: string]: TextStyle } = {
   body13: {
     fontSize: 13, fontWeight: 'medium',
   },
+  body16: {
+    fontSize: 16, fontWeight: 'medium',
+  },
   body20: {
     fontSize: 20, fontWeight: 'medium',
   },

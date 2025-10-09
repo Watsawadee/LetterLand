@@ -1,10 +1,39 @@
-import React from "react";
-import { View, StyleSheet, Text, ScrollView } from "react-native";
+import React, { forwardRef, useImperativeHandle, useRef } from "react";
+import { View, StyleSheet, ScrollView } from "react-native";
 import WordCard from "./WordCard";
 import QuestionListSlider from "./QuestionListSlider";
 import { CluesProps } from "../types/type";
 
-export default function CluesPanel(props: CluesProps) {
+export type CluesPanelHandle = {
+  measureClues: () => Promise<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>;
+};
+
+function measure(ref: React.RefObject<View | null>) {
+  return new Promise<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>((resolve) => {
+    const node = ref.current as View | null;
+    if (!node) return resolve(null);
+    (node as any).measureInWindow?.(
+      (x: number, y: number, w: number, h: number) =>
+        resolve({ x, y, width: w, height: h })
+    );
+    setTimeout(() => resolve(null), 120);
+  });
+}
+
+const CluesPanel = forwardRef<CluesPanelHandle, CluesProps>(function CluesPanel(
+  props,
+  ref
+) {
   const {
     mode,
     questionsAndAnswers,
@@ -14,21 +43,26 @@ export default function CluesPanel(props: CluesProps) {
     revealedAnswers,
   } = props;
 
+  const wrapRef = useRef<View>(null);
+  useImperativeHandle(ref, () => ({ measureClues: () => measure(wrapRef) }));
+
   if (mode === "CROSSWORD_SEARCH") {
     return (
-      <QuestionListSlider
-        questionsAndAnswers={questionsAndAnswers}
-        foundWords={foundWordsList}
-        showQuestion
-        activeIndex={activeIndex}
-        onChangeIndex={onChangeIndex}
-        revealedAnswers={revealedAnswers}
-      />
+      <View ref={wrapRef}>
+        <QuestionListSlider
+          questionsAndAnswers={questionsAndAnswers}
+          foundWords={foundWordsList}
+          showQuestion
+          activeIndex={activeIndex}
+          onChangeIndex={onChangeIndex}
+          revealedAnswers={revealedAnswers}
+        />
+      </View>
     );
   }
 
   return (
-    <View style={styles.wordListWrapper}>
+    <View ref={wrapRef} style={styles.wordListWrapper}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -44,10 +78,11 @@ export default function CluesPanel(props: CluesProps) {
       </ScrollView>
     </View>
   );
-}
+});
+
+export default CluesPanel;
 
 const ROW_HEIGHT = 75;
-
 const styles = StyleSheet.create({
   wordListWrapper: {
     height: ROW_HEIGHT,
@@ -58,8 +93,5 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "rgba(249, 249, 249, 0.8)",
   },
-  wordRow: {
-    alignItems: "center",
-    paddingRight: 8,
-  },
+  wordRow: { alignItems: "center", paddingRight: 8 },
 });
