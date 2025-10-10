@@ -43,7 +43,7 @@ export default function GameScreen() {
 
         setGameData(finalData);
         setMode(
-          finalData.gameTemplate.gameType as "WORD_SEARCH" | "CROSSWORD_SEARCH"
+          finalData.gameType as "WORD_SEARCH" | "CROSSWORD_SEARCH"
         );
 
         if (finalData.gameTemplate.imageUrl) {
