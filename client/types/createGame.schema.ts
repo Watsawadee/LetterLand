@@ -30,14 +30,13 @@ export const CreateGameFromGeminiResponseSchema = z.object({
         id: z.number(),
         userId: z.number(),
         gameTemplateId: z.number(),
-        timer: z.number().nullable().optional(),
         isHintUsed: z.boolean(),
         isFinished: z.boolean(),
         gameCode: z.string().nullable(),
+        gameType: GameTypeSchema,
         gameTemplate: z.object({
             id: z.number(),
             gameTopic: z.string(),
-            gameType: GameTypeSchema,
             difficulty: EnglishLevelSchema,
             imageUrl: z.string().nullable().optional(),
             ownerId: z.number(),
@@ -48,7 +47,6 @@ export const CreateGameFromGeminiResponseSchema = z.object({
                     answer: z.string(),
                     hint: z.string(),
                     pronunciationUrl: z.string().optional(),
-
                 })
             ),
         }),

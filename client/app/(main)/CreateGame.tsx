@@ -93,6 +93,7 @@ const CreateGameScreen = () => {
   const [input, setInput] = useState("");
   const [pdfFile, setPdfFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
   const [infoDialogVisible, setInfoDialogVisible] = useState(false);
+  const [showLevelDialog, setShowLevelDialog] = useState(false);
 
   const handleUploadTypeSelect = async (type: "text" | "link" | "pdf") => {
     setUploadType(type)
@@ -348,6 +349,10 @@ const CreateGameScreen = () => {
                   {["A1", "A2", "B1", "B2", "C1", "C2"].map((level) => {
                     const isActive = englishLevel === level;
                     const isUsersLevel = user && !("error" in user) && user.englishLevel === level;
+                    const levelOrder = ["A1", "A2", "B1", "B2", "C1", "C2"];
+                    const userLevelIndex = user && !("error" in user) ? levelOrder.indexOf(user.englishLevel) : -1;
+                    const thisLevelIndex = levelOrder.indexOf(level);
+                    const isDisabled = thisLevelIndex > userLevelIndex;
                     return (
                       <View key={level} style={{ display: "flex", flexDirection: "column", justifyContent: "flex-end", alignItems: "center", gap: 3 }}>
                         {isUsersLevel && (
@@ -355,24 +360,71 @@ const CreateGameScreen = () => {
                             <Text style={{ color: isActive ? Color.white : Color.gray, fontWeight: "700", fontSize: 10, textAlign: "center" }}>Your Level</Text>
                           </View>
                         )}
-                        <Button
-                          onPress={() => setEnglishLevel(level as typeof englishLevel)}
-                          style={{
-                            marginBottom: 8,
-                            borderRadius: 20,
-                            borderColor: isActive ? levelColors[level] : "#ddd",
-                            backgroundColor: isActive ? levelColors[level] : "#fff",
+                        <Pressable
+                          onPress={() => {
+                            if (isDisabled) {
+                              setShowLevelDialog(true);
+                            } else {
+                              setEnglishLevel(level as typeof englishLevel);
+                            }
                           }}
+                          style={{ width: "100%" }}
                         >
-                          <Text style={{ color: isActive ? Color.white : Color.gray, fontWeight: "bold" }}>
-                            {level}
-                          </Text>
-                        </Button>
+                          <Button
+                            onPress={() => setEnglishLevel(level as typeof englishLevel)}
+                            disabled={isDisabled}
+                            style={{
+                              marginBottom: 8,
+                              borderRadius: 20,
+                              borderColor: isActive ? levelColors[level] : "#ddd",
+                              backgroundColor: isDisabled
+                                ? "#ddd"
+                                : isActive
+                                  ? levelColors[level]
+                                  : "#fff",
+                            }}
+                          >
+                            <Text style={{ color: isDisabled ? Color.white : isActive ? Color.white : Color.gray, fontWeight: "bold" }}>
+                              {level}
+                            </Text>
+                          </Button>
+                        </Pressable>
                       </View>
                     );
                   })}
                 </View>
-
+                <Portal>
+                  <Dialog
+                    visible={showLevelDialog}
+                    onDismiss={() => setShowLevelDialog(false)}
+                    style={{
+                      backgroundColor: Color.white,
+                      width: "50%", display: "flex", alignSelf: 'center'
+                    }}
+                  >
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        paddingRight: 10,
+                      }}
+                    >
+                      <Dialog.Title style={{ color: Color.gray }}>Not allowed</Dialog.Title>
+                      <IconButton
+                        icon={(p) => <CloseIcon width={18} height={18} fillColor={Color.gray} {...p} />}
+                        onPress={() => setShowLevelDialog(false)}
+                        style={{ margin: 0 }}
+                        accessibilityLabel="Close dialog"
+                      />
+                    </View>
+                    <Dialog.Content>
+                      <Text style={{ color: Color.gray }}>
+                        You cannot select a game level higher than your current CEFR level.
+                      </Text>
+                    </Dialog.Content>
+                  </Dialog>
+                </Portal>
                 <View style={{ flexDirection: "column", gap: 8 }}>
                   <Text style={{ fontWeight: "700", color: Color.gray }}>Timer</Text>
                   <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
