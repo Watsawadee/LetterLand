@@ -2,12 +2,6 @@ import { useEffect, useRef } from "react";
 import { PanResponder, GestureResponderEvent, PanResponderGestureState } from "react-native";
 import { GameState, LayoutMeta, DragGestureConfig } from "@/types/type";
 
-function validateConfig(cfg: DragGestureConfig) {
-  if (!cfg || typeof cfg.GRID_SIZE !== "number" || typeof cfg.CELL_SIZE !== "number") {
-    throw new Error("useDragGesture: invalid config");
-  }
-}
-
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 
 function getPointerXY(
@@ -82,7 +76,6 @@ function alignedWithDir(from: [number, number], to: [number, number], dir: [numb
 }
 
 export function useDragGesture(config: DragGestureConfig) {
-  validateConfig(config);
   const { GRID_SIZE, CELL_SIZE, gridRef, layoutRef, gameState, setGameState, questionsAndAnswers } = config;
 
   const gameStateRef = useRef<GameState>(gameState);
