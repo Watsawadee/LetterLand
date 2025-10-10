@@ -32,6 +32,7 @@ import { Typography } from "@/theme/Font";
 import GridIcon from "@/assets/icon/GridIcon";
 import CloseIcon from "@/assets/icon/CloseIcon";
 import UploadIcon from "@/assets/icon/UploadIcon";
+import LoadingPopupCreateGame from "@/components/LoadingPopupCreateGame";
 
 
 const CreateGameScreen = () => {
@@ -679,9 +680,8 @@ const CreateGameScreen = () => {
             </ScrollView>
 
             {/* Create Button */}
-            <LoadingPopup
-              visible={isCreating}
-              uploadType={uploadType}     // enables the PDF-specific joke
+            <LoadingPopupCreateGame
+              visible={isCreating}  // enables the PDF-specific joke
             // progress={null}          // omit or pass a 0..1 when you implement real progress
             // lockBackButton={true}    // default true; set false if you want back button to close it
             />
