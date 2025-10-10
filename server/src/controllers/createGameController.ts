@@ -9,14 +9,7 @@ import { generatePronunciation } from "../services/textToSpeechService";
 import { generateGameCode } from "../services/gameCodeGenerator";
 export const createGameFromGemini = async (req: Request, res: Response) => {
 
-  const body = {
-    ...req.body,
-    userId: Number(req.body.userId),
-    ownerId: req.body.ownerId ? Number(req.body.ownerId) : undefined,
-    timer: req.body.timer ? Number(req.body.timer) : undefined,
-    isPublic: req.body.isPublic === "true" || req.body.isPublic === true,
-  };
-  const parsed = CreateGameFromGeminiRequestSchema.safeParse(body);
+  const parsed = CreateGameFromGeminiRequestSchema.safeParse(req.body);
 
   if (!parsed.success) {
     res.status(400).json({
