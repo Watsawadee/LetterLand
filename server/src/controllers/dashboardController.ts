@@ -40,7 +40,8 @@ export const getUserTotalPlaytime = async (
       res.status(200).json({ error: "User is not exist" });
       return;
     }
-    const response = TotalPlaytimeResponseSchema.parse({ totalPlaytime: user.total_playtime, })
+    const totalPlaytimeHours = user.total_playtime / 3600;
+    const response = TotalPlaytimeResponseSchema.parse({ totalPlaytime: Number(totalPlaytimeHours.toFixed(2)), })
     res.status(200).json(response);
     return;
   } catch (error) {

@@ -7,7 +7,7 @@ import { Card } from "react-native-paper";
 import { ActivityIndicator } from "react-native";
 import Clock from "@/assets/icon/Clock";
 import Pencil from "@/assets/icon/Pencil";
-import { VictoryAxis, VictoryBar, VictoryChart, VictoryLabel, VictoryLine, VictoryTheme } from "victory-native";
+import { VictoryAxis, VictoryBar, VictoryChart, VictoryLabel, VictoryLine, VictoryScatter, VictoryTheme } from "victory-native";
 
 import { Dimensions } from "react-native";
 import Carousel, { Pagination, ICarouselInstance } from "react-native-reanimated-carousel";
@@ -94,6 +94,7 @@ const UserOverviewPerformance = () => {
 
             <Card style={{
                 backgroundColor: "#F2F8F9", borderRadius: 16,
+                overflow: "visible",
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
@@ -108,26 +109,12 @@ const UserOverviewPerformance = () => {
                     subtitleStyle={{ color: Color.gray, textAlign: "center", fontSize: 20 }}
                     style={{ alignItems: "center", paddingBottom: 0 }}
                 />
-
-                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
-                    <View style={{
-                        width: 24,
-                        height: 4,
-                        backgroundColor: Color.pink,
-                        borderRadius: 2,
-                        marginRight: 8,
-                        borderWidth: 1,
-                        borderColor: Color.pink,
-                        borderStyle: "dashed"
-                    }} />
-                    <Text style={{ color: Color.pink, fontWeight: "bold" }}>Average games played</Text>
-                </View>
                 <VictoryChart
                     theme={VictoryTheme.material}
                     width={CHART_W}
                     height={CHART_H}
-                    // domainPadding={{ x: 22, y: 8 }}
-                    domain={{ y: [0, maxY + 1] }}
+                    domainPadding={{ x: 22, y: 8 }}
+                    domain={{ y: [0, maxY + 2] }}
                 >
                     <VictoryAxis
                         dependentAxis
@@ -159,25 +146,13 @@ const UserOverviewPerformance = () => {
                         labels={({ datum }) => datum.y === 0 ? "" : `${datum.y}`}
                         labelComponent={<VictoryLabel dy={-8} textAnchor="middle" />}
                     />
+                    {/* <View
+                        style={{
+                            flexDirection: "row",
+                        }}
+                    > */}
                     <VictoryLine
                         data={avgCounts.map((y, i) => ({ x: i, y }))}
-                        labels={({ index }) =>
-                            index === avgCounts.length - 1 && avgGames?.averageGamesPlayedThisWeek
-                                ? `Avg: ${avgGames.averageGamesPlayedThisWeek.toFixed(1)}`
-                                : ""
-                        }
-                        labelComponent={
-                            <VictoryLabel
-                                dx={20} // move slightly right
-                                dy={-10}
-                                textAnchor="start"
-                                style={{
-                                    fill: Color.pink,
-                                    fontSize: 14,
-                                    fontWeight: "bold",
-                                }}
-                            />
-                        }
                         style={{
                             data: {
                                 stroke: Color.pink,
@@ -186,8 +161,33 @@ const UserOverviewPerformance = () => {
                             },
                         }}
                     />
+
+                    <VictoryScatter
+                        data={[{ x: avgCounts.length - 1, y: avgValue }]} // last point only
+                        size={5}
+                        style={{ data: { fill: Color.pink } }}
+                        labels={[avgValue === 0 ? "" : `Average: ${avgValue.toFixed(0)}`]}
+                        labelComponent={
+                            <VictoryLabel
+                                dx={-50} // shift label left so it doesn’t go off right edge
+                                dy={-10}
+                                textAnchor="start"
+                                style={{
+                                    fill: Color.pink,
+                                    fontSize: 18,
+                                    fontWeight: "bold",
+                                }}
+                            />
+                        }
+                    />
+                    {/* <Text style={{ color: Color.pink, fontWeight: "bold", fontSize: 16 }}>
+                        {avgValue.toFixed(1)}
+                    </Text> */}
+                    {/* </View> */}
                 </VictoryChart>
-            </Card>
+
+
+            </Card >
         )
     }
     const onPressPagination = (targetIndex: number) => {

@@ -26,11 +26,6 @@ export const generateCrosswordHints = async (
   userCEFR: "A1" | "A2" | "B1" | "B2" | "C1" | "C2"
 ) => {
   try {
-    console.log("Gemini URL:", GEMINI_API_URL);
-    console.log(
-      "Gemini key loaded:",
-      process.env.GEMINI_API_KEY ? "yes" : "NO!"
-    );
     let prompt = `Generate a crossword puzzle based on this extracted text: "${extractedText}".  
 Your task:
 - Choose clue–answer pairs suitable for CEFR level: ${userCEFR} (A1 to C2).
