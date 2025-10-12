@@ -192,7 +192,7 @@ export default function HintShopModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: Color.overlay,
     justifyContent: "center",
     alignItems: "center",
     padding: 24,

@@ -559,7 +559,7 @@ export default function WordLearnedModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: Color.overlay,
     alignItems: "center",
     justifyContent: "center",
     padding: 16,
