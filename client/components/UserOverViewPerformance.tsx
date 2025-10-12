@@ -22,7 +22,7 @@ const MAX_WEEKS = 5;
 const UserOverviewPerformance = () => {
     const [carouselIndex, setCarouselIndex] = useState(0);
     const [forceLoading, setForceLoading] = useState(true);
-    const CHART_W = 550;
+    const CHART_W = 750;
     const CHART_H = 300;
     const progress = useSharedValue<number>(0);
     const ref = useRef<ICarouselInstance>(null);
@@ -98,7 +98,7 @@ const UserOverviewPerformance = () => {
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
-                width: CHART_W,
+                width: "100%",
 
             }
             }>
@@ -199,7 +199,7 @@ const UserOverviewPerformance = () => {
 
     const data = Array.from({ length: MAX_WEEKS }, (_, i) => i);
     return (
-        <View style={{ width: "50%", height: "100%", gap: 20 }}>
+        <View style={{ width: "68%", height: "100%", gap: 23 }}>
             <Card style={{ backgroundColor: "#E1F3F6", padding: 20 }}>
                 <View style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
                     <Pressable

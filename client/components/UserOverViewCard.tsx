@@ -19,6 +19,7 @@ import GardenBackground from "@/assets/backgroundTheme/GardenBackground";
 import GameTypeBackground from "@/assets/backgroundTheme/GameTypeBackground";
 import GameTypeGrid from "@/assets/icon/GameTypeGrid";
 import { useQueryClient } from "@tanstack/react-query";
+import CreateGameModal from "./CreateGameModal";
 
 type Props = {
   coins?: number;
@@ -33,7 +34,7 @@ const UserOverviewCard = ({ coins, onOpenSettings }: Props) => {
   const [dialogVisible, setDialogVisible] = useState(false);
 
   const [infoDialogVisible, setInfoDialogVisible] = useState(false);
-
+  const [showCreateGame, setShowCreateGame] = useState(false);
   const queryClient = useQueryClient();
 
 
@@ -54,14 +55,16 @@ const UserOverviewCard = ({ coins, onOpenSettings }: Props) => {
   const handleSelect = (type: "crossword" | "wordsearch") => {
     setGameType(type);
     setDialogVisible(false);
-    if (!userId) return;
+    setShowCreateGame(true);
 
-    router.push({
-      pathname: "/CreateGame",
-      params: {
-        gameType: type === "wordsearch" ? "WORD_SEARCH" : "CROSSWORD_SEARCH"
-      },
-    });
+    // if (!userId) return;
+
+    // router.push({
+    //   pathname: "/CreateGame",
+    //   params: {
+    //     gameType: type === "wordsearch" ? "WORD_SEARCH" : "CROSSWORD_SEARCH"
+    //   },
+    // });
   };
 
 
@@ -163,28 +166,6 @@ const UserOverviewCard = ({ coins, onOpenSettings }: Props) => {
               </Button>
             </View>
           </View>
-          <Button onPress={() => {
-            if (Platform.OS === "web") {
-              localStorage.removeItem("user-token");
-              queryClient.clear(); // ✅ clear cached data
-              router.replace("/authentication/login");
-            } else {
-              SecureStore.deleteItemAsync("user-token")
-                .then(() => {
-                  console.log("token cleared");
-                  queryClient.clear(); // ✅ clear cached data
-                  router.replace("/authentication/login");
-                });
-            }
-
-          }}
-            rippleColor={"transparent"}
-            style={{ backgroundColor: Color.blue }}
-          >
-            <Text style={{ color: Color.white, fontWeight: "bold" }}>
-              Logout
-            </Text>
-          </Button>
         </View>
 
         <View style={{ display: "flex", flexDirection: "row", justifyContent: "space-around", alignItems: "center" }}>
@@ -341,7 +322,15 @@ const UserOverviewCard = ({ coins, onOpenSettings }: Props) => {
               </Dialog.Content>
             </Dialog>
           </Portal >
-
+          <CreateGameModal
+            visible={showCreateGame}
+            onClose={() => setShowCreateGame(false)}
+            gameType={
+              gameType === "wordsearch"
+                ? "WORD_SEARCH"
+                : "CROSSWORD_SEARCH"
+            }
+          />
           <Image
             source={mascot}
             style={{ width: 90, height: 100, borderRadius: 25, transform: [{ rotateY: "360deg" }] }}

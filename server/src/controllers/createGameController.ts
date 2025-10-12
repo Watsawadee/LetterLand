@@ -21,7 +21,7 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
   const { type, userId, difficulty, gameType, timer, inputData, isPublic } = parsed.data;
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { englishLevel: true },
+    select: { englishLevel: true, age: true },
   });
 
   if (!user) {
@@ -144,13 +144,16 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
 
     let imageData = null;
     let fileName: string | null = null;
+    const age = Number(user.age);
+    const imageStyle = age && age >= 1 && age <= 15 ? "cartoon" : "realistic";
+    console.log("User age:", age, "Image style:", imageStyle);
     //Create Game
     if (geminiResult.imagePrompt) {
       const sanitizedTopic = geminiResult.game.gameTopic.toLowerCase().replace(/\s+/g, "_");
       fileName = `image_${game.id.toString()}_${sanitizedTopic}`;
       imageData = await genImage(
         geminiResult.imagePrompt,
-        "realistic",
+        imageStyle,
         "16:9",
         "5",
         game.id.toString(),
