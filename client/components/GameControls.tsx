@@ -12,7 +12,7 @@ import Timer from "@/assets/icon/Timer";
 import { Typography } from "@/theme/Font";
 import { useTime } from "@/hooks/useTime";
 import { GameControlsProps } from "@/types/type";
-import { CEFR } from "@/components/CEFR";
+import { CEFRPill } from "@/components/CEFRpill";
 import { Color } from "@/theme/Color";
 import * as Clipboard from "expo-clipboard";
 import CopyIcon from "@/assets/icon/CopyIcon";
@@ -172,7 +172,7 @@ const GameControls = forwardRef<GameControlsHandle, GameControlsProps>(
             ) : null}
 
             <View ref={cefrChipRef} style={styles.chip}>
-              <CEFR level={cefr} />
+              <CEFRPill level={cefr} />
             </View>
           </View>
         </View>
