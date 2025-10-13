@@ -22,7 +22,7 @@ router.post("/:userId/usehint", useHintController);
 //progress Level up route
 router.put("/progress", authenticatedUser, progressLevelupController)
 router.post("/:userId/buyhint", buyHintController);
-router.get("/user/:userId/lastfinishedgame", authenticatedUser, getUserLastFinishedGame);
+router.get("/user/lastfinishedgame", authenticatedUser, getUserLastFinishedGame);
 
 
 export default router;

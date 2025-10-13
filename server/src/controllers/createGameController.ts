@@ -9,14 +9,7 @@ import { generatePronunciation } from "../services/textToSpeechService";
 import { generateGameCode } from "../services/gameCodeGenerator";
 export const createGameFromGemini = async (req: Request, res: Response) => {
 
-  const body = {
-    ...req.body,
-    userId: Number(req.body.userId),
-    ownerId: req.body.ownerId ? Number(req.body.ownerId) : undefined,
-    timer: req.body.timer ? Number(req.body.timer) : undefined,
-    isPublic: req.body.isPublic === "true" || req.body.isPublic === true,
-  };
-  const parsed = CreateGameFromGeminiRequestSchema.safeParse(body);
+  const parsed = CreateGameFromGeminiRequestSchema.safeParse(req.body);
 
   if (!parsed.success) {
     res.status(400).json({
@@ -28,7 +21,7 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
   const { type, userId, difficulty, gameType, timer, inputData, isPublic } = parsed.data;
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { englishLevel: true },
+    select: { englishLevel: true, age: true },
   });
 
   if (!user) {
@@ -151,18 +144,21 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
 
     let imageData = null;
     let fileName: string | null = null;
+    const age = Number(user.age);
+    const imageStyle = age && age >= 1 && age <= 15 ? "cartoon" : "realistic";
+    console.log("User age:", age, "Image style:", imageStyle);
     //Create Game
     if (geminiResult.imagePrompt) {
       const sanitizedTopic = geminiResult.game.gameTopic.toLowerCase().replace(/\s+/g, "_");
-      // fileName = `image_${game.id.toString()}_${sanitizedTopic}`;
-      // imageData = await genImage(
-      //   geminiResult.imagePrompt,
-      //   "realistic",
-      //   "16:9",
-      //   "5",
-      //   game.id.toString(),
-      //   geminiResult.game.gameTopic
-      // );
+      fileName = `image_${game.id.toString()}_${sanitizedTopic}`;
+      imageData = await genImage(
+        geminiResult.imagePrompt,
+        imageStyle,
+        "16:9",
+        "5",
+        game.id.toString(),
+        geminiResult.game.gameTopic
+      );
       await prisma.gameTemplate.update({
         where: { id: gameTemplate.id },
         data: { imageUrl: fileName },
