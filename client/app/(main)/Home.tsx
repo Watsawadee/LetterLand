@@ -101,12 +101,13 @@ export default function Home() {
           visitMsg = `Hi ${userName}! Nice to meet you for the first time`;
         }
 
-        const gameMsg = lastFinishedGame
-          ? `Your last puzzle was "${lastFinishedGame.topic}" — finished ${formatDistanceToNow(
-            new Date(lastFinishedGame.finishedAt),
-            { addSuffix: true }
-          )}`
-          : "You haven’t finished any games yet — let’s start one today!";
+        const gameMsg =
+          lastFinishedGame && !lastFinishedGame.message
+            ? `Your last puzzle was "${lastFinishedGame.topic}" — finished ${formatDistanceToNow(
+              new Date(lastFinishedGame.finishedAt),
+              { addSuffix: true }
+            )}`
+            : "You haven’t finished any games yet — let’s start one today!";
 
         let coinMsg = "";
         if (profile && !("error" in profile)) {

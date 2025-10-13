@@ -483,11 +483,11 @@ export const getUserLastFinishedGame = async (
   req: AuthenticatedRequest,
   res: Response
 ): Promise<void> => {
-  const userId = Number(req.params.userId);
+  const userId = req.user?.id;
   const loggedInUserId = req.user?.id;
 
-  if (isNaN(userId)) {
-    res.status(400).json({ error: "Invalid user ID" });
+  if (!userId) {
+    res.status(401).json({ error: "Unauthorized" });
     return;
   }
   if (userId !== loggedInUserId) {
@@ -497,11 +497,13 @@ export const getUserLastFinishedGame = async (
 
   try {
     const lastGame = await prisma.game.findFirst({
-      where: { userId, isFinished: true },
-      orderBy: { finishedAt: "desc" },
-      include: {
-        gameTemplate: true,
+      where: {
+        userId,
+        isFinished: true,
+        finishedAt: { not: null },
       },
+      orderBy: { finishedAt: "desc" },
+      include: { gameTemplate: true },
     });
 
     if (!lastGame) {

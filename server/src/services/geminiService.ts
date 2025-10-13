@@ -26,31 +26,75 @@ export const generateCrosswordHints = async (
   userCEFR: "A1" | "A2" | "B1" | "B2" | "C1" | "C2"
 ) => {
   try {
-    console.log("Gemini URL:", GEMINI_API_URL);
-    console.log(
-      "Gemini key loaded:",
-      process.env.GEMINI_API_KEY ? "yes" : "NO!"
-    );
-    let prompt = `Generate a crossword puzzle based on this extracted text: "${extractedText}".  
-Your task:
-- Choose clue–answer pairs suitable for CEFR level: ${userCEFR} (A1 to C2).
-- Use **real-world, general English vocabulary**, not academic, technical, or scientific terms — even at C2.
-- Avoid taxonomy, scientific classifications, Latin-based biology terms (e.g., "homoiothermic", "limnetic", "cnidarian", etc.).
-- Use words commonly found in general articles, spoken language, and popular media.
-- Do **not** include words that would confuse an advanced English learner unfamiliar with biology or science.
-- Clues should be clear and accessible for the target CEFR level.
-- The answer for each clue must not exceed the following character limits:
-  - A1, A2: 8 characters
-  - B1, B2: 10 characters
-  - C1, C2: 12 characters
-- If a suitable answer cannot be found within the limit, use a shorter synonym or a simpler word.
-Also include an **imagePrompt** — a creative description for generating an image that represents the crossword’s topic. It should work for AI image generation tools.
-- Do not repeat the same word (case-sensitive) for more than one clue.
-- Every answer in the "questions" array must be unique (case-insensitive). Do NOT repeat the same answer for different clues, even if the casing is different (e.g., "EARTH" and "earth" are considered the same).
-- If any answer is repeated (case-insensitive), the game will fail and your response will be rejected.
+    let prompt = `
+You are an expert English teacher and CEFR-certified linguist working for an AI word game system.
 
-Respond only with the following strict JSON format:
-\`\`\`json
+Your task is to analyze the given input and generate vocabulary items and clues suitable for an English word game.
+
+Generate a crossword puzzle based on this extracted text: "${extractedText}".
+
+────────────────────────────
+IMPORTANT NOTE FOR THE MODEL:
+When the CEFR level is A1 or A2, you must switch to "child-friendly mode."
+All output should be extremely simple, like vocabulary taught to very young children.
+Do NOT use adult-level beginner vocabulary.
+If a word feels too hard for a 6–9 year old, replace it with an easier one.
+
+────────────────────────────
+A1 (Kindergarten / Very Beginner)
+• Use only the simplest, most common English words — things children at kindergarten see every day.
+• One or two syllables only.
+• Avoid abstract or hard words.
+• Use short, clear example sentences (max 4 words).
+• Hints and definitions must be simple, concrete, and visual (e.g., “It says meow” for “cat”).
+• Think of what a child learning their first 100 English words could understand.
+
+────────────────────────────
+A2 (Early Primary)
+• Still very simple, but may include basic daily actions, places, or feelings.
+• Avoid long or abstract words.
+• Sentences can be a bit longer (max 6 words).
+• Hints should feel natural for a 7–9-year-old learner.
+• Words should describe real, visible, or common things.
+
+────────────────────────────
+For higher levels (B1–C2)
+• Gradually increase vocabulary complexity and abstractness, but not technicality.
+• Use natural, real-world English, not domain-specific or scientific jargon.
+• Focus on nuance, precision, or abstract meaning (e.g., “help” → “assist” → “facilitate” → “empower”), not rare or academic words.
+
+────────────────────────────
+For ALL levels
+• Do NOT repeat the same answer for different CEFR levels — each must be unique.
+• Use real-world, general English vocabulary — not academic, scientific, or obscure terms.
+• Avoid technical, Latin, or biology-related words (e.g., "homoiothermic", "limnetic").
+• All answers must contain only English letters (A–Z, a–z). No numbers or symbols.
+• Clues must directly define or describe the word’s meaning — no riddles or metaphors.
+• Every answer must be a real English word or proper noun that is a semantically correct, logical answer to its clue. Do NOT use random, unrelated, or out-of-context words. For example, for the clue "Top of your body," only answers like "head" or "hair" are valid; "rule" is NOT valid.
+• If you cannot find a suitable answer that fits the clue, leave that clue out.
+• Do NOT invent new words.
+• Answer length limits by CEFR level:
+    - A1–A2: 3–8 letters (simple words)
+    - B1–B2: 5–10 letters (moderate)
+    - C1–C2: 6–12 letters (advanced but natural)
+• Generate exactly 6 question–answer pairs (no more, no less).
+• If an answer is too long, replace it with a shorter real synonym.
+• Each answer must be unique (case-insensitive).
+• If you cannot find a suitable answer, skip it — do not fill with nonsense.
+────────────────────────────
+🚫 IMPORTANT CLUE RULE
+- The **answer word must NEVER appear inside its own question or hint**.  
+- Do NOT copy the answer directly into the clue text (e.g., avoid “A simple word related to phones: call” → answer “call”).  
+- Instead, describe its meaning or use a simple, visual or conceptual definition (e.g., for “call”: “You talk on the phone”).  
+────────────────────────────
+Image Prompt
+Include an imagePrompt — a creative description for generating an image that represents the crossword’s topic 
+(e.g., “A detailed digital illustration of outer space featuring Earth and Moon.”)
+
+────────────────────────────
+Output Format
+Return ONLY a valid JSON object — no Markdown, no explanations, no code fences.
+
 {
   "success": true,
   "game": {
@@ -71,7 +115,6 @@ Respond only with the following strict JSON format:
   },
   "imagePrompt": "A detailed digital illustration of outer space featuring Earth and Moon."
 }
-\`\`\`
 `;
 
     const response = await axios.post(GEMINI_API_URL, {
@@ -134,18 +177,41 @@ Respond only with the following strict JSON format:
     };
     const maxLen = gridLengths[userCEFR];
 
+    async function isRealEnglishWord(word: string): Promise<boolean> {
+      // Accept proper nouns (capitalized) and common words
+      if (/^[A-Z][a-z]+$/.test(word)) return true;
+      try {
+        const res = await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${word.toLowerCase()}`);
+        return Array.isArray(res.data) && res.data.length > 0;
+      } catch {
+        return false;
+      }
+    }
+
+    function isAlphabetic(word: string): boolean {
+      return /^[a-zA-Z]+$/.test(word);
+    }
     // Apply CEFR choice → sanitize → strict length filter (drop if invalid/too long)
     const processed = (gameData.game.questions as Array<any>)
       .map((q) => {
         const original = q.answer ?? "";
         // Prefer ranked CEFR word; fallback to original
         const picked = rankedWords?.[original]?.[userCEFR] ?? original;
-        const sanitized = sanitizeAnswer(picked);
+        let sanitized = sanitizeAnswer(picked);
 
-        // STRICT RULE: drop clue if empty or exceeds maxLen
+        // If synonym is too long, fallback to original
         if (!sanitized || sanitized.length > maxLen) {
+          sanitized = sanitizeAnswer(original);
+        }
+
+        // If still invalid, drop
+        if (
+          !sanitized ||
+          sanitized.length > maxLen ||
+          !isAlphabetic(sanitized)
+        ) {
           console.log(
-            `Dropping clue — length limit: "${original}" → "${picked}" → "${sanitized}" (max ${maxLen})`
+            `Dropping clue — invalid answer: "${original}" → "${picked}" → "${sanitized}" (max ${maxLen})`
           );
           return null;
         }
@@ -154,14 +220,33 @@ Respond only with the following strict JSON format:
       })
       .filter(Boolean) as Array<any>;
 
+    const realWordProcessed = [];
+    for (const q of processed) {
+      if (await isRealEnglishWord(q.answer)) {
+        realWordProcessed.push(q);
+      } else {
+        console.log(`Dropping hallucinated/non-dictionary word: "${q.answer}"`);
+      }
+    }
+
     // Remove duplicates AFTER strict length filtering (case-insensitive on sanitized answers)
-    const deduped = dedupeQuestions(processed);
+    let deduped = dedupeQuestions(realWordProcessed);
+    deduped = deduped.slice(0, 6);
 
     // Optional: enforce minimum question count to accept a puzzle
-    // const MIN_QUESTIONS = 6;
-    // if (deduped.length < MIN_QUESTIONS) {
-    //   throw new Error(`Not enough unique, within-limit answers (need ${MIN_QUESTIONS}).`);
-    // }
+    const MIN_QUESTIONS = 6;
+    if (deduped.length < MIN_QUESTIONS) {
+      console.warn(`Only ${deduped.length} valid clues — refilling with fallback simple words.`);
+      const fillerWords = ["phone", "call", "text", "app", "chat", "wifi"]
+        .slice(0, MIN_QUESTIONS - deduped.length)
+        .map((w) => ({
+          question: `A simple word related to phones: ${w}`,
+          answer: w,
+          hint: "Basic filler word"
+        }));
+      deduped.push(...fillerWords);
+    }
+
 
     const finalPayload = {
       success: true,
@@ -215,39 +300,34 @@ function dedupeQuestions<T extends { answer: string }>(qs: T[]): T[] {
   return out;
 }
 
-/** Legacy helper – not used in main flow, kept for compatibility/reference. */
-function transformGameFormat(geminiResponse: any, userId: number) {
-  const transformedGame = {
-    success: true,
-    game: {
-      id: geminiResponse.game?.id || Math.floor(Math.random() * 1000),
-      topic: geminiResponse.game?.topic || "Unknown Topic",
-      questions: [] as Array<{ question: string; answer: string }>,
-      userId,
-    },
-  };
-
-  const { across = {}, down = {} } = geminiResponse.game?.clues || {};
-  Object.entries({ ...across, ...down }).forEach(([_, clueObj]) => {
-    transformedGame.game.questions.push({
-      question: (clueObj as { clue: string }).clue,
-      answer: (clueObj as { answer: string }).answer,
-    });
-  });
-
-  return transformedGame;
-}
-
 async function rankWordsByCEFR(
   wordSynonyms: { [key: string]: string[] },
   userCEFR: string
 ) {
   try {
-    const prompt = `For each word below, choose the best synonym based on:
-1. Its contextual fit with the original clue.
-2. Its appropriateness for CEFR levels A1 to C2 where user CEFR level is ${userCEFR}.
+    const prompt = `
+You are an expert CEFR linguist helping an AI word game system choose correct vocabulary difficulty levels.
+
+For each word below, provide appropriate synonyms across CEFR levels (A1 to C2), while keeping them related to the same **semantic theme** and **topic** as the original word list.
+If the topic is entertainment, art, or horror (e.g., "Art the Clown"), avoid unrelated academic or random verbs like “do” or “go.”
+
+────────────────────────────
+RULES:
+- Each level’s synonym must make sense in the same context as the original word.
+- For A1–A2, use **child-friendly, visual, concrete** words that a 6–9-year-old can easily understand.
+- For B1–B2, use general intermediate English words known to teens or casual learners.
+- For C1–C2, use natural, advanced, or thematic vocabulary that fits academic or creative writing.
+- Avoid invented, rare, or scientific words (e.g., “homoiothermic”, “limnetic”).
+- Avoid random or meaningless replacements like “do”, “go”, “thing”, “nice”.
+- Never use words unrelated to the topic or emotion of the source material.
+- All outputs must be real, dictionary-valid English words.
+- If you cannot find a suitable synonym, leave that CEFR slot blank or repeat the closest valid one.
+- Every answer must be a real English word or proper noun that is a semantically correct, logical answer to its clue. Do NOT use random, unrelated, or out-of-context words. For example, for the clue "Top of your body," only answers like "head" or "hair" are valid; "rule" is NOT valid.
+- If you cannot find a suitable answer that fits the clue, leave that clue out.
+────────────────────────────
 Return a JSON object in this exact structure:
-      "word1": {
+{
+  "word1": {
     "A1": "easiest synonym",
     "A2": "slightly harder synonym",
     "B1": "medium difficulty synonym",
@@ -255,19 +335,21 @@ Return a JSON object in this exact structure:
     "C1": "complex synonym",
     "C2": "most difficult synonym"
   },
+  "word2": { ... },
   ...
 }
-Ensure each word has **one synonym per CEFR level**. Do not add any explanations or extra text.
-Guidelines:
-- Avoid overly academic, rare, or scientific terms (e.g., "homoiothermic", "limnetic") even at C2.
-- Favor real-world, commonly understood words instead.
-- Prefer general English over discipline-specific vocabulary.
 
-Words and their synonyms:
+Each word below represents the ANSWER to a crossword clue about the same topic.
+Do not select synonyms that change its meaning or make the clue nonsense.
+For example, if the clue was "Top of your body", the answer must stay semantically correct ("head" → "face", "hair"), not random words ("rule", "law").
+
+Words and their synonyms (keep topic and meaning consistent):
 ${Object.entries(wordSynonyms)
         .map(([word, syns]) => `"${word}": ["${syns.join('", "')}"]`)
         .join(",\n")}
+
 `;
+
 
     console.log("🔍 Sending request to Gemini for CEFR ranking...");
     const response = await axios.post(GEMINI_API_URL, {

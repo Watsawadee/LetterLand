@@ -34,10 +34,10 @@ export const CreateGameFromGeminiResponseSchema = z.object({
         isHintUsed: z.boolean(),
         isFinished: z.boolean(),
         gameCode: z.string().nullable(),
+        gameType: GameTypeSchema,
         gameTemplate: z.object({
             id: z.number(),
             gameTopic: z.string(),
-            gameType: GameTypeSchema,
             difficulty: EnglishLevelSchema,
             imageUrl: z.string().nullable().optional(),
             ownerId: z.number(),
