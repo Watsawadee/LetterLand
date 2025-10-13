@@ -15,21 +15,21 @@ export async function getAuthHeader() {
         },
     };
 }
-export async function getTotalGameThisWeek(offSet = 0): Promise<WeeklyGameData> {
-    const userId = await getLoggedInUserId();
-    const config = await getAuthHeader();
-    const res = await api.get<WeeklyGameData>(
-        `/dashboard/user/${userId}/gameplayedperweek?offset=${offSet}`,
-        config
-    );
-    const ok = GamesPlayedPerWeekResponseSchema.safeParse(res.data);
-    if (ok.success) return ok.data;
+// export async function getTotalGameThisWeek(offSet = 0): Promise<WeeklyGameData> {
+//     const userId = await getLoggedInUserId();
+//     const config = await getAuthHeader();
+//     const res = await api.get<WeeklyGameData>(
+//         `/dashboard/user/${userId}/gameplayedperweek?offset=${offSet}`,
+//         config
+//     );
+//     const ok = GamesPlayedPerWeekResponseSchema.safeParse(res.data);
+//     if (ok.success) return ok.data;
 
-    const err = ErrorResponseSchema.safeParse(res.data);
-    if (err.success) throw new Error(err.data.error);
+//     const err = ErrorResponseSchema.safeParse(res.data);
+//     if (err.success) throw new Error(err.data.error);
 
-    throw new Error("Invalid response from server");
-}
+//     throw new Error("Invalid response from server");
+// }
 
 export const getAverageGamesByLevel = async (offSet = 0) => {
     const token = await getToken();
