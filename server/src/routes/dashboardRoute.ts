@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  getAverageGamesEachDayByLevel,
   getAverageGamesPlayedByLevel,
   getUserGamesPlayedPerWeek,
   getUserTotalPlaytime,
@@ -20,5 +21,6 @@ router.get(
   authenticatedUser,
   getAverageGamesPlayedByLevel
 );
+router.get("/average/daily", authenticatedUser, getAverageGamesEachDayByLevel);
 
 export default router;

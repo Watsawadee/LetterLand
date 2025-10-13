@@ -7,11 +7,13 @@ import {
   WordsLearnedResponseSchema,
   GamesPlayedPerWeekResponseSchema,
   AverageGamesByLevelResponseSchema,
+  AverageGamesEachDayResponseSchema,
 } from "../types/dashboard.schema";
 import {
   TotalPlaytimeOrError, WordsLearnedOrError,
   GamesPlayedPerWeekOrError,
   AverageGamesByLevelOrError,
+  AverageGamesEachDayOrError,
 } from "../types/type"
 import { EnglishLevel } from "@prisma/client";
 export const getUserTotalPlaytime = async (
@@ -263,3 +265,96 @@ export const getAverageGamesPlayedByLevel = async (
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+export const getAverageGamesEachDayByLevel = async (req: AuthenticatedRequest,
+  res: Response<AverageGamesEachDayOrError>): Promise<void> => {
+  const userId = req.user?.id
+  if (!userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  try {
+    const offSet = Number(req.query.offset ?? 0)
+    if (Number.isNaN(offSet)) {
+      res.status(400).json({ error: "Invalid offset" });
+      return;
+    }
+    const base = addWeeks(new Date(), offSet);
+    const start = startOfWeek(base, { weekStartsOn: 0 });
+    const end = endOfWeek(base, { weekStartsOn: 0 });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { englishLevel: true },
+    });
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    const userLevel = user.englishLevel
+    if (!userLevel) {
+      res.status(404).json({ error: "English Level not found" });
+      return;
+    }
+    const sameLevelUsers = await prisma.user.findMany({
+      where: {
+        englishLevel: userLevel,
+        NOT: { id: userId },
+      },
+      select: { id: true },
+    });
+    const sameLevelUserIds = sameLevelUsers.map((u) => u.id);
+    const peerCount = sameLevelUserIds.length;
+    const days = eachDayOfInterval({ start, end });
+    const labels = days.map(day => format(day, "EEE").slice(0, 2));
+    if (peerCount === 0) {
+      const zeroCounts = labels.map(() => 0);
+      const payload = {
+        englishLevel: userLevel,
+        userCount: 0,
+        labels,
+        counts: zeroCounts,
+        weekLabel: `${format(start, "MMM d")} – ${format(end, "MMM d, yyyy")}`,
+        offSet,
+      };
+      const response = AverageGamesEachDayResponseSchema.parse(payload);
+      res.status(200).json(response as any);
+      return;
+    }
+    const peerGames = await prisma.game.findMany({
+      where: {
+        userId: { in: sameLevelUserIds },
+        isFinished: true,
+        startedAt: { gte: start, lte: end },
+      },
+      select: {
+        startedAt: true,
+      },
+    });
+
+    const dailyTotalGames: Record<string, number> = Object.fromEntries(labels.map(l => [l, 0]));
+    peerGames.forEach((game) => {
+      const key = format(game.startedAt, "EEE").slice(0, 2);
+      if (key in dailyTotalGames) {
+        dailyTotalGames[key] += 1;
+      }
+    });
+    const dailyAverages = labels.map(dayLabel =>
+      Number((dailyTotalGames[dayLabel] / peerCount).toFixed(2))
+    );
+    const payload = {
+      englishLevel: userLevel,
+      userCount: peerCount,
+      labels,
+      counts: dailyAverages,
+      weekLabel: `${format(start, "MMM d")} – ${format(end, "MMM d, yyyy")}`,
+      offSet,
+    };
+
+    const response = AverageGamesEachDayResponseSchema.parse(payload);
+    res.status(200).json(response as any);
+  }
+  catch (error: any) {
+    console.error("❌ Error computing daily average peer games:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+}

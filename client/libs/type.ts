@@ -8,7 +8,7 @@ import {
 import { UserSchema } from "../types/user.schema";
 import { ErrorResponseSchema, GetWordsOrErrorSchema, GetWordsResponseSchema, SetupProfileRequestSchema, SetupProfileResponseSchema, SetupProfileSuccessSchema, vocabEntrySchema } from "../types/setup.schema"
 import { UserProfileOrErrorSchema, UserProfileResponseSchema } from "../types/userProfile.schema"
-import { AverageGamesByLevelOrErrorSchema, GamesPlayedPerWeekOrErrorSchema, GamesPlayedPerWeekResponseSchema, TotalPlaytimeOrErrorSchema, TotalPlaytimeResponseSchema, WordsLearnedOrErrorSchema, WordsLearnedResponseSchema } from "../types/dashboard.schema"
+import { AverageGamesByLevelOrErrorSchema, AverageGamesEachDayOrErrorSchema, GamesPlayedPerWeekOrErrorSchema, GamesPlayedPerWeekResponseSchema, TotalPlaytimeOrErrorSchema, TotalPlaytimeResponseSchema, WordsLearnedOrErrorSchema, WordsLearnedResponseSchema } from "../types/dashboard.schema"
 import { CreateGameFromGeminiRequestSchema, CreateGameFromGeminiResponseSchema, EnglishLevelSchema, GameTypeSchema, MaterialTypeSchema } from "@/types/createGame.schema";
 import { UpdateUserProfileResponse, UpdateUserSettingSchema } from "@/types/setting.schema";
 import { ProgressLevelupParamsSchema, ProgressLevelupResponseSchema } from "@/types/progressLevelup.schema";
@@ -50,6 +50,8 @@ export type GamesPlayedPerWeekOrError = z.infer<
 export type AverageGamesByLevelOrError = z.infer<
     typeof AverageGamesByLevelOrErrorSchema
 >;
+export type AverageGamesEachDayOrError = z.infer<typeof AverageGamesEachDayOrErrorSchema>
+
 
 //Create Game
 export type MaterialType = z.infer<typeof MaterialTypeSchema>;

@@ -51,3 +51,17 @@ export const GamesPlayedPerWeekOrErrorSchema = z.union([
     ErrorResponseSchema,
 ]);
 
+
+export const AverageGamesEachDayResponseSchema = z.object({
+    englishLevel: z.enum(["A1", "A2", "B1", "B2", "C1", "C2"]),
+    userCount: z.number().int().nonnegative(),
+    labels: z.array(z.string().length(2)),
+    counts: z.array(z.number()),
+    weekLabel: z.string(),
+    offSet: z.number().int(),
+});
+export const AverageGamesEachDayOrErrorSchema = z.union([
+    AverageGamesEachDayResponseSchema,
+    ErrorResponseSchema,
+]);
+
