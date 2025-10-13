@@ -114,7 +114,9 @@ export const getUserGamesPlayedPerWeek = async (
       res.status(400).json({ error: "Invalid offset" });
       return;
     }
-    const base = addWeeks(new Date(), offSet);
+    const now = new Date();
+    const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const base = addWeeks(localMidnight, offSet);
     const start = startOfWeek(base, { weekStartsOn: 0 });
     const end = endOfWeek(base, { weekStartsOn: 0 });
 
@@ -204,7 +206,9 @@ export const getAverageGamesPlayedByLevel = async (
       return;
     }
 
-    const base = addWeeks(new Date(), offSet);
+    const now = new Date();
+    const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const base = addWeeks(localMidnight, offSet);
     const start = startOfWeek(base, { weekStartsOn: 0 });
     const end = endOfWeek(base, { weekStartsOn: 0 });
 
