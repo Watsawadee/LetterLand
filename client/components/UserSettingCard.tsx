@@ -33,6 +33,9 @@ const UserSettingCard = ({ onBack }: Props) => {
   const [gameType, setGameType] = useState<"crossword" | "wordsearch" | null>(
     null
   );
+  const [isUsernameFocused, setIsUsernameFocused] = useState(false);
+  const [isEmailFocused, setIsEmailFocused] = useState(false);
+
   const [dialogVisible, setDialogVisible] = useState(false);
   const [updateLevelDialogVisible, setupdateLevelDialogVisible] = useState(false);
   const [infoDialogVisible, setInfoDialogVisible] = useState(false);
@@ -144,52 +147,70 @@ const UserSettingCard = ({ onBack }: Props) => {
           }}
           hitSlop={10}
         >
-          <ArrowLeft />
+          <ArrowLeft color={Color.gray} />
         </Pressable>
         <Text style={{ color: Color.gray, fontSize: 25, fontWeight: "bold", marginLeft: 4 }}>
           Account
         </Text>
       </View>
-      <View style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: "80%", maxHeight: "100%" }}>
 
-        <View style={{ gap: 10 }}>
-          <TextInput
-            label="Username"
-            value={username}
-            onChangeText={setUsername}
-            mode="outlined"
-            autoCapitalize="none"
-            textColor={Color.gray}
-            style={{ backgroundColor: "#FFF" }}
-            activeOutlineColor={Color.gray}
-          />
-          <TextInput
-            label="Email"
-            value={email}
-            onChangeText={setEmail}
-            mode="outlined"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            style={{ backgroundColor: "#fff" }}
-            activeOutlineColor={Color.gray}
-            textColor={Color.gray}
-          />
+      <View style={{ flexDirection: "column", justifyContent: "space-between", height: "80%", marginTop: 20 }}>
+        <View style={{ flexDirection: "column", gap: 20 }} >
+          <View>
+            <View style={{ flexDirection: "column", width: "100%" }} >
+              <Text style={{ color: Color.gray, fontWeight: Typography.header20.fontWeight, fontSize: Typography.header16.fontSize }}>Username</Text>
+              <TextInput
+                mode="outlined"
+                value={username}
+                onChangeText={setUsername}
+                autoCapitalize="none"
+                outlineColor="#B5B5B5"
+                activeOutlineColor={Color.gray}
+                textColor={Color.gray}
+                style={{ backgroundColor: "#FFF", marginBottom: 12 }}
+                contentStyle={{ paddingVertical: 5 }}
+                outlineStyle={{ borderRadius: 999, borderWidth: 1.5 }}
+                onFocus={() => setIsUsernameFocused(true)}
+                onBlur={() => setIsUsernameFocused(false)}
+                right={<TextInput.Icon icon="pencil" color={isUsernameFocused ? Color.gray : "#B5B5B5"} />}
+              />
+            </View>
+            <View style={{ flexDirection: "column", gap: 5 }} >
+              <Text style={{ color: Color.gray, fontWeight: Typography.header20.fontWeight, fontSize: Typography.header16.fontSize }}>Email</Text>
+              <TextInput
+                // label="Email"
+                value={email}
+                onChangeText={setEmail}
+                mode="outlined"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                style={{ backgroundColor: "#fff" }}
+                contentStyle={{ paddingVertical: 12 }}
+                outlineStyle={{ borderRadius: 999, borderWidth: 1.5 }}
+                outlineColor="#B5B5B5"
+                activeOutlineColor={Color.gray}
+                textColor={Color.gray}
+                onFocus={() => setIsEmailFocused(true)}
+                onBlur={() => setIsEmailFocused(false)}
+                right={<TextInput.Icon icon="pencil" color={isEmailFocused ? Color.gray : "#B5B5B5"} />}
+              />
+            </View>
 
-          {isDirty && (
-            <Button
-              mode="contained"
-              onPress={onSave}
-              disabled={!isDirty || isPending}
-              loading={isPending}
-              style={{ marginTop: 8, backgroundColor: !isDirty || isPending ? Color.lightblue : Color.blue }}
-            >
-              <Text style={{ marginTop: 8, color: Color.white, fontWeight: Typography.header25.fontWeight }}>
-                Save
-              </Text>
-            </Button>)}
-        </View>
-        <View style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", height: "17%", }}>
-          <View style={{ display: "flex", flexDirection: "row", gap: 5, alignItems: "center" }}>
+            {isDirty && (
+              <Button
+                mode="contained"
+                onPress={onSave}
+                disabled={!isDirty || isPending}
+                loading={isPending}
+                style={{ marginTop: 20, backgroundColor: !isDirty || isPending ? "#B5B5B5" : Color.blue }}
+              >
+                <Text style={{ marginTop: 8, color: Color.white, fontWeight: Typography.header25.fontWeight }}>
+                  Save
+                </Text>
+              </Button>)}
+          </View>
+
+          <View style={{ display: "flex", flexDirection: "row", gap: 3, alignItems: "center" }}>
             <Text style={{ fontSize: Typography.header25.fontSize, fontWeight: Typography.header25.fontWeight, color: Color.gray }}>
               Upgrade Level
             </Text>
@@ -204,7 +225,7 @@ const UserSettingCard = ({ onBack }: Props) => {
             </Button>
           </View>
           <View style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-            <Button style={{ backgroundColor: user?.canLevelUp ? Color.blue : Color.lightblue, width: "90%" }} contentStyle={{ height: 50 }} disabled={!user?.canLevelUp} onPress={() => {
+            <Button style={{ backgroundColor: user?.canLevelUp ? Color.blue : "#B5B5B5", width: "90%" }} contentStyle={{ height: 50 }} disabled={!user?.canLevelUp} onPress={() => {
               handleLevelup()
             }}>
               <Text style={{ fontSize: Typography.header20.fontSize, fontWeight: Typography.header20.fontWeight, color: Color.white }} >
@@ -238,29 +259,8 @@ const UserSettingCard = ({ onBack }: Props) => {
             </Portal >
           </View>
         </View>
-        {/* <View style={{ display: "flex", flexDirection: "row", justifyContent: "space-around", alignItems: "center" }}> */}
-        {/* <Button
-            mode="contained"
-            style={{
-              backgroundColor: Color.blue,
-              borderRadius: 25,
-              marginTop: 12,
-              alignItems: "center"
-            }}
-            contentStyle={{
-              height: 80,
-            }}
-            onPress={() => {
-              setDialogVisible(true);
-              setInfoDialogVisible(false);
-              setupdateLevelDialogVisible(false);
-            }}
-          >
-            <Text style={{
-              color: "white", fontWeight: "bold",
-              fontSize: 20
-            }}>Create Puzzle</Text>
-          </Button> */}
+      </View>
+      <View style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", height: "20%", marginBottom: 20 }}>
 
         <Button onPress={() => {
           if (Platform.OS === "web") {
@@ -284,8 +284,8 @@ const UserSettingCard = ({ onBack }: Props) => {
             Logout
           </Text>
         </Button>
-        {/* </View> */}
       </View>
+
     </Card >
   );
 };

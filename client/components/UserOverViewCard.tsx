@@ -6,7 +6,7 @@ import { getLoggedInUserId } from "@/utils/auth";
 import { useUserProfile } from "@/hooks/useGetUserProfile";
 import coinIcon from "../assets/images/coin.png"
 import Explore from "../assets/images/Explore.png"
-import { Button, Card, Dialog, IconButton, Portal, Text } from "react-native-paper";
+import { Button, Card, Dialog, IconButton, Portal, ProgressBar, Text } from "react-native-paper";
 import mascot from "@/assets/images/mascot.png";
 import SettingIcon from "@/assets/icon/settingIcon";
 import { Color } from "@/theme/Color";
@@ -139,9 +139,42 @@ const UserOverviewCard = ({ coins, onOpenSettings }: Props) => {
               }}>
                 <Text style={{ fontWeight: "700", color: Color.gray }} >Dashboard</Text>
 
-                <Text variant="bodyMedium" style={{ color: Color.gray }}>This is your current game performance</Text>
-                <View style={{ backgroundColor: Color.pink, padding: 6, borderRadius: 10, width: "13%" }}>
-                  <Text style={{ fontWeight: "500", color: Color.gray, textAlign: "center" }}>{user.englishLevel}</Text>
+                <Text variant="bodyMedium" style={{ color: Color.gray }}>Access all your stats and updates in {"\n"} the dashboard.</Text>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 10,
+                    width: "100%",
+                  }}
+                >
+                  {/* Level badge */}
+                  <View
+                    style={{
+                      backgroundColor: Color.pink,
+                      padding: 6,
+                      borderRadius: 10,
+                      width: "15%",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text style={{ fontWeight: "500", color: Color.gray, textAlign: "center" }}>
+                      {user.englishLevel}
+                    </Text>
+                  </View>
+
+                  {/* Progress bar */}
+                  <View style={{ flex: 1, flexDirection: "row", alignItems: "center" }}>
+                    <ProgressBar
+                      progress={Math.min((user?.progressPercent ?? 0) / 100, 1)}
+                      color={Color.pink}
+                      style={{
+                        height: 14,
+                        borderRadius: 10,
+                        backgroundColor: "#E0E0E0",
+                      }}
+                    />
+                  </View>
                 </View>
               </View>
             </View>
@@ -155,11 +188,12 @@ const UserOverviewCard = ({ coins, onOpenSettings }: Props) => {
               borderColor: "#5B6073",
               borderRadius: 20,
               borderWidth: 1,
+              width: "100%"
             }}>
               <View style={{ display: "flex", flexDirection: "row" }}>
-                <Image source={Explore} style={{ width: 35, height: 30 }} />
+                <Image source={Explore} style={{ width: 45, height: 40 }} />
 
-                <Text style={{ fontWeight: "700", color: Color.gray, display: "flex", flexDirection: "column", justifyContent: "center" }}>Solve puzzles created by others</Text>
+                <Text variant="bodyMedium" style={{ color: Color.gray }}>Explore and solve puzzles{"\n"}from the community.</Text>
               </View>
               <Button mode="contained" style={{ backgroundColor: Color.green }} onPress={() => { router.replace("/Publicboard") }}>
                 <Text style={{ color: Color.white, fontWeight: "bold" }}>Explore other game</Text>
