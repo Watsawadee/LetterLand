@@ -98,13 +98,13 @@ const UserOverviewCard = ({ coins, onOpenSettings }: Props) => {
           <View style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", alignContent: "center", gap: 5 }}>
             <View style={{ display: "flex", flexDirection: "column", gap: 5 }}>
               <Text
-                variant="titleMedium" style={{ fontWeight: "700", color: Color.gray, display: "flex", alignContent: "flex-start" }}
+                variant="titleMedium" style={{ fontWeight: Typography.header20.fontWeight, fontSize: Typography.header20.fontSize, color: Color.gray, display: "flex", alignContent: "flex-start" }}
               >
                 {user.username}
               </Text>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
                 <Image source={coinIcon} style={{ width: 30, height: 30, }} />
-                <Text style={{ color: Color.gray }}>{typeof coins === "number" ? coins : user.coin}</Text>
+                <Text style={{ color: "#F9C23C", fontWeight: "900", fontSize: Typography.header16.fontSize }}>{typeof coins === "number" ? coins : user.coin}</Text>
               </View>
             </View>
             <Button
@@ -164,14 +164,26 @@ const UserOverviewCard = ({ coins, onOpenSettings }: Props) => {
                   </View>
 
                   {/* Progress bar */}
-                  <View style={{ flex: 1, flexDirection: "row", alignItems: "center" }}>
+                  <View
+                    style={{
+                      flex: 1,
+                      flexDirection: "column",
+                      justifyContent: "center",
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.25,
+                      shadowRadius: 4,
+                    }}
+                  >
                     <ProgressBar
                       progress={Math.min((user?.progressPercent ?? 0) / 100, 1)}
                       color={Color.pink}
+
                       style={{
-                        height: 14,
-                        borderRadius: 10,
-                        backgroundColor: "#E0E0E0",
+                        height: 18,
+                        borderRadius: 999,
+                        backgroundColor: Color.white,
+                        overflow: "hidden",
                       }}
                     />
                   </View>
