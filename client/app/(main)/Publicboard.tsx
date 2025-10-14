@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+// app/(screens)/Publicboard.tsx
+import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "expo-router";
 import {
   View,
@@ -7,26 +8,72 @@ import {
   TouchableOpacity,
   useWindowDimensions,
 } from "react-native";
+
 import GardenBackgroundBlueSky from "@/assets/backgroundTheme/GardenBackgroundBlue";
 import WordBankModal from "@/components/WordBank";
 import { ButtonStyles } from "@/theme/ButtonStyles";
 import { Typography } from "@/theme/Font";
-import PublicGames from "@/components/publicgame";
+import PublicGames from "@/components/publicgame"; // keep your existing path
 import UserOverviewCard from "@/components/UserOverViewCard";
+import UserSettingCard from "@/components/UserSettingCard";
 import Book from "@/assets/icon/Book";
 import ArrowLeft from "@/assets/icon/ArrowLeft";
-import UserSettingCard from "@/components/UserSettingCard";
 
-export default function Public() {
+// 🔎 search UI + API
+import FloatingSearch from "@/components/Searchbar";
+import api from "@/services/api";
+
+export default function Publicboard() {
   const router = useRouter();
   const [showBook, setShowBook] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+
   const { width } = useWindowDimensions();
   const isWide = width >= 1024;
 
-  const handleBackPress = () => {
-    router.push("/Home");
-  };
+  // --- search state ---
+  const [gameName, setGameName] = useState("");
+  const [difficulty, setDifficulty] = useState(""); // A1..C2 or ""
+  const [hasSearched, setHasSearched] = useState(false);
+  const [whitelistIds, setWhitelistIds] = useState<number[] | null>(null);
+
+  const handleBackPress = () => router.push("/Home");
+
+  // --- run backend search, collect template IDs ---
+  const runSearch = useCallback(async () => {
+    try {
+      const params: Record<string, string> = {};
+      if (gameName.trim()) params.q = gameName.trim();  // supports q or gameName
+      if (difficulty) params.levels = difficulty;       // supports levels or difficulty
+
+      const { data } = await api.get("/search/search-games", { params });
+      const list: { id: number }[] = data?.games ?? [];
+
+      setWhitelistIds(list.map((g) => g.id));
+      setHasSearched(true);
+    } catch (err) {
+      console.error("search failed:", err);
+      setWhitelistIds([]); // show empty state
+      setHasSearched(true);
+    }
+  }, [gameName, difficulty]);
+
+  // 👉 auto-search when CEFR tag changes (and reset when cleared)
+  useEffect(() => {
+    if (difficulty) {
+      runSearch();
+      return;
+    }
+    // if level is cleared…
+    if (!gameName.trim()) {
+      // …and no text, reset to default feed
+      setWhitelistIds(null);
+      setHasSearched(false);
+    } else {
+      // …but still has text -> search by text only
+      runSearch();
+    }
+  }, [difficulty, gameName, runSearch]);
 
   return (
     <View style={styles.root}>
@@ -40,36 +87,58 @@ export default function Public() {
             { marginRight: isWide ? 24 : 0, marginBottom: isWide ? 0 : 24 },
           ]}
         >
-          {/* Header with back button */}
+          {/* Header Row */}
           <View style={styles.headerRow}>
             <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
               <ArrowLeft width={24} height={24} />
-              <Text style={[Typography.header30, { marginLeft: 4 }]}>
-                Public Board
-              </Text>
+              <Text style={[Typography.header30, { marginLeft: 4 }]}>Public Board</Text>
             </TouchableOpacity>
 
-            {/* Word Bank Button */}
-            <TouchableOpacity
-              style={[
-                ButtonStyles.wordBank.container,
-                { flexDirection: "row", alignItems: "center" },
-              ]}
-              onPress={() => setShowBook(true)}
-            >
-              <Book width={50} height={50} style={{ marginRight: 4 }} />
-              <View style={{ flexDirection: "column", alignItems: "flex-start", paddingLeft: 8 }}>
-                <Text style={ButtonStyles.wordBank.text}>Word</Text>
-                <Text style={ButtonStyles.wordBank.text}>Bank</Text>
-              </View>
-            </TouchableOpacity>
+            <View style={styles.controlsRight}>
+  {/* only search bar gets marginTop */}
+  <View style={{ width: isWide ? 360 : 240, marginTop: 0 }}>
+    <FloatingSearch
+      value={gameName}
+      onChangeText={(txt) => {
+        setGameName(txt);
+        if (!txt.trim() && !difficulty) {
+          setWhitelistIds(null);
+          setHasSearched(false);
+        }
+      }}
+      level={difficulty}
+      onChangeLevel={(lv) => setDifficulty(lv)}
+      onSubmit={runSearch}
+    />
+  </View>
 
-            <WordBankModal visible={showBook} onClose={() => setShowBook(false)} />
+  {/* Word Bank button stays unchanged */}
+  <TouchableOpacity
+    style={[
+      ButtonStyles.wordBank.container,
+      { flexDirection: "row", alignItems: "center" },
+    ]}
+    onPress={() => setShowBook(true)}
+  >
+    <Book width={50} height={50} style={{ marginRight: 4 }} />
+    <View style={{ flexDirection: "column", alignItems: "flex-start", paddingLeft: 8 }}>
+      <Text style={ButtonStyles.wordBank.text}>Word</Text>
+      <Text style={ButtonStyles.wordBank.text}>Bank</Text>
+    </View>
+  </TouchableOpacity>
+
+  <WordBankModal visible={showBook} onClose={() => setShowBook(false)} />
+</View>
+
           </View>
 
-          {/* Public Games Scroll */}
+          {/* Main Area — reuse PublicGames with optional whitelist */}
           <View style={styles.publicGamesContainer}>
-            <PublicGames title=" " />
+            {hasSearched ? (
+              <PublicGames title=" " whitelistIds={whitelistIds} />
+            ) : (
+              <PublicGames title=" " />
+            )}
           </View>
         </View>
 
@@ -110,13 +179,13 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 24,
     flexDirection: "row",
-    minHeight: 0, // 👈 allow children to shrink
+    minHeight: 0,
   },
   leftPanel: {
     flex: 2.5,
     borderRadius: 20,
     padding: 16,
-    minHeight: 0, // 👈 critical for nested FlatList
+    minHeight: 0,
   },
   rightPanel: {
     flex: 1,
@@ -128,17 +197,9 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 40,
-  },
-  link: {
-    color: "#2F80ED",
-  },
-  publicGamesContainer: {
-    flexDirection: "column",
-    gap: 16,
-    flex: 1,
-    minHeight: 0, // 👈 allow the FlatList to get height
+    alignItems: "center",  // vertical centering with title
+    gap: 12,
+    marginBottom: 8,
   },
   backButton: {
     flexDirection: "row",
@@ -147,5 +208,17 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 0,
     marginLeft: -8,
+  },
+  controlsRight: {
+    flexDirection: "row",
+    alignItems: "center",  // same baseline as the title
+    gap: 12,
+  },
+  publicGamesContainer: {
+    flexDirection: "column",
+    gap: 16,
+    flex: 1,
+    minHeight: 0,
+    marginTop: 8,
   },
 });

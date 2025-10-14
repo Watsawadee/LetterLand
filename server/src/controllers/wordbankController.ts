@@ -1,4 +1,3 @@
-
 import prisma from "../configs/db";
 import { Response, NextFunction } from "express";
 import { AuthenticatedRequest } from "../types/authenticatedRequest";

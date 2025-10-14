@@ -1,3 +1,4 @@
+// types/achievementTypes.ts
 export interface Achievement {
   id: number;
   name: string;
@@ -8,8 +9,9 @@ export interface Achievement {
   maxProgress: number;
   isCompleted: boolean;
   earnedAt: string | null;
-  isClaimed?: boolean;
+  isClaimed: boolean;     // <- always present
   claimedAt?: string | null;
+  rank?: number;          // <- backend may send this
 }
 
 export interface AchievementResponse {

@@ -1,3 +1,4 @@
+// src/screens/PublicGames.tsx
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
   View,
@@ -31,6 +32,9 @@ import GameTypeCard from "@/components/GameTypeModal";
 import InfoIcon from "@/assets/icon/infoIcon";
 import GameTypeBackground from "@/assets/backgroundTheme/GameTypeBackground";
 import CloseIcon from "@/assets/icon/CloseIcon";
+
+/* ---------- use your existing profile service (returns CEFR level) ---------- */
+import { getUserProfile } from "@/services/getUserProfileService";
 
 /* ------------------ Timer pills (UiTimer = seconds-as-strings) ------------------ */
 export type UiTimer = "none" | "60" | "180" | "300";
@@ -85,47 +89,114 @@ const t = StyleSheet.create({
   chipTextSelected: { color: "#FFFFFF", fontWeight: "700" },
 });
 
+/* ----- CEFR order helper ----- */
+const LEVEL_ORDER = ["A1","A2","B1","B2","C1","C2"] as const;
+type Level = typeof LEVEL_ORDER[number];
+const rank = (lvl?: string | null) => {
+  const i = LEVEL_ORDER.indexOf(lvl as Level);
+  return i === -1 ? Number.POSITIVE_INFINITY : i;
+};
+
+/* ---------- CEFR color palette ---------- */
+const LEVEL_COLORS: Record<string, string> = {
+  A1: "#F2B9DD",
+  A2: "#FB7FC7",
+  B1: "#F19DB8",
+  B2: "#FB6C97",
+  C1: "#C8A8E0",
+  C2: "#AE7EDF",
+};
+
 /* ------------------ Grid Card ------------------ */
 type GridCardProps = {
   id: number;
   image: string | null | undefined;
   title: string;
-  subtitle?: string;
   level?: string;
+  locked?: boolean;
   onPress?: () => void;
 };
 
 const GridCard: React.FC<GridCardProps> = ({
   image,
   title,
-  subtitle,
   level,
+  locked = false,
   onPress,
 }) => (
-  <TouchableOpacity style={card.card} onPress={onPress}>
+  <TouchableOpacity
+    style={[card.card, locked && { opacity: 0.6 }]}
+    onPress={() => {
+      if (locked) return;
+      onPress?.();
+    }}
+    activeOpacity={locked ? 1 : 0.7}
+  >
     {!!image && <Image source={{ uri: image }} style={card.image} />}
+    {locked && (
+      <View style={lockStyles.overlay}>
+        <Text style={lockStyles.lockEmoji}>🔒</Text>
+        <Text style={lockStyles.lockText}>Locked</Text>
+      </View>
+    )}
     <View style={card.content}>
       <View style={card.row}>
         <Text style={card.title}>{title}</Text>
-        {!!level && <Text style={card.level}>{level}</Text>}
+        {!!level && (
+          <Text
+            style={[
+              card.level,
+              {
+                backgroundColor: LEVEL_COLORS[level] || "#F3F4F6",
+                opacity: locked ? 0.6 : 1,
+              },
+            ]}
+          >
+            {level}
+          </Text>
+        )}
       </View>
-      {!!subtitle && <Text style={card.subtitle}>{subtitle}</Text>}
     </View>
   </TouchableOpacity>
 );
 
+const lockStyles = StyleSheet.create({
+  overlay: {
+    position: "absolute",
+    inset: 0 as any,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 16,
+  },
+  lockEmoji: { fontSize: 28, marginBottom: 4, color: "white" },
+  lockText: { color: "white", fontWeight: "800" },
+});
+
 /* ------------------ Component ------------------ */
-type Props = { title?: string; limit?: number; offset?: number };
+type Props = {
+  title?: string;
+  limit?: number;
+  offset?: number;
+  /** When provided, show only these template IDs (used by Publicboard search) */
+  whitelistIds?: number[] | null;
+};
 
 export default function PublicGames({
   title = "Public Games",
   limit = 50,
   offset = 0,
+  whitelistIds = null,
 }: Props) {
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<PublicGameItem[]>([]);
+
+  /* ---------- user CEFR level ---------- */
+  const [userLevel, setUserLevel] =
+    useState<"A1" | "A2" | "B1" | "B2" | "C1" | "C2" | null>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
 
   // selection/time flow
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
@@ -149,7 +220,35 @@ export default function PublicGames({
     []
   );
 
-  /* ---------- load list ---------- */
+  /* ---------- load user english level ---------- */
+  const fetchUserLevel = useCallback(async () => {
+    try {
+      setLoadingUser(true);
+      const prof = await getUserProfile();
+
+      // Try typical shapes: adjust if your schema is fixed
+      const lvl =
+        (prof as any)?.data?.englishLevel ??
+        (prof as any)?.data?.user?.englishLevel ??
+        (prof as any)?.englishLevel ??
+        null;
+
+      if (typeof lvl === "string") {
+        const valid = ["A1", "A2", "B1", "B2", "C1", "C2"] as const;
+        setUserLevel(valid.includes(lvl as any) ? (lvl as typeof valid[number]) : null);
+      } else {
+        setUserLevel(null);
+      }
+    } catch (err: any) {
+      console.error("[PublicGames] load user failed:", err?.response?.data || err?.message || err);
+      Alert.alert("Couldn’t load your profile", "Some games may not be correctly locked.");
+      setUserLevel(null);
+    } finally {
+      setLoadingUser(false);
+    }
+  }, []);
+
+  /* ---------- load public games ---------- */
   const fetchPublic = useCallback(async () => {
     try {
       setLoading(true);
@@ -176,18 +275,70 @@ export default function PublicGames({
     }
   }, [limit, offset]);
 
-  useEffect(() => { fetchPublic(); }, [fetchPublic]);
+  useEffect(() => {
+    fetchUserLevel();
+  }, [fetchUserLevel]);
 
-  const cards: GridCardProps[] = items.map((g) => ({
-    id: g.id,
-    title: g.title,
-    subtitle: g.gameType,
-    level: g.difficulty,
-    image: g.imageUrl,
-  }));
+  useEffect(() => {
+    fetchPublic();
+  }, [fetchPublic]);
+
+  /* ---------- filter by whitelistIds when provided ---------- */
+  const visibleItems = useMemo(
+    () => (whitelistIds ? items.filter((i) => whitelistIds.includes(i.id)) : items),
+    [items, whitelistIds]
+  );
+
+  /* ---------- build cards with lock flag (allow user level and below) ---------- */
+  const cards: GridCardProps[] = useMemo(() => {
+    // If we don't know the user level yet, don't lock anything (UI still sorts later once level loads)
+    const userRank = userLevel ? rank(userLevel) : Number.POSITIVE_INFINITY;
+
+    const mapped = visibleItems.map((g) => {
+      const gRank = rank(g.difficulty);
+      // Unlocked if game level <= user level
+      const locked = userRank !== Number.POSITIVE_INFINITY ? gRank > userRank : false;
+
+      // Priority for sorting:
+      //   0 = same level (best match)
+      //   1 = below user level (still playable)
+      //   2 = locked (above user level)
+      let priority = 2;
+      if (!locked) {
+        priority = gRank === userRank ? 0 : 1;
+      }
+
+      return {
+        id: g.id,
+        title: g.title,
+        level: g.difficulty,
+        image: g.imageUrl,
+        locked,
+        // internal sort keys
+        _priority: priority,
+        _gRank: gRank,
+      } as GridCardProps & { _priority: number; _gRank: number };
+    });
+
+    // Sort: playable first (same level, then lower), then locked; within each group, lower rank first
+    const sorted = mapped.sort((a, b) => {
+      if (a._priority !== b._priority) return a._priority - b._priority;
+      return a._gRank - b._gRank;
+    });
+
+    // Strip internal keys
+    return sorted.map(({ _priority, _gRank, ...rest }) => rest);
+  }, [visibleItems, userLevel]);
 
   /* ---------- open combined dialog ---------- */
-  const handlePress = (templateId: number) => {
+  const handlePress = (templateId: number, locked?: boolean) => {
+    if (locked) {
+      Alert.alert(
+        "Locked",
+        "This game is locked for your current level. Play games at your level to unlock more later."
+      );
+      return;
+    }
     setSelectedTemplateId(templateId);
     const base = items.find((x) => x.id === templateId);
     setSelectedType(base?.gameType ?? "WORD_SEARCH");
@@ -221,14 +372,17 @@ export default function PublicGames({
       }
     };
     const id = setTimeout(run, 150);
-    return () => { active = false; clearTimeout(id); };
+    return () => {
+      active = false;
+      clearTimeout(id);
+    };
   }, [comboDialogVisible, selectedTemplateId, selectedType, timer]);
 
   useEffect(() => {
     if (comboDialogVisible && alreadyPlayed) setRemarkVisible(true);
   }, [comboDialogVisible, alreadyPlayed]);
 
-  /* ---------- actually create the game (send SECONDS) ---------- */
+  /* ---------- start game (send SECONDS) ---------- */
   const reallyStart = useCallback(async () => {
     if (!selectedTemplateId) return;
 
@@ -249,7 +403,7 @@ export default function PublicGames({
       setSelectedType(null);
       setSelectedTemplateId(null);
 
-      router.push({ pathname: "/GameScreen", params: { gameId: String(started.id) } });
+      router.push({ pathname: "/gameScreen", params: { gameId: String(started.id) } });
     } catch (err: any) {
       console.error("[PublicGames] start failed:", err?.response?.data || err?.message || err);
       Alert.alert("Couldn’t start game", err?.response?.data?.error ?? "Please try again.");
@@ -261,18 +415,13 @@ export default function PublicGames({
     else reallyStart();
   };
 
-  const selectionSummary = useMemo(() => {
-    const tLabel = selectedType === "CROSSWORD_SEARCH" ? "Crossword search" : "Word search";
-    const mins = minutesFromUiTimer(timer);
-    const timeLabel = mins === null ? "No timer" : `${mins} min${mins === 1 ? "" : "s"}`;
-    return `${tLabel} • ${timeLabel}`;
-  }, [selectedType, timer]);
+  const showSpinner = loading || loadingUser;
 
   return (
     <View style={{ flex: 1, minHeight: 0, marginTop: 24 }}>
       <Text style={[Typography.header20, { marginBottom: 8 }]}>{title}</Text>
 
-      {loading ? (
+      {showSpinner ? (
         <ActivityIndicator size="small" />
       ) : cards.length > 0 ? (
         <FlatList<GridCardProps>
@@ -281,12 +430,19 @@ export default function PublicGames({
           data={cards}
           numColumns={3}
           keyExtractor={(item) => String(item.id)}
-          renderItem={({ item }) => <GridCard {...item} onPress={() => handlePress(item.id)} />}
+          renderItem={({ item }) => (
+            <GridCard
+              {...item}
+              onPress={() => handlePress(item.id, item.locked)}
+            />
+          )}
           showsVerticalScrollIndicator
           columnWrapperStyle={{ justifyContent: "space-between", marginBottom: 16 }}
         />
       ) : (
-        <Text style={{ color: "gray", textAlign: "center", marginTop: 10 }}>No public games found.</Text>
+        <Text style={{ color: "gray", textAlign: "center", marginTop: 10 }}>
+          No public games found.
+        </Text>
       )}
 
       {/* ==================== DIALOGS ==================== */}
@@ -301,7 +457,9 @@ export default function PublicGames({
           {/* Title Row */}
           <View style={s.titleRow}>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Dialog.Title style={{ fontWeight: "800", color: Color.gray }}>Game Type & Timer</Dialog.Title>
+              <Dialog.Title style={{ fontWeight: "800", color: Color.gray }}>
+                Game Type & Timer
+              </Dialog.Title>
               <IconButton
                 icon={(p) => <InfoIcon size={16} color={p.color ?? Color.gray} />}
                 size={16}
@@ -313,7 +471,9 @@ export default function PublicGames({
               />
             </View>
             <IconButton
-              icon={(p) => <CloseIcon width={18} height={18} fillColor={Color.gray} {...p} />}
+              icon={(p) => (
+                <CloseIcon width={18} height={18} fillColor={Color.gray} {...p} />
+              )}
               onPress={() => setComboDialogVisible(false)}
               style={{ margin: 0 }}
               accessibilityLabel="Close dialog"
@@ -337,28 +497,21 @@ export default function PublicGames({
             {/* Timer Pills (UiTimer seconds, displayed as minutes) */}
             <TimerChips value={timer} onChange={setTimer} />
 
-            {/* Selection summary */}
-            <View style={s.summaryRow}>
-              <Text style={s.summaryText}>Selected:</Text>
-              <View style={s.summaryBadge}>
-                <Text style={s.summaryBadgeText}>{selectionSummary}</Text>
-              </View>
-            </View>
-
-            {/* Inline replay notice */}
-            {checkingReplay ? (
-              <Text style={s.inlineNotice}>Checking…</Text>
-            ) : alreadyPlayed ? (
+            {alreadyPlayed ? (
               <View style={s.inlineBadge}>
                 <Text style={s.inlineBadgeText}>
-                  You’ve played this setup before. Replays don’t earn coins (extra word still gives 1).
+                  You’ve played this setup before. Replays don’t earn coins (extra
+                  word still gives 1).
                 </Text>
               </View>
             ) : null}
 
             {/* Actions */}
             <View style={s.actions}>
-              <Pressable style={[m.btn, m.outline]} onPress={() => setComboDialogVisible(false)}>
+              <Pressable
+                style={[m.btn, m.outline]}
+                onPress={() => setComboDialogVisible(false)}
+              >
                 <Text style={[m.btnText, { color: "#333" }]}>Cancel</Text>
               </Pressable>
               <Pressable
@@ -372,7 +525,7 @@ export default function PublicGames({
           </Dialog.Content>
         </Dialog>
 
-        {/* -------- Info Dialog (unchanged) -------- */}
+        {/* -------- Info Dialog -------- */}
         <Dialog
           visible={infoDialogVisible}
           onDismiss={() => setInfoDialogVisible(false)}
@@ -386,20 +539,27 @@ export default function PublicGames({
           }}
         >
           <View style={s.bgHalf}>
-            <GameTypeBackground pointerEvents="none" style={{ width: "100%", height: "100%" }} />
+            <GameTypeBackground
+              pointerEvents="none"
+              style={{ width: "100%", height: "100%" }}
+            />
           </View>
 
           <View style={s.infoHeader}>
-            <Dialog.Title style={{ fontWeight: "800", color: Color.gray }}>Game Type</Dialog.Title>
+            <Dialog.Title style={{ fontWeight: "800", color: Color.gray }}>
+              Game Type
+            </Dialog.Title>
             <IconButton
-              icon={(p) => <CloseIcon width={18} height={18} fillColor={Color.gray} {...p} />}
+              icon={(p) => (
+                <CloseIcon width={18} height={18} fillColor={Color.gray} {...p} />
+              )}
               onPress={() => setInfoDialogVisible(false)}
               style={{ margin: 0 }}
             />
           </View>
 
           <Dialog.Content>
-            {/* … your info dialog content … */}
+            {/* put your info content here */}
             <View style={{ height: 300 }} />
           </Dialog.Content>
         </Dialog>
@@ -411,7 +571,9 @@ export default function PublicGames({
           style={{ width: "50%", alignSelf: "center", backgroundColor: Color.white, borderRadius: 24 }}
         >
           <Dialog.Content>
-            <Text style={{ fontSize: 28, fontWeight: "800", color: "#4B5563", marginBottom: 12 }}>Remark</Text>
+            <Text style={{ fontSize: 28, fontWeight: "800", color: "#4B5563", marginBottom: 12 }}>
+              Remark
+            </Text>
             <Text style={{ fontSize: 18, lineHeight: 26, color: "#4B5563", marginBottom: 22 }}>
               You won’t earn coins for replaying this game, but finding the extra word will still reward you a coin.
               Time spent will count toward your progress.
@@ -428,10 +590,28 @@ export default function PublicGames({
 }
 
 const s = StyleSheet.create({
-  titleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingRight: 10, paddingTop: 4 },
-  typeRow: { flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 16, marginBottom: 18 },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingRight: 10,
+    paddingTop: 4,
+  },
+  typeRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 16,
+    marginBottom: 18,
+  },
   actions: { flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 16 },
-  inlineBadge: { marginTop: 12, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12, backgroundColor: "#F3F4F6" },
+  inlineBadge: {
+    marginTop: 12,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: "#F3F4F6",
+  },
   inlineBadgeText: { color: "#4B5563", fontSize: 13, fontWeight: "600" },
   inlineNotice: { marginTop: 10, color: "#6B7280", fontStyle: "italic" },
   summaryRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 12 },
@@ -440,7 +620,16 @@ const s = StyleSheet.create({
   summaryBadgeText: { color: "#374151", fontWeight: "700" },
   infoHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 5 },
   bgHalf: { position: "absolute", bottom: 0, left: 0, width: "100%", height: "50%", zIndex: 0 },
-  playBtn: { backgroundColor: "#5EA1FF", paddingVertical: 14, borderRadius: 20, alignItems: "center", shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 6, shadowOffset: { width: 0, height: 3 } },
+  playBtn: {
+    backgroundColor: "#5EA1FF",
+    paddingVertical: 14,
+    borderRadius: 20,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+  },
 });
 
 const m = StyleSheet.create({
