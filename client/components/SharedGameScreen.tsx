@@ -7,7 +7,7 @@ import GameEndModal from "./GameEndModal";
 import ConfirmModal from "./ConfirmModal";
 import { useRouter } from "expo-router";
 import { useGameLogic } from "../hooks/useGameLogic";
-import { GameProps } from "../types/type";
+import { GameProps, QuestionAnswer } from "../types/type";
 import { useHints } from "../hooks/useHints";
 import { useAllFound } from "../hooks/useAllFound";
 import ArrowLeft from "@/assets/icon/ArrowLeft";
@@ -33,6 +33,12 @@ import { Typography } from "@/theme/Font";
 import { Color } from "@/theme/Color";
 import TutorialOverlay from "./TutorialOverlay";
 import { useTutorial, useGameTutorial } from "@/hooks/useTutorial";
+
+function norm(s: string) {
+  return String(s ?? "")
+    .trim()
+    .toUpperCase();
+}
 
 export default function SharedGameScreen({
   mode,
@@ -98,10 +104,12 @@ export default function SharedGameScreen({
     () => foundWords.map((fw) => fw.word),
     [foundWords]
   );
+
   const allAnswers = useMemo(
     () => questionsAndAnswers.map((q) => q.answer),
     [questionsAndAnswers]
   );
+
   const allAnswersLower = useMemo(() => {
     const s = new Set<string>();
     for (const a of allAnswers)
@@ -121,16 +129,32 @@ export default function SharedGameScreen({
   const { visible: allFoundVisible, setVisible: setAllFoundVisible } =
     useAllFound(allAnswers, foundWordsList);
 
-  const { hintCount, isHintDisabled, onShowHint, clearActiveHint, resetHints } =
-    useHints({
-      mode,
-      gameId: gameData?.id,
-      questionsAndAnswers,
-      foundWordsList,
-      revealedAnswers,
-      activeQuestionIndex,
-      showHintForAnswer,
-    });
+  const {
+    hintCount,
+    isHintDisabled,
+    onShowHint,
+    clearActiveHint,
+    resetHints,
+    setHintsCountFromShop,
+  } = useHints({
+    mode,
+    gameId: gameData?.id,
+    questionsAndAnswers,
+    foundWordsList,
+    revealedAnswers,
+    activeQuestionIndex,
+    showHintForAnswer,
+  });
+
+  const isCrossword = mode === "CROSSWORD_SEARCH";
+  const activeAnswerKey = useMemo(() => {
+    if (!isCrossword) return "";
+    const qa = questionsAndAnswers?.[activeQuestionIndex] as
+      | QuestionAnswer
+      | undefined;
+    if (!qa) return "";
+    return `${qa.id}:${norm(qa.answer)}`;
+  }, [questionsAndAnswers, activeQuestionIndex]);
 
   const hasTimer = !!(gameData?.timer && gameData.timer > 0);
 
@@ -411,7 +435,6 @@ export default function SharedGameScreen({
     (allFoundVisible || (timeUp && hasTimer));
   const endVariant = allFoundVisible ? "success" : "timeout";
 
-
   return (
     <View style={styles.container}>
       {toast.visible && (
@@ -453,6 +476,8 @@ export default function SharedGameScreen({
             }
             resetKey={roundKey}
             onRequestBuyHints={() => setShopVisible(true)}
+            questionKey={activeAnswerKey}
+            lockPerQuestion={isCrossword}
           />
         </View>
 
@@ -535,8 +560,10 @@ export default function SharedGameScreen({
       <HintShopModal
         visible={shopVisible}
         onClose={() => setShopVisible(false)}
-        onPurchased={() => {
-          resetHints?.();
+        onPurchased={(newHintCount?: number) => {
+          if (typeof newHintCount === "number") {
+            setHintsCountFromShop?.(newHintCount);
+          }
           setToast({ visible: true, text: `✨ Hint added!` });
           setTimeout(() => setToast({ visible: false, text: "" }), 1500);
           setShopVisible(false);

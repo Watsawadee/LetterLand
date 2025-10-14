@@ -31,20 +31,27 @@ export const getBGImage = async (imgName: string) => {
   }
 };
 
-export const useHint = async (userId: number, gameId?: number | string) => {
-  await api.post(`/users/${userId}/useHint`, { gameId});
+type UseHintResult = {
+  remainingHints: number;
+  alreadyUsedBefore: boolean;
+};
 
-  if (gameId != null) {
+export const useHint = async (
+  userId: number,
+  gameId?: number | string
+): Promise<UseHintResult> => {
+  const r = await api.post(`/users/${userId}/useHint`, { gameId });
+  const remainingHints = Number(r?.data?.data?.remainingHints ?? 0);
+  const alreadyUsedBefore = Boolean(r?.data?.data?.alreadyUsedBefore);
+
+  if (gameId != null && !alreadyUsedBefore) {
     try {
-      await completeGame({
-        gameId,
-        hintUsed: true,
-      });
+      await completeGame({ gameId, hintUsed: true });
     } catch (e) {
       console.warn("Failed to mark isHintUsed on game:", e);
     }
   }
-  return true;
+  return { remainingHints, alreadyUsedBefore };
 };
 
 export const purchaseHints = async (

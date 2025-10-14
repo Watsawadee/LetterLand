@@ -11,7 +11,7 @@ import { Magnify } from "@/assets/icon/Magnify";
 import Timer from "@/assets/icon/Timer";
 import { Typography } from "@/theme/Font";
 import { useTime } from "@/hooks/useTime";
-import { GameControlsProps } from "@/types/type";
+import { GameControlsProps as BaseProps } from "@/types/type";
 import { CEFRPill } from "@/components/CEFRpill";
 import { Color } from "@/theme/Color";
 import * as Clipboard from "expo-clipboard";
@@ -50,10 +50,18 @@ export type GameControlsHandle = {
   } | null>;
 };
 
-function measure(
-  ref: React.RefObject<View | null>
-): Promise<{ x: number; y: number; width: number; height: number } | null> {
-  return new Promise((resolve) => {
+type Props = BaseProps & {
+  questionKey?: string;
+  lockPerQuestion?: boolean;
+};
+
+function measure(ref: React.RefObject<View | null>) {
+  return new Promise<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>((resolve) => {
     const node = ref.current as View | null;
     if (!node) return resolve(null);
     (node as any).measureInWindow?.(
@@ -65,7 +73,7 @@ function measure(
   });
 }
 
-const GameControls = forwardRef<GameControlsHandle, GameControlsProps>(
+const GameControls = forwardRef<GameControlsHandle, Props>(
   function GameControls(
     {
       title,
@@ -79,6 +87,8 @@ const GameControls = forwardRef<GameControlsHandle, GameControlsProps>(
       onRequestBuyHints,
       gameCode,
       cefr,
+      questionKey,
+      lockPerQuestion = true,
     },
     ref
   ) {
@@ -86,6 +96,8 @@ const GameControls = forwardRef<GameControlsHandle, GameControlsProps>(
     const [currentHints, setCurrentHints] = useState<number>(
       typeof hintCount === "number" ? hintCount : 0
     );
+
+    const [hintBusy, setHintBusy] = useState(false);
 
     const gameTitleWrapRef = useRef<View>(null);
     const codePillWrapRef = useRef<View>(null);
@@ -112,25 +124,49 @@ const GameControls = forwardRef<GameControlsHandle, GameControlsProps>(
       if (typeof hintCount === "number") setCurrentHints(hintCount);
     }, [hintCount]);
 
+    // CROSSWORD: release local busy when parent flags isHintDisabled (hint used for that question)
+    useEffect(() => {
+      if (!lockPerQuestion) return;
+      if (hintBusy && isHintDisabled) setHintBusy(false);
+    }, [isHintDisabled, hintBusy, lockPerQuestion]);
+
+    // CROSSWORD: clear busy on question change
+    useEffect(() => {
+      if (!lockPerQuestion) return;
+      setHintBusy(false);
+    }, [questionKey, lockPerQuestion]);
+
     const formatTime = (sec: number) => {
-      const minutes = Math.floor(sec / 60);
-      const seconds = sec % 60;
-      return `${minutes.toString().padStart(2, "0")}:${seconds
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return `${m.toString().padStart(2, "0")}:${s
         .toString()
         .padStart(2, "0")}`;
     };
 
     const hasHints = currentHints > 0;
-    const parentThinksNoHints =
-      typeof hintCount === "number" && hintCount === 0;
-    const computedDisabled = hasHints
-      ? Boolean(isHintDisabled && !parentThinksNoHints)
-      : false;
 
-    const onPressHint = () => {
-      if (!hasHints) return onRequestBuyHints?.();
+    const computedDisabled = Boolean(isHintDisabled) || hintBusy;
+
+    const blockTouch = computedDisabled && currentHints > 0;
+
+    const onPressHint = async () => {
+      // Out of hints → go to shop
+      if (!hasHints) {
+        onRequestBuyHints?.();
+        return;
+      }
+      // If disabled (already hinted/busy), block
       if (computedDisabled) return;
-      onShowHint();
+
+      setHintBusy(true);
+      try {
+        await Promise.resolve(onShowHint?.());
+      } finally {
+        if (!lockPerQuestion) {
+          setHintBusy(false);
+        }
+      }
     };
 
     const copyCode = async () => {
@@ -187,7 +223,10 @@ const GameControls = forwardRef<GameControlsHandle, GameControlsProps>(
         )}
 
         <View style={styles.buttonsRow}>
-          <View ref={hintBtnWrapRef}>
+          <View
+            ref={hintBtnWrapRef}
+            pointerEvents={blockTouch ? "none" : "auto"}
+          >
             <CustomButton
               onPress={onPressHint}
               type={hasHints ? "buyHint" : "useHint"}
@@ -196,7 +235,7 @@ const GameControls = forwardRef<GameControlsHandle, GameControlsProps>(
                   <Magnify />
                 </View>
               }
-              disabled={computedDisabled}
+              disabled={blockTouch}
               number={Math.max(0, currentHints)}
             />
           </View>
