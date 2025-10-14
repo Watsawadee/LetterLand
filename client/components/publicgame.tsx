@@ -11,6 +11,8 @@ import {
   Pressable,
   StyleSheet,
   Platform,
+  useWindowDimensions,
+  ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Portal, Dialog, IconButton } from "react-native-paper";
@@ -54,7 +56,7 @@ function TimerChips({
     <View style={{ marginTop: 6 }}>
       <Text style={t.title}>Timer</Text>
       <View style={t.row}>
-        {TIMER_OPTIONS.map((opt) => {
+        {TIMER_OPTIONS.map((opt, i) => {
           const selected = value === opt;
           const mins = opt === "none" ? null : Number(opt) / 60;
           const label = mins === null ? "None" : `${mins} min${mins === 1 ? "" : "s"}`;
@@ -62,7 +64,11 @@ function TimerChips({
             <Pressable
               key={opt}
               onPress={() => onChange(opt)}
-              style={[t.chip, selected && t.chipSelected]}
+              style={[
+                t.chip,
+                selected && t.chipSelected,
+                i !== TIMER_OPTIONS.length - 1 && { marginRight: 12 },
+              ]}
             >
               <Text style={[t.chipText, selected && t.chipTextSelected]}>{label}</Text>
             </Pressable>
@@ -74,8 +80,8 @@ function TimerChips({
 }
 
 const t = StyleSheet.create({
-  title: { fontSize: 14, fontWeight: "700", color: "#6B7280", marginBottom: 8 },
-  row: { flexDirection: "row", alignItems: "center", gap: 12 },
+  title: { fontSize: 15, fontWeight: "800", color: "#6B7280", marginBottom: 8 },
+  row: { flexDirection: "row", alignItems: "center" },
   chip: {
     backgroundColor: "#FFFFFF",
     borderColor: "#E6EBF2",
@@ -85,13 +91,13 @@ const t = StyleSheet.create({
     borderRadius: 999,
   },
   chipSelected: { backgroundColor: "#5EA1FF", borderColor: "transparent" },
-  chipText: { color: "#6B7280", fontWeight: "700" },
-  chipTextSelected: { color: "#FFFFFF", fontWeight: "700" },
+  chipText: { color: "#6B7280", fontWeight: "800" },
+  chipTextSelected: { color: "#FFFFFF", fontWeight: "800" },
 });
 
 /* ----- CEFR order helper ----- */
-const LEVEL_ORDER = ["A1","A2","B1","B2","C1","C2"] as const;
-type Level = typeof LEVEL_ORDER[number];
+const LEVEL_ORDER = ["A1", "A2", "B1", "B2", "C1", "C2"] as const;
+type Level = (typeof LEVEL_ORDER)[number];
 const rank = (lvl?: string | null) => {
   const i = LEVEL_ORDER.indexOf(lvl as Level);
   return i === -1 ? Number.POSITIVE_INFINITY : i;
@@ -226,7 +232,6 @@ export default function PublicGames({
       setLoadingUser(true);
       const prof = await getUserProfile();
 
-      // Try typical shapes: adjust if your schema is fixed
       const lvl =
         (prof as any)?.data?.englishLevel ??
         (prof as any)?.data?.user?.englishLevel ??
@@ -291,18 +296,12 @@ export default function PublicGames({
 
   /* ---------- build cards with lock flag (allow user level and below) ---------- */
   const cards: GridCardProps[] = useMemo(() => {
-    // If we don't know the user level yet, don't lock anything (UI still sorts later once level loads)
     const userRank = userLevel ? rank(userLevel) : Number.POSITIVE_INFINITY;
 
     const mapped = visibleItems.map((g) => {
       const gRank = rank(g.difficulty);
-      // Unlocked if game level <= user level
       const locked = userRank !== Number.POSITIVE_INFINITY ? gRank > userRank : false;
 
-      // Priority for sorting:
-      //   0 = same level (best match)
-      //   1 = below user level (still playable)
-      //   2 = locked (above user level)
       let priority = 2;
       if (!locked) {
         priority = gRank === userRank ? 0 : 1;
@@ -314,21 +313,23 @@ export default function PublicGames({
         level: g.difficulty,
         image: g.imageUrl,
         locked,
-        // internal sort keys
         _priority: priority,
         _gRank: gRank,
       } as GridCardProps & { _priority: number; _gRank: number };
     });
 
-    // Sort: playable first (same level, then lower), then locked; within each group, lower rank first
     const sorted = mapped.sort((a, b) => {
       if (a._priority !== b._priority) return a._priority - b._priority;
       return a._gRank - b._gRank;
     });
 
-    // Strip internal keys
     return sorted.map(({ _priority, _gRank, ...rest }) => rest);
   }, [visibleItems, userLevel]);
+
+  /* ---------- sizing for dialog/cards ---------- */
+  const { width: W } = useWindowDimensions();
+  const isTablet = W >= 900;
+  const CARD_W = isTablet ? 300 : 240; // slightly smaller width than before
 
   /* ---------- open combined dialog ---------- */
   const handlePress = (templateId: number, locked?: boolean) => {
@@ -342,7 +343,7 @@ export default function PublicGames({
     setSelectedTemplateId(templateId);
     const base = items.find((x) => x.id === templateId);
     setSelectedType(base?.gameType ?? "WORD_SEARCH");
-    setTimer("none"); // reset to no timer
+    setTimer("none");
     setAlreadyPlayed(false);
     setRemarkVisible(false);
     setComboDialogVisible(true);
@@ -396,7 +397,6 @@ export default function PublicGames({
       };
       const started = await startPublicGame(selectedTemplateId, payload);
 
-      // reset + close
       setRemarkVisible(false);
       setComboDialogVisible(false);
       setTimer("none");
@@ -452,13 +452,26 @@ export default function PublicGames({
           visible={comboDialogVisible && !infoDialogVisible}
           dismissable={!infoDialogVisible}
           onDismiss={() => setComboDialogVisible(false)}
-          style={{ backgroundColor: Color.white, width: "60%", alignSelf: "center", height: "60%" }}
+          style={[
+            {
+              backgroundColor: Color.white,
+              alignSelf: "center",
+              borderRadius: 20,
+              shadowColor: "#000",
+              shadowOpacity: 0.15,
+              shadowOffset: { width: 0, height: 2 },
+              shadowRadius: 10,
+            },
+            // shorter height than before so Timer fits
+            isTablet ? { width: "70%", height: "58%" } : { width: "92%", height: "95%" },
+
+          ]}
         >
           {/* Title Row */}
           <View style={s.titleRow}>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <Dialog.Title style={{ fontWeight: "800", color: Color.gray }}>
-                Game Type & Timer
+                Game Types Selection
               </Dialog.Title>
               <IconButton
                 icon={(p) => <InfoIcon size={16} color={p.color ?? Color.gray} />}
@@ -481,51 +494,65 @@ export default function PublicGames({
           </View>
 
           <Dialog.Content>
-            {/* Type Cards */}
-            <View style={s.typeRow}>
-              {gameOptions.map(({ type, question, label }) => (
-                <GameTypeCard
-                  key={type}
-                  question={question}
-                  gameType={label}
-                  selected={selectedType === type}
-                  onPress={() => setSelectedType(type)}
-                />
-              ))}
-            </View>
-
-            {/* Timer Pills (UiTimer seconds, displayed as minutes) */}
-            <TimerChips value={timer} onChange={setTimer} />
-
-            {alreadyPlayed ? (
-              <View style={s.inlineBadge}>
-                <Text style={s.inlineBadgeText}>
-                  You’ve played this setup before. Replays don’t earn coins (extra
-                  word still gives 1).
-                </Text>
+            <ScrollView
+              contentContainerStyle={{ paddingBottom: 40 }}
+              keyboardShouldPersistTaps="handled"
+            >
+              {/* === Game type cards (shorter) === */}
+              <View style={s.typeRow}>
+                {gameOptions.map(({ type, question, label }, idx) => (
+                  <View
+                    key={type}
+                    style={[
+                      { width: CARD_W },
+                      idx === 0 ? { marginRight: 18 } : null,
+                    ]}
+                  >
+                    <GameTypeCard
+                      style={{ height: 170, paddingVertical: 8 }}  // SHORTER CARD
+                      question={question}
+                      gameType={label}
+                      selected={selectedType === type}
+                      onPress={() => setSelectedType(type)}
+                    />
+                  </View>
+                ))}
               </View>
-            ) : null}
 
-            {/* Actions */}
-            <View style={s.actions}>
-              <Pressable
-                style={[m.btn, m.outline]}
-                onPress={() => setComboDialogVisible(false)}
-              >
-                <Text style={[m.btnText, { color: "#333" }]}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                style={[m.btn, m.primary, { opacity: selectedType ? 1 : 0.5 }]}
-                disabled={!selectedType}
-                onPress={confirmAndStart}
-              >
-                <Text style={[m.btnText, { color: "white" }]}>Start</Text>
-              </Pressable>
-            </View>
+              {/* === Timer section === */}
+              <View style={{ marginTop: 8 }}>
+                <TimerChips value={timer} onChange={setTimer} />
+              </View>
+
+              {alreadyPlayed ? (
+                <View style={s.inlineBadge}>
+                  <Text style={s.inlineBadgeText}>
+                    You’ve played this setup before. Replays don’t earn coins (extra word still gives 1).
+                  </Text>
+                </View>
+              ) : null}
+
+              {/* Buttons */}
+              <View style={s.actions}>
+                <Pressable
+                  style={[m.btn, m.outline]}
+                  onPress={() => setComboDialogVisible(false)}
+                >
+                  <Text style={[m.btnText, { color: "#333" }]}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={[m.btn, m.primary, { opacity: selectedType ? 1 : 0.5 }]}
+                  disabled={!selectedType}
+                  onPress={confirmAndStart}
+                >
+                  <Text style={[m.btnText, { color: "white" }]}>Start</Text>
+                </Pressable>
+              </View>
+            </ScrollView>
           </Dialog.Content>
         </Dialog>
 
-        {/* -------- Info Dialog -------- */}
+        {/* -------- Info Dialog (unchanged) -------- */}
         <Dialog
           visible={infoDialogVisible}
           onDismiss={() => setInfoDialogVisible(false)}
@@ -539,27 +566,13 @@ export default function PublicGames({
           }}
         >
           <View style={s.bgHalf}>
-            <GameTypeBackground
-              pointerEvents="none"
-              style={{ width: "100%", height: "100%" }}
-            />
+            <GameTypeBackground pointerEvents="none" style={{ width: "100%", height: "100%" }} />
           </View>
-
           <View style={s.infoHeader}>
-            <Dialog.Title style={{ fontWeight: "800", color: Color.gray }}>
-              Game Type
-            </Dialog.Title>
-            <IconButton
-              icon={(p) => (
-                <CloseIcon width={18} height={18} fillColor={Color.gray} {...p} />
-              )}
-              onPress={() => setInfoDialogVisible(false)}
-              style={{ margin: 0 }}
-            />
+            <Dialog.Title style={{ fontWeight: "800", color: Color.gray }}>Game Type</Dialog.Title>
+            <IconButton icon={(p) => <CloseIcon width={18} height={18} fillColor={Color.gray} {...p} />} onPress={() => setInfoDialogVisible(false)} style={{ margin: 0 }} />
           </View>
-
           <Dialog.Content>
-            {/* put your info content here */}
             <View style={{ height: 300 }} />
           </Dialog.Content>
         </Dialog>
@@ -600,25 +613,34 @@ const s = StyleSheet.create({
   typeRow: {
     flexDirection: "row",
     justifyContent: "center",
-    alignItems: "center",
-    gap: 16,
-    marginBottom: 18,
+    alignItems: "stretch",
+    marginTop: 8,
+    marginBottom: 6,
   },
-  actions: { flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 16 },
+  actions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 16,
+  },
   inlineBadge: {
-    marginTop: 12,
+    marginTop: 10,
     borderRadius: 12,
     paddingVertical: 10,
     paddingHorizontal: 12,
     backgroundColor: "#F3F4F6",
   },
-  inlineBadgeText: { color: "#4B5563", fontSize: 13, fontWeight: "600" },
-  inlineNotice: { marginTop: 10, color: "#6B7280", fontStyle: "italic" },
-  summaryRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 12 },
-  summaryText: { color: "#6B7280", fontWeight: "700" },
-  summaryBadge: { backgroundColor: "#EEF2FF", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
-  summaryBadgeText: { color: "#374151", fontWeight: "700" },
-  infoHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 5 },
+  inlineBadgeText: {
+    color: "#4B5563",
+    fontSize: 13,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  infoHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 5,
+  },
   bgHalf: { position: "absolute", bottom: 0, left: 0, width: "100%", height: "50%", zIndex: 0 },
   playBtn: {
     backgroundColor: "#5EA1FF",
