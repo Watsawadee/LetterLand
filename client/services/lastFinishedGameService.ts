@@ -6,7 +6,7 @@ export async function getUserLastFinishedGame() {
     const userId = await getLoggedInUserId();
     const config = await getAuthHeader();
 
-    const res = await api.get(`/dashboard/user/${userId}/lastfinishedgame`, config);
+    const res = await api.get(`/users/user/lastfinishedgame`, config);
 
     // Optionally validate shape
     if ("lastFinishedGame" in res.data) {

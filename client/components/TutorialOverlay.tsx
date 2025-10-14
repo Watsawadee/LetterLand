@@ -155,7 +155,7 @@ export default function TutorialOverlay({
               y="0"
               width={screen.width}
               height={screen.height}
-              fill="rgba(0,0,0,0.55)"
+              fill="rgba(0,0,0,0.5)"
               mask="url(#hole)"
             />
           </Svg>

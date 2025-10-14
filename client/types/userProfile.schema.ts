@@ -9,6 +9,7 @@ export const UserProfileResponseSchema = z.object({
     englishLevel: EnglishLevelSchema,
     nextLevel: z.string().nullable().optional(),
     canLevelUp: z.boolean().optional(),
+    progressPercent: z.number().optional(),
 });
 
 

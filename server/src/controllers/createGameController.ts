@@ -8,6 +8,7 @@ import { genImage } from "../services/genImageService";
 import { generatePronunciation } from "../services/textToSpeechService";
 import { generateGameCode } from "../services/gameCodeGenerator";
 export const createGameFromGemini = async (req: Request, res: Response) => {
+
   const parsed = CreateGameFromGeminiRequestSchema.safeParse(req.body);
 
   if (!parsed.success) {
@@ -18,6 +19,31 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
   }
 
   const { type, userId, difficulty, gameType, timer, inputData, isPublic } = parsed.data;
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { englishLevel: true, age: true },
+  });
+
+  if (!user) {
+    res.status(404).json({ message: "User not found" });
+    return;
+  }
+
+
+  const levelOrder = ["A1", "A2", "B1", "B2", "C1", "C2"];
+  const userLevelIndex = levelOrder.indexOf(user.englishLevel.toUpperCase());
+  const requestedLevelIndex = levelOrder.indexOf(difficulty.toUpperCase());
+
+  if (requestedLevelIndex === -1) {
+    res.status(400).json({ message: "Invalid difficulty level" });
+    return;
+  }
+
+  // Only allow user's level or below
+  if (requestedLevelIndex > userLevelIndex) {
+    res.status(403).json({ message: "You can only create games at your current level or below." });
+    return;
+  }
 
   try {
     let rawInput: string | Buffer;
@@ -118,13 +144,16 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
 
     let imageData = null;
     let fileName: string | null = null;
+    const age = Number(user.age);
+    const imageStyle = age && age >= 1 && age <= 15 ? "cartoon" : "realistic";
+    console.log("User age:", age, "Image style:", imageStyle);
     //Create Game
     if (geminiResult.imagePrompt) {
       const sanitizedTopic = geminiResult.game.gameTopic.toLowerCase().replace(/\s+/g, "_");
       fileName = `image_${game.id.toString()}_${sanitizedTopic}`;
       imageData = await genImage(
         geminiResult.imagePrompt,
-        "realistic",
+        imageStyle,
         "16:9",
         "5",
         game.id.toString(),

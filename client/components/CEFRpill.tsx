@@ -9,26 +9,7 @@ import {
 } from "react-native";
 import { Color } from "@/theme/Color";
 import { Typography } from "@/theme/Font";
-
-type CEFRLevel = "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
-
-const LEVEL_TO_COLOR: Record<CEFRLevel, string> = {
-  A1: Color.A1,
-  A2: Color.A2,
-  B1: Color.B1,
-  B2: Color.B2,
-  C1: Color.C1,
-  C2: Color.C2,
-};
-
-export function getCEFRColor(
-  level?: string | number | null,
-  fallback = Color.gray500
-) {
-  if (!level) return fallback;
-  const key = String(level).toUpperCase() as CEFRLevel;
-  return LEVEL_TO_COLOR[key] ?? fallback;
-}
+import { getCEFRColor, CEFRLevel } from "@/theme/CEFR";
 
 type Props = {
   level?: string | number | null;
@@ -39,7 +20,7 @@ type Props = {
 };
 
 function CEFRBase({ level, label, style, textStyle, outlined }: Props) {
-  const normalized = String(level ?? "").toUpperCase();
+  const normalized = String(level ?? "").toUpperCase() as CEFRLevel;
   if (!normalized) return null;
 
   const color = getCEFRColor(normalized);
@@ -63,7 +44,7 @@ function CEFRBase({ level, label, style, textStyle, outlined }: Props) {
   );
 }
 
-export const CEFR = memo(CEFRBase);
+export const CEFRPill = memo(CEFRBase);
 
 const styles = StyleSheet.create({
   pill: {

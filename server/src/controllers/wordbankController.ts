@@ -11,73 +11,99 @@ type WordBankQuery = {
   page?: string; // query params come in as string
 };
 
-// Define the shape of the JSON response
-type WordBankResponse = {
-  page: number;
+type SpreadSideRow = { n: number; word: string };
+type SpreadSection = {
   total: number;
   totalPages: number;
+  left: SpreadSideRow[];
+  right: SpreadSideRow[];
+};
+type WordBankCombinedResponse = {
+  page: number;
   perSide: number;
-  left: { n: number; word: string }[];
-  right: { n: number; word: string }[];
+  spreadSize: number;
+  words: SpreadSection;
+  extra: SpreadSection;
 };
 
-/**
- * GET /user/:userId/word-bank?page=<1-based>
- */
-export const getUserWordBankUnique = async (
-  req: AuthenticatedRequest,
-  res: Response<WordBankResponse>,
-  _next?: NextFunction
-): Promise<void> => {
-  const userId = Number(req.params.userId);
-  if (userId !== req.user?.id) {
-    res.status(403).json({ error: "Forbidden" } as any); // typecast since error shape is different
-    return;
-  }
-
-  const page = Math.max(Number(req.query.page ?? 1), 1); // 1-based
-  const spreadSize = 10; // 10 words per spread (5 left + 5 right)
-  const perSide = 5; // 5 per page/column
-
-  // 1) pull ALL rows in discovery order (oldest -> newest)
-  const rows = await prisma.wordFound.findMany({
-    where: { userId },
-    orderBy: { foundAt: "asc" },
-    select: { word: true },
-  });
-
-  // 2) make them UNIQUE while preserving order (keep first occurrence)
+function uniquePreserveOrder(words: string[]): string[] {
   const seen = new Set<string>();
-  const uniqueInOrder: string[] = [];
-  for (const r of rows) {
-    if (!seen.has(r.word)) {
-      seen.add(r.word);
-      uniqueInOrder.push(r.word);
+  const out: string[] = [];
+  for (const w of words) {
+    if (!seen.has(w)) {
+      seen.add(w);
+      out.push(w);
     }
   }
+  return out;
+}
 
-  // 3) paginate by "spread" of 10
+function buildSpread(
+  uniqueInOrder: string[],
+  page: number,
+  perSide: number,
+  spreadSize: number
+): SpreadSection {
   const total = uniqueInOrder.length;
   const totalPages = Math.max(1, Math.ceil(total / spreadSize));
-  const start = (page - 1) * spreadSize;
-  const pageSlice = uniqueInOrder.slice(start, start + spreadSize);
+  const safePage = Math.min(Math.max(page, 1), totalPages);
 
-  // 4) split into left (first 5) / right (next 5)
-  const left = pageSlice.slice(0, perSide).map((word, i) => ({
-    n: start + i + 1, // absolute number (1-based)
+  const start = (safePage - 1) * spreadSize;
+  const slice = uniqueInOrder.slice(start, start + spreadSize);
+
+  const left = slice.slice(0, perSide).map((word, i) => ({
+    n: start + i + 1,
     word,
   }));
-  const right = pageSlice.slice(perSide).map((word, i) => ({
+  const right = slice.slice(perSide).map((word, i) => ({
     n: start + perSide + i + 1,
     word,
   }));
 
+  return { total, totalPages, left, right };
+}
+
+export const getUserWordBankUnique = async (
+  req: AuthenticatedRequest,
+  res: Response<WordBankCombinedResponse>,
+  _next?: NextFunction
+): Promise<void> => {
+  const userId = Number(req.params.userId);
+  if (userId !== req.user?.id) {
+    res.status(403).json({ error: "Forbidden" } as any);
+    return;
+  }
+
+  const page = Math.max(Number(req.query.page ?? 1), 1);
+  const perSide = 5; // 5 per column
+  const spreadSize = 10; // 10 per spread (5 left + 5 right)
+
+  const [learnedRows, extraRows] = await Promise.all([
+    prisma.wordFound.findMany({
+      where: { userId },
+      orderBy: { foundAt: "asc" },
+      select: { word: true },
+    }),
+    prisma.extraWordFound.findMany({
+      where: { userId },
+      orderBy: { foundAt: "asc" },
+      select: { word: true },
+    }),
+  ]);
+
+  // De-dupe while preserving order (per section)
+  const learnedUnique = uniquePreserveOrder(learnedRows.map((r) => r.word));
+  const extraUnique = uniquePreserveOrder(extraRows.map((r) => r.word));
+
+  // Build per-section spreads using the same requested page
+  const words = buildSpread(learnedUnique, page, perSide, spreadSize);
+  const extra = buildSpread(extraUnique, page, perSide, spreadSize);
+
   res.status(200).json({
     page,
-    total,
-    totalPages,
     perSide,
-    left,
-    right,
+    spreadSize,
+    words,
+    extra,
   });
 };

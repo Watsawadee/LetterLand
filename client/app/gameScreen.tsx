@@ -1,13 +1,17 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { Text, View, ActivityIndicator, StyleSheet } from "react-native";
+import { Text, View, StyleSheet } from "react-native";
 import { Image as ExpoImage } from "expo-image";
 import SharedGameScreen from "../components/SharedGameScreen";
 import { useLocalSearchParams } from "expo-router";
 import { GameData } from "../types/type";
 import { getGameData, getBGImage } from "../services/gameService";
+import { useGlobalLoading } from "@/contexts/GlobalLoadingContext";
+import { Color } from "@/theme/Color";
 
 export default function GameScreen() {
   const { gameId } = useLocalSearchParams<{ gameId: string }>();
+  const { show, update, hide } = useGlobalLoading();
+
   const [gameData, setGameData] = useState<GameData | null>(null);
   const [mode, setMode] = useState<"WORD_SEARCH" | "CROSSWORD_SEARCH" | null>(
     null
@@ -24,6 +28,10 @@ export default function GameScreen() {
 
     (async () => {
       try {
+        setError(null);
+        setLoadingData(true);
+        show({ message: "Loading game…" });
+
         const data: GameData = await getGameData(String(gameId));
 
         const questionsWithUppercase = data.gameTemplate.questions.map((q) => ({
@@ -42,12 +50,12 @@ export default function GameScreen() {
         if (cancelled) return;
 
         setGameData(finalData);
-        setMode(
-          finalData.gameType as "WORD_SEARCH" | "CROSSWORD_SEARCH"
-        );
+        setMode(finalData.gameType as "WORD_SEARCH" | "CROSSWORD_SEARCH");
 
+        // Prepare background
         if (finalData.gameTemplate.imageUrl) {
           try {
+            update({ message: "Preparing background…" });
             const resolved = await getBGImage(finalData.gameTemplate.imageUrl);
             if (cancelled) return;
             setImageUri(resolved);
@@ -69,8 +77,21 @@ export default function GameScreen() {
 
     return () => {
       cancelled = true;
+      hide();
     };
-  }, [gameId]);
+  }, [gameId, show, update, hide]);
+
+  const blocking = loadingData || !imageReady;
+
+  useEffect(() => {
+    if (blocking) {
+      show({
+        message: loadingData ? "Loading game…" : "Preparing background…",
+      });
+    } else {
+      hide();
+    }
+  }, [blocking, loadingData, show, hide]);
 
   const { CELL_SIZE, GRID_SIZE } = useMemo(() => {
     const level = gameData?.gameTemplate?.difficulty?.toUpperCase().trim();
@@ -80,8 +101,6 @@ export default function GameScreen() {
       return { CELL_SIZE: 65, GRID_SIZE: 10 };
     return { CELL_SIZE: 55, GRID_SIZE: 12 };
   }, [gameData?.gameTemplate?.difficulty]);
-
-  const blocking = loadingData || !imageReady;
 
   return (
     <View style={{ flex: 1 }}>
@@ -111,33 +130,24 @@ export default function GameScreen() {
         ) : null}
       </View>
 
-      {blocking && (
-        <View style={styles.centerOverlay}>
-          <ActivityIndicator size="large" />
-          <Text style={{ marginTop: 8 }}>
-            {loadingData ? "Loading game…" : "Preparing background…"}
-          </Text>
-
-          {imageUri ? (
-            <ExpoImage
-              source={{ uri: imageUri }}
-              style={{ width: 1, height: 1, opacity: 0 }}
-              contentFit="cover"
-              transition={0}
-              cachePolicy="memory-disk"
-              priority="high"
-              onLoadEnd={() => setImageReady(true)}
-              onError={() => setImageReady(true)}
-              accessible={false}
-              accessibilityElementsHidden
-              importantForAccessibility="no-hide-descendants"
-            />
-          ) : null}
-        </View>
-      )}
+      {blocking && imageUri ? (
+        <ExpoImage
+          source={{ uri: imageUri }}
+          style={{ width: 1, height: 1, opacity: 0, position: "absolute" }}
+          contentFit="cover"
+          transition={0}
+          cachePolicy="memory-disk"
+          priority="high"
+          onLoadEnd={() => setImageReady(true)}
+          onError={() => setImageReady(true)}
+          accessible={false}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        />
+      ) : null}
 
       {error && !blocking && (
-        <View style={styles.centerOverlay}>
+        <View style={styles.errorOverlay}>
           <Text>{error}</Text>
         </View>
       )}
@@ -146,10 +156,10 @@ export default function GameScreen() {
 }
 
 const styles = StyleSheet.create({
-  centerOverlay: {
+  errorOverlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: Color.white,
   },
 });

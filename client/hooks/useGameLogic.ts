@@ -13,27 +13,7 @@ const initialGameState: GameState = {
   foundWords: [],
 };
 
-// TODO(Zod): Replace with schema validation when ready.
-function validateConfig(cfg: UseGameLogicProps) {
-  if (!cfg) throw new Error("useGameLogic: missing config");
-  if (typeof cfg.GRID_SIZE !== "number" || typeof cfg.CELL_SIZE !== "number") {
-    throw new Error("useGameLogic: GRID_SIZE and CELL_SIZE must be numbers");
-  }
-  if (
-    !Array.isArray(cfg.questionsAndAnswers) ||
-    cfg.questionsAndAnswers.length === 0
-  ) {
-    throw new Error(
-      "useGameLogic: questionsAndAnswers must be a non-empty array"
-    );
-  }
-  if (cfg.mode !== "WORD_SEARCH" && cfg.mode !== "CROSSWORD_SEARCH") {
-    throw new Error("useGameLogic: invalid mode");
-  }
-}
-
 export function useGameLogic(rawConfig: UseGameLogicProps) {
-  validateConfig(rawConfig);
   const { GRID_SIZE, CELL_SIZE, questionsAndAnswers, mode } = rawConfig;
 
   const [grid, setGrid] = useState<string[][]>([]);

@@ -50,8 +50,7 @@ export const createGameFromGemini = async (
 
         const res = await api.post("/geminis/gemini/pdf", formData, {
             headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "multipart/form-data",
+                Authorization: `Bearer ${token}`
             },
         });
 

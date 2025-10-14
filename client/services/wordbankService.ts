@@ -5,28 +5,58 @@ import axios, { AxiosResponse } from "axios";
 export type SideItem = { n: number; word: string };
 export type ApiOK = {
   page: number;
+  perSide: number;
+  spreadSize?: number;
   total: number;
   totalPages: number;
-  perSide: number;
   left: SideItem[];
   right: SideItem[];
+  words?: BankSection;
+  extra?: BankSection;
 };
 type ApiErr = { error?: string; message?: string };
 
-export async function fetchWordBankPage(page: number, apiBase?: string): Promise<ApiOK> {
+type BankSection = {
+  total: number;
+  totalPages: number;
+  left: SideItem[];
+  right: SideItem[];
+};
+type BackendRes = {
+  page: number;
+  perSide: number;
+  spreadSize: number;
+  words: BankSection;
+  extra: BankSection;
+};
+
+export async function fetchWordBankPage(
+  page: number,
+  source: "words" | "extra" = "words"
+): Promise<ApiOK> {
   const token = await getToken();
   const userId = await getLoggedInUserId();
   if (!token || !userId) throw new Error("Not logged in");
 
-
   try {
-    // 👇 Tell axios what type to expect in data
-    const res: AxiosResponse<ApiOK> = await api.get(`/wordbank/user/${userId}/wordbank`, {
-      params: { page: Math.max(1, page) },
-      headers: { Authorization:`Bearer ${token}` },
-    });
+    const res: AxiosResponse<BackendRes> = await api.get(
+      `/wordbank/user/${userId}/wordbank`,
+      {
+        params: { page: Math.max(1, page) },
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
 
-    return res.data; // res.data is strongly typed as ApiOK
+    const section = source === "extra" ? res.data.extra : res.data.words;
+
+    return {
+      page: res.data.page,
+      total: section.total,
+      totalPages: section.totalPages,
+      perSide: res.data.perSide,
+      left: section.left,
+      right: section.right,
+    };
   } catch (err: any) {
     if (axios.isAxiosError<ApiErr>(err)) {
       const status = err.response?.status;
