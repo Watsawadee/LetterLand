@@ -1,9 +1,10 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, RequestHandler } from "express";
 import prisma from "../configs/db";
 import axios from "axios";
 import dotenv from "dotenv";
 import { getFileFromDrive } from "../services/ggDriveService";
 import { AuthenticatedRequest } from "../types/authenticatedRequest";
+import { GameType } from "@prisma/client";
 
 dotenv.config();
 const ACHIEVEMENT_IMAGE_FOLDERID = process.env.ACHIEVEMENT_IMAGE_FOLDERID!;
@@ -22,7 +23,6 @@ interface AchievementProgress {
   rank: number;
 }
 
-// Use this any time you need typed params together with your AuthenticatedRequest
 type WithParams<P> = AuthenticatedRequest & { params: P };
 
 /* ----------------------------- Ranking & Rules ---------------------------- */
@@ -33,7 +33,7 @@ type Rule = {
   metric: Metric;
   goal: number;
   rank: number;
-  gameType?: "WORD_SEARCH" | "CROSSWORD_SEARCH";
+  gameType?: GameType; // align with Prisma enum
 };
 
 const RULES: Rule[] = [
@@ -42,29 +42,28 @@ const RULES: Rule[] = [
   { name: "Bonus Hunter", descriptionStartsWith: "Find 5 extra", metric: "EXTRA_WORDS", goal: 5, rank: 3 },
   { name: "Puzzle Solver", descriptionStartsWith: "Complete 3", metric: "TOTAL_FINISHED", goal: 3, rank: 4 },
 
-
   { name: "Vocabulary Master", descriptionStartsWith: "Learn 10", metric: "UNIQUE_WORDS", goal: 10, rank: 4 },
   { name: "Puzzle Solver", descriptionStartsWith: "Complete 5", metric: "TOTAL_FINISHED", goal: 5, rank: 5 },
   { name: "Word Explorer", descriptionStartsWith: "Find 20 extra", metric: "EXTRA_WORDS", goal: 20, rank: 6 },
 
   { name: "Puzzle Expert", descriptionStartsWith: "Complete 15", metric: "TOTAL_FINISHED", goal: 15, rank: 7 },
-  { name: "Crossword Beginner", descriptionStartsWith: "Finish your first crossword", metric: "FINISHED_BY_TYPE", goal: 1, rank: 8, gameType: "CROSSWORD_SEARCH" },
-  { name: "Wordsearch Beginner", descriptionStartsWith: "Finish your first word search", metric: "FINISHED_BY_TYPE", goal: 1, rank: 9, gameType: "WORD_SEARCH" },
+  { name: "Crossword Beginner", descriptionStartsWith: "Finish your first crossword", metric: "FINISHED_BY_TYPE", goal: 1, rank: 8, gameType: GameType.CROSSWORD_SEARCH },
+  { name: "Wordsearch Beginner", descriptionStartsWith: "Finish your first word search", metric: "FINISHED_BY_TYPE", goal: 1, rank: 9, gameType: GameType.WORD_SEARCH },
 
   { name: "Hidden Word Master", descriptionStartsWith: "Find 50 extra", metric: "EXTRA_WORDS", goal: 50, rank: 10 },
   { name: "Vocabulary Collector", descriptionStartsWith: "Find 40", metric: "UNIQUE_WORDS", goal: 40, rank: 11 },
   { name: "Puzzle Master", descriptionStartsWith: "Complete 30", metric: "TOTAL_FINISHED", goal: 30, rank: 12 },
-  { name: "Crossword Solver", descriptionStartsWith: "Finish 10 crossword", metric: "FINISHED_BY_TYPE", goal: 10, rank: 13, gameType: "CROSSWORD_SEARCH" },
-  { name: "Wordsearch Solver", descriptionStartsWith: "Finish 10 word search", metric: "FINISHED_BY_TYPE", goal: 10, rank: 14, gameType: "WORD_SEARCH" },
+  { name: "Crossword Solver", descriptionStartsWith: "Finish 10 crossword", metric: "FINISHED_BY_TYPE", goal: 10, rank: 13, gameType: GameType.CROSSWORD_SEARCH },
+  { name: "Wordsearch Solver", descriptionStartsWith: "Finish 10 word search", metric: "FINISHED_BY_TYPE", goal: 10, rank: 14, gameType: GameType.WORD_SEARCH },
 
   { name: "Lexicon Legend", descriptionStartsWith: "Find 100", metric: "UNIQUE_WORDS", goal: 100, rank: 15 },
   { name: "Super Vocabulary", descriptionStartsWith: "Find 200", metric: "UNIQUE_WORDS", goal: 200, rank: 16 },
   { name: "Puzzle Super", descriptionStartsWith: "Complete 50", metric: "TOTAL_FINISHED", goal: 50, rank: 17 },
-  { name: "Crossword Prodigy", descriptionStartsWith: "Finish 20 crossword", metric: "FINISHED_BY_TYPE", goal: 20, rank: 18, gameType: "CROSSWORD_SEARCH" },
-  { name: "Wordsearch Prodigy", descriptionStartsWith: "Finish 20 word search", metric: "FINISHED_BY_TYPE", goal: 20, rank: 19, gameType: "WORD_SEARCH" },
+  { name: "Crossword Prodigy", descriptionStartsWith: "Finish 20 crossword", metric: "FINISHED_BY_TYPE", goal: 20, rank: 18, gameType: GameType.CROSSWORD_SEARCH },
+  { name: "Wordsearch Prodigy", descriptionStartsWith: "Finish 20 word search", metric: "FINISHED_BY_TYPE", goal: 20, rank: 19, gameType: GameType.WORD_SEARCH },
 ];
 
-/* ----------------------------- Helper Functions ---------------------------- */
+/* ----------------------------- Helper Functions --------------------------- */
 function findRule(name: string, description: string | null | undefined): Rule | undefined {
   const d = (description ?? "").trim();
   return RULES.find(r => r.name === name && d.startsWith(r.descriptionStartsWith));
@@ -73,7 +72,7 @@ function findRule(name: string, description: string | null | undefined): Rule | 
 async function countFinishedAll(userId: number) {
   return prisma.game.count({ where: { userId, isFinished: true } });
 }
-async function countFinishedByType(userId: number, gameType: "WORD_SEARCH" | "CROSSWORD_SEARCH") {
+async function countFinishedByType(userId: number, gameType: GameType) {
   return prisma.game.count({ where: { userId, isFinished: true, gameType } });
 }
 async function countUniqueWords(userId: number) {
@@ -125,8 +124,8 @@ export const getAllAchievements = async (userId: number) => {
       return {
         id: a.id,
         name: a.name,
-        description: a.description,
-        coinReward: a. coinReward,
+        description: a.description ?? "",
+        coinReward: a.coinReward,          // ✅ fixed stray space
         imageUrl: a.imageUrl,
         progress,
         maxProgress,
@@ -143,11 +142,14 @@ export const getAllAchievements = async (userId: number) => {
 
 /* ------------------------------- API HANDLERS ------------------------------ */
 
-// matches: router.get("/", authenticatedUser, getUserAchievements);
-export const getUserAchievements = async (req: AuthenticatedRequest, res: Response) => {
+// GET /achievements
+export const getUserAchievements = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> => {
   try {
     const userId = req.user?.id;
-    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    if (!userId) { res.status(401).json({ message: "Unauthorized" }); return; }
 
     const data = await getAllAchievements(userId);
     res.status(200).json({ message: "Achievements retrieved", data });
@@ -157,14 +159,17 @@ export const getUserAchievements = async (req: AuthenticatedRequest, res: Respon
   }
 };
 
-// matches: router.get("/coins", authenticatedUser, getUserCoins);
-export const getUserCoins = async (req: AuthenticatedRequest, res: Response) => {
+// GET /achievements/coins
+export const getUserCoins = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> => {
   try {
     const userId = req.user?.id;
-    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    if (!userId) { res.status(401).json({ message: "Unauthorized" }); return; }
 
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { coin: true } });
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) { res.status(404).json({ message: "User not found" }); return; }
 
     res.status(200).json({ message: "User coins", data: { coins: user.coin || 0 } });
   } catch (err) {
@@ -173,11 +178,14 @@ export const getUserCoins = async (req: AuthenticatedRequest, res: Response) => 
   }
 };
 
-// matches: router.post("/check", authenticatedUser, triggerAchievementCheck);
-export const triggerAchievementCheck = async (req: AuthenticatedRequest, res: Response) => {
+// POST /achievements/check
+export const triggerAchievementCheck = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> => {
   try {
     const userId = req.user?.id;
-    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    if (!userId) { res.status(401).json({ message: "Unauthorized" }); return; }
 
     const all = await getAllAchievements(userId);
 
@@ -213,22 +221,25 @@ export const triggerAchievementCheck = async (req: AuthenticatedRequest, res: Re
   }
 };
 
-// matches: router.post("/:achievementId/claim", authenticatedUser, claimAchievement);
-export const claimAchievement = async (req: WithParams<{ achievementId: string }>, res: Response) => {
+// POST /achievements/:achievementId/claim
+export const claimAchievement = async (
+  req: WithParams<{ achievementId: string }>,
+  res: Response
+): Promise<void> => {
   try {
     const userId = req.user?.id;
     const achievementId = Number(req.params.achievementId);
-    if (!userId) return res.status(401).json({ message: "Unauthorized" });
-    if (!Number.isFinite(achievementId)) return res.status(400).json({ message: "Invalid achievementId" });
+    if (!userId) { res.status(401).json({ message: "Unauthorized" }); return; }
+    if (!Number.isFinite(achievementId)) { res.status(400).json({ message: "Invalid achievementId" }); return; }
 
     const ua = await prisma.userAchievement.findFirst({
       where: { userId, achievementId },
       include: { achievement: { select: { coinReward: true } } },
     });
 
-    if (!ua) return res.status(404).json({ message: "Achievement progress not found" });
-    if (!ua.isCompleted) return res.status(400).json({ message: "Achievement not completed yet" });
-    if (ua.isClaimed) return res.status(400).json({ message: "Already claimed" });
+    if (!ua) { res.status(404).json({ message: "Achievement progress not found" }); return; }
+    if (!ua.isCompleted) { res.status(400).json({ message: "Achievement not completed yet" }); return; }
+    if (ua.isClaimed) { res.status(400).json({ message: "Already claimed" }); return; }
 
     const [updatedUser] = await prisma.$transaction([
       prisma.user.update({
@@ -256,14 +267,17 @@ export const claimAchievement = async (req: WithParams<{ achievementId: string }
   }
 };
 
-// matches: router.get("/achievementimage/:fileName", getAchievementImage);
-export const getAchievementImage = async (req: Request, res: Response) => {
+// GET /achievements/achievementimage/:fileName
+export const getAchievementImage = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { fileName } = req.params;
-    if (!fileName) return res.status(400).json({ message: "fileName is required" });
+    if (!fileName) { res.status(400).json({ message: "fileName is required" }); return; }
 
     const file = await getFileFromDrive(fileName, ACHIEVEMENT_IMAGE_FOLDERID);
-    if (!file) return res.status(404).json({ message: "Image not found" });
+    if (!file) { res.status(404).json({ message: "Image not found" }); return; }
 
     const response = await axios.get(`https://drive.google.com/uc?export=download&id=${file.id}`, { responseType: "arraybuffer" });
     res.setHeader("Content-Type", file.mimeType || "image/png");
