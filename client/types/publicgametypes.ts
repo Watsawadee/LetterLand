@@ -7,7 +7,8 @@ export interface PublicGameItem {
   gameType: PublicGameType;
   difficulty: EnglishLevel;
   imageUrl: string | null;
-  gameCode: string | null;   // <--- add this
+  gameCode: string | null; 
+  isPublic: boolean;   
 }
 
 export interface ListPublicGamesResponse {

@@ -15,6 +15,7 @@ import publicgameRoutes from './routes/publicgameRoute';
 import wordBankRoutes from './routes/wordbankRoute'
 import settingRoutes from './routes/settingRoutes'
 import achievementRoutes from "./routes/achievementRoute";
+import searchRoutes from './routes/searchbarRoute';
 
 dotenv.config();
 const app = express();
@@ -40,7 +41,7 @@ app.use("/publicgame", publicgameRoutes);
 app.use("/wordbank", wordBankRoutes);
 app.use("/setting", settingRoutes)
 app.use("/achievement", achievementRoutes);
-
+app.use('/search', searchRoutes);
 
 app.listen(3000, () => {
   console.log("Server is running on port 3000");

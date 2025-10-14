@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   useWindowDimensions,
+  Image,
 } from "react-native";
 import GardenBackgroundBlueSky from "@/assets/backgroundTheme/GardenBackgroundBlue";
 import WordBankModal from "@/components/WordBank";
@@ -13,7 +14,6 @@ import { ButtonStyles } from "@/theme/ButtonStyles";
 import { Typography } from "@/theme/Font";
 import MyGamesRow from "@/components/mygame";
 import UserOverviewCard from "@/components/UserOverViewCard";
-import { Image } from "react-native";
 import mascot from "@/assets/images/mascot.png";
 import Book from "@/assets/icon/Book";
 import AchievementsRow from "../../components/AchievementRow";
@@ -30,16 +30,15 @@ export default function Home() {
   const [showBook, setShowBook] = useState(false);
   const [username, setUsername] = useState<string | null>(null);
   const [greeting, setGreeting] = useState<string>("");
+  const [showSettings, setShowSettings] = useState(false);
+  const [coins, setCoins] = useState(0);
 
   const { width } = useWindowDimensions();
   const isWide = width >= 1024;
-  const [coins, setCoins] = useState(0);
   const { data: profile, isLoading, error } = useUserProfile();
   const { data: lastFinishedGame } = useUserLastFinishedGame();
-  const [showSettings, setShowSettings] = useState(false);
 
-
-  // Load the user’s current coins once at mount
+  // Load coins
   useEffect(() => {
     const loadCoins = async () => {
       try {
@@ -51,15 +50,17 @@ export default function Home() {
     };
     loadCoins();
   }, []);
+
+  // Fetch username
   useEffect(() => {
     const fetchUsername = async () => {
       const decoded = await getDecodedToken();
       setUsername(decoded?.username ?? null);
     };
-
     fetchUsername();
   }, []);
 
+  // Greeting logic
   useEffect(() => {
     const checkLastVisit = async () => {
       try {
@@ -72,22 +73,19 @@ export default function Home() {
         const key = `lastVisit_${userId}`;
         const lastVisitStr = await AsyncStorage.getItem(key);
 
-        // 🕒 Greeting (time-based)
         const hour = now.getHours();
         const timeGreeting =
           hour < 12
             ? `Good morning 🌞 ${userName}!`
             : hour < 18
-              ? `Good afternoon 🌤️ ${userName}!`
-              : `Good evening 🌙 ${userName}!`;
+            ? `Good afternoon 🌤️ ${userName}!`
+            : `Good evening 🌙 ${userName}!`;
 
-        // 👋 Visit message
         let visitMsg = "";
         if (lastVisitStr) {
           const lastVisit = new Date(lastVisitStr);
           const diffDays =
             (now.getTime() - lastVisit.getTime()) / (1000 * 60 * 60 * 24);
-
           if (diffDays >= 2) {
             visitMsg = `Long time no see, ${userName}! You haven’t entered the app for ${Math.floor(
               diffDays
@@ -101,13 +99,12 @@ export default function Home() {
           visitMsg = `Hi ${userName}! Nice to meet you for the first time`;
         }
 
-        const gameMsg =
-          lastFinishedGame && !lastFinishedGame.message
-            ? `Your last puzzle was "${lastFinishedGame.topic}" — finished ${formatDistanceToNow(
+        const gameMsg = lastFinishedGame
+          ? `Your last puzzle was "${lastFinishedGame.topic}" — finished ${formatDistanceToNow(
               new Date(lastFinishedGame.finishedAt),
               { addSuffix: true }
             )}`
-            : "You haven’t finished any games yet — let’s start one today!";
+          : "You haven’t finished any games yet — let’s start one today!";
 
         let coinMsg = "";
         if (profile && !("error" in profile)) {
@@ -115,10 +112,10 @@ export default function Home() {
         }
 
         const messages = [timeGreeting, visitMsg, gameMsg, coinMsg];
-        const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+        const randomMessage =
+          messages[Math.floor(Math.random() * messages.length)];
 
         setGreeting(randomMessage);
-
         await AsyncStorage.setItem(key, now.toISOString());
       } catch (err) {
         console.error("Error tracking last visit:", err);
@@ -128,118 +125,181 @@ export default function Home() {
     checkLastVisit();
   }, [lastFinishedGame, profile]);
 
-  let content: React.ReactNode = null;
-  if (isLoading) {
-    content = <Text>Loading...</Text>;
-  } else if (error || !profile) {
-    content = <Text>Error loading user profile</Text>;
-  } else if ("error" in profile) {
-    content = <Text>Failed to load user profile</Text>;
-  }
-  else {
-    content = (
-      <>
-        <GardenBackgroundBlueSky style={styles.bg} />
+  if (isLoading) return <Text>Loading...</Text>;
+  if (error || !profile) return <Text>Error loading user profile</Text>;
+  if ("error" in profile) return <Text>Failed to load user profile</Text>;
 
-        <View style={[styles.page, { flexDirection: isWide ? "row" : "column" }]}>
-          {/* LEFT PANEL */}
-          <View
-            style={[
-              styles.leftPanel,
-              { marginRight: isWide ? 24 : 0, marginBottom: isWide ? 0 : 24 },
-            ]}
-          >
-            {/* greeting + Word Bank */}
-            <View style={styles.headerRow}>
-              {/* Mascot + Greeting */}
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                <Image
-                  source={mascot}
-                  style={{ width: 90, height: 90, borderRadius: 25, transform: [{ scaleX: -1 }] }}
-                  resizeMode="contain"
-                />
-                <View>
-                  <Text style={[Typography.header25, { marginBottom: 4 }]}>
-                    Hello {username}
-                  </Text>
-                  <Text style={[Typography.body20, { opacity: 0.8 }, { maxWidth: "65%" }]}>
-                    {greeting}
-                  </Text>
-                </View>
-              </View>
+  return (
+    <View style={styles.root}>
+      <GardenBackgroundBlueSky style={styles.bg} />
 
-              {/* Word Bank Button */}
+      <View style={[styles.page, { flexDirection: isWide ? "row" : "column" }]}>
+        {/* LEFT PANEL */}
+        <View
+          style={[
+            styles.leftPanel,
+            { marginRight: isWide ? 24 : 0, marginBottom: isWide ? 0 : 24 },
+          ]}
+        >
+          {/* HEADER ROW */}
+<View style={styles.headerRow}>
+  {/* LEFT SIDE: Mascot + Greeting */}
+  <View style={styles.greetingContainer}>
+    <Image
+      source={mascot}
+      style={{
+        width: 90,
+        height: 90,
+        borderRadius: 25,
+        transform: [{ scaleX: -1 }],
+      }}
+      resizeMode="contain"
+    />
+    <View style={{ flex: 1 }}>
+      <Text style={[Typography.header25, { marginBottom: 4 }]}>
+        Hello {username}
+      </Text>
+      <Text
+        style={[
+          Typography.body20,
+          { opacity: 0.8, flexShrink: 1, flexWrap: "wrap" },
+        ]}
+      >
+        {greeting}
+      </Text>
+    </View>
+  </View>
+
+  {/* RIGHT SIDE: Word Bank Button */}
+  <TouchableOpacity
+    style={[
+      ButtonStyles.wordBank.container,
+      {
+        flexDirection: "row",
+        alignItems: "center",
+        alignSelf: "flex-start", // stay top-aligned
+        marginLeft: 16,
+      },
+    ]}
+    onPress={() => setShowBook(true)}
+  >
+    <Book width={50} height={50} style={{ marginRight: 4 }} />
+    <View
+      style={{
+        flexDirection: "column",
+        alignItems: "flex-start",
+        paddingLeft: 8,
+      }}
+    >
+      <Text style={ButtonStyles.wordBank.text}>Word</Text>
+      <Text style={ButtonStyles.wordBank.text}>Bank</Text>
+    </View>
+  </TouchableOpacity>
+
+  <WordBankModal visible={showBook} onClose={() => setShowBook(false)} />
+</View>
+
+          {/* ACHIEVEMENT SECTION */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={Typography.header25}>Achievements</Text>
               <TouchableOpacity
-                style={[ButtonStyles.wordBank.container, { flexDirection: "row", alignItems: "center" }]}
-                onPress={() => setShowBook(true)}
+                onPress={() => router.push("/Achievementboard")}
               >
-                <Book width={50} height={50} style={{ marginRight: 4 }} />
-                <View style={{ flexDirection: "column", alignItems: "flex-start", paddingLeft: 8 }}>
-                  <Text style={ButtonStyles.wordBank.text}>Word</Text>
-                  <Text style={ButtonStyles.wordBank.text}>Bank</Text>
-                </View>
+                <Text style={[Typography.body14, styles.link]}>view all</Text>
               </TouchableOpacity>
-
-              {/* modal */}
-              <WordBankModal visible={showBook} onClose={() => setShowBook(false)} />
             </View>
+            <View style={styles.sectionContent}>
+              <AchievementsRow
+                onCoinsUpdated={(newBalance) => setCoins(newBalance)}
+              />
+            </View>
+          </View>
 
-            {/* ⬇️ ACHIEVEMENT SECTION (live data) */}
-            <AchievementsRow
-              onCoinsUpdated={(newBalance) => {
-                setCoins(newBalance); // your local/global coin setter
-              }}
-            />
-
-            {/* Recent game title row */}
+          {/* RECENT GAME SECTION */}
+          <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={Typography.header25}>Recent game</Text>
-
               <TouchableOpacity onPress={() => router.push("/Myboard")}>
                 <Text style={[Typography.body14, styles.link]}>view all</Text>
               </TouchableOpacity>
             </View>
-
-            {/* Your games row */}
-            <MyGamesRow title=" " scrollDirection="horizontal" />
+            <View style={styles.sectionContent}>
+              <MyGamesRow title=" " scrollDirection="horizontal" />
+            </View>
           </View>
-
-          {/* RIGHT SIDEBAR */}
-          {/* <View style={styles.rightPanel}> */}
-          {showSettings ? (
-            <UserSettingCard onBack={() => setShowSettings(false)} />
-          ) : (
-            <UserOverviewCard coins={coins} onOpenSettings={() => setShowSettings(true)} />
-          )}
-          {/* </View> */}
         </View>
-      </>
-    )
-  }
 
-  return (
-    <View style={styles.root}>
-      {content}
+        {/* RIGHT PANEL */}
+        {showSettings ? (
+          <UserSettingCard onBack={() => setShowSettings(false)} />
+        ) : (
+          <UserOverviewCard
+            coins={coins}
+            onOpenSettings={() => setShowSettings(true)}
+          />
+        )}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
-    flex: 1, width: "100%", height: "100%", alignItems: "center",
+    flex: 1,
+    width: "100%",
+    height: "100%",
+    alignItems: "center",
   },
   bg: {
-    position: "absolute", bottom: 0, left: 0, width: "100%", height: 1000, zIndex: 0,
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    width: "100%",
+    height: 1000,
+    zIndex: 0,
   },
   page: {
-    flex: 1, width: "100%", maxWidth: 1125, paddingHorizontal: 0,
-    paddingTop: 16, paddingBottom: 24, flexDirection: "row",
+    flex: 1,
+    width: "100%",
+    maxWidth: 1125,
+    paddingHorizontal: 0,
+    paddingTop: 16,
+    paddingBottom: 24,
+    flexDirection: "row",
   },
-  leftPanel: { flex: 2.5, borderRadius: 20, padding: 16 },
-  rightPanel: { flex: 1, borderRadius: 20, padding: 16, justifyContent: "center", alignItems: "center" },
+  leftPanel: {
+    flex: 2.5,
+    borderRadius: 20,
+    padding: 16,
+  },
+
+  /* ✅ single definition */
   headerRow: {
-    flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 40,
+    flexDirection: "row",
+    alignItems: "flex-start", // top-aligned so the button sits nicely
+    marginBottom: 40,
   },
-  sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  link: { color: "#2F80ED" },
+
+  section: {
+    marginBottom: 6,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 30,
+  },
+  sectionContent: {},
+  link: {
+    color: "#2F80ED",
+  },
+
+  /* new container for the left side of the header */
+  greetingContainer: {
+    flex: 1,               // lets the text take the space
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
 });

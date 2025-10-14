@@ -52,6 +52,7 @@ export const listPublicGames: RequestHandler<
           difficulty: true,
           imageUrl: true,
           gameCode: true,
+          isPublic: true,
         },
         orderBy: { id: "desc" },
         take: limit,
@@ -68,6 +69,7 @@ export const listPublicGames: RequestHandler<
       difficulty: t.difficulty,
       imageUrl: t.imageUrl,// make it loadable in RN <Image>
       gameCode: t.gameCode ?? null,
+      isPublic: t.isPublic, 
     }));
 
     res.status(200).json({ total, items });

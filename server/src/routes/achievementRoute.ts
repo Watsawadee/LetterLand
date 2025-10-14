@@ -3,8 +3,8 @@ import {
   getUserAchievements,
   getAchievementImage,
   getUserCoins,
-  triggerAchievementCheck, 
-  claimAchievement,// <-- add this
+  triggerAchievementCheck,
+  claimAchievement,
 } from "../controllers/achievementController";
 import { authenticatedUser } from "../middleware/authMiddleware";
 
