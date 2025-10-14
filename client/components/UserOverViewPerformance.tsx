@@ -8,7 +8,6 @@ import { ActivityIndicator } from "react-native";
 import Clock from "@/assets/icon/Clock";
 import Pencil from "@/assets/icon/Pencil";
 import { VictoryAxis, VictoryBar, VictoryChart, VictoryLabel, VictoryLine, VictoryScatter, VictoryTheme, VictoryVoronoiContainer } from "victory-native";
-
 import { Dimensions } from "react-native";
 import Carousel, { Pagination, ICarouselInstance } from "react-native-reanimated-carousel";
 import { useSharedValue } from "react-native-reanimated";
@@ -22,35 +21,23 @@ import CloseIcon from "@/assets/icon/CloseIcon";
 import WordBankModal from "./WordBank";
 import Book from "@/assets/icon/Book";
 import { ButtonStyles } from "@/theme/ButtonStyles";
+import { Dropdown } from "react-native-element-dropdown";
 
 const MAX_WEEKS = 5;
 const UserOverviewPerformance = () => {
+    type ListItem = { _id: string; value: string };
     const [carouselIndex, setCarouselIndex] = useState(0);
     const [forceLoading, setForceLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
     const [showBook, setShowBook] = useState(false);
-    const [selectedGraphs, setSelectedGraphs] = useState({
-        games: true,
-        peerAvg: false,
-    });
+    const [graphType, setGraphType] = useState("games");
+    const [barAnimationDone, setBarAnimationDone] = useState(false);
 
-
-    const toggleTimeout = useRef<NodeJS.Timeout | null>(null);
-
-    const toggleGraph = useCallback(
-        (key: "games" | "peerAvg") => {
-            if (toggleTimeout.current) clearTimeout(toggleTimeout.current);
-
-            toggleTimeout.current = setTimeout(() => {
-                setSelectedGraphs(prev => ({
-                    ...prev,
-                    [key]: !prev[key],
-                }));
-            }, 200);
-        },
-        []
-    );
-
+    const graphOptions = [
+        { label: "Games Played", value: "games" },
+        { label: "Average of Peer", value: "peerAvg" },
+        { label: "Both", value: "both" },
+    ];
 
 
     const CHART_W = 750;
@@ -64,11 +51,6 @@ const UserOverviewPerformance = () => {
     useEffect(() => {
         const timer = setTimeout(() => setForceLoading(false), 1000);
         return () => clearTimeout(timer);
-    }, []);
-    useEffect(() => {
-        return () => {
-            if (toggleTimeout.current) clearTimeout(toggleTimeout.current);
-        };
     }, []);
 
     const weekOffset = carouselIndex - (MAX_WEEKS - 1);
@@ -91,6 +73,13 @@ const UserOverviewPerformance = () => {
             })),
         [labels, counts]
     );
+    const modalWeeklySeries = useMemo(() => {
+        if (!dailyData?.labels || !dailyData?.counts) return [];
+        return dailyData.labels.map((label, index) => ({
+            x: label,
+            y: typeof dailyData.counts[index] === "number" ? dailyData.counts[index] : 0,
+        }));
+    }, [dailyData]);
 
     const peerSeries = useMemo(() => {
         if (!dailyData?.labels || !dailyData?.counts) {
@@ -505,49 +494,44 @@ const UserOverviewPerformance = () => {
                                     accessibilityLabel="Close dialog"
                                 />
                             </View>
-                            <View style={{ flexDirection: "row", justifyContent: "center", marginBottom: 20 }}>
-                                {[
-                                    { key: "games", label: "Games Played", color: Color.blue },
-                                    { key: "peerAvg", label: "Average of Peer", color: "#FFB300" },
-                                ].map(opt => (
-                                    <TouchableOpacity
-                                        key={opt.key}
-                                        disabled={loadingDaily || loadingChart}
-                                        style={{
-                                            flexDirection: "row",
-                                            alignItems: "center",
-                                            marginHorizontal: 10,
-                                            paddingVertical: 8,
-                                            paddingHorizontal: 12,
-                                            borderRadius: 20,
-                                            backgroundColor: selectedGraphs[opt.key as keyof typeof selectedGraphs] ? opt.color : Color.gray,
-                                        }}
-                                        onPress={() => toggleGraph(opt.key as "games" | "peerAvg")}
-                                    >
-                                        <Checkbox.Android
-                                            status={selectedGraphs[opt.key as keyof typeof selectedGraphs] ? "checked" : "unchecked"}
-                                            onPress={() => toggleGraph(opt.key as "games" | "peerAvg")}
-                                            color="#fff"
-                                        // disabled={loadingDaily || loadingChart}
-                                        />
-                                        <Text style={{ color: "#fff", fontWeight: "bold" }}>{opt.label}</Text>
-                                    </TouchableOpacity>
-                                ))}
+                            <View style={{
+                                width: "20%", marginTop: 10, marginBottom: 20
+                            }}>
+                                <Dropdown
+                                    data={graphOptions}
+                                    labelField="label"
+                                    valueField="value"
+                                    value={graphType}
+                                    placeholder="Select graph type"
+                                    onChange={(item) => setGraphType(item.value)}
+                                    style={{
+                                        height: 40,
+                                        borderColor: "#ccc",
+                                        borderWidth: 1,
+                                        borderRadius: 8,
+                                        paddingHorizontal: 10,
+                                        backgroundColor: "white",
+                                    }}
+                                    placeholderStyle={{ color: Color.gray }}
+                                    selectedTextStyle={{ color: Color.gray, fontWeight: "bold" }}
+                                />
                             </View>
                             <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
-                                {/* {selectedGraphs.games && labels && counts && labels.length === counts.length && ( */}
-                                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                                    <View style={{ width: 30, height: 4, backgroundColor: Color.blue, marginRight: 8, borderRadius: 2 }} />
-                                    <Text style={{ marginRight: 20, color: Color.blue, fontWeight: "bold" }}>Your Games Played</Text>
-                                </View>
-                                {/* )} */}
-                                {/* {selectedGraphs.peerAvg && labels && dailyData?.counts && labels.length === dailyData.counts.length && ( */}
-                                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                                {(graphType === "games" || graphType === "both") && (
 
-                                    <View style={{ width: 30, height: 4, backgroundColor: "#FFA500", marginRight: 8, borderRadius: 2 }} />
-                                    <Text style={{ color: "#FFA500", fontWeight: "bold" }}>Average of Peers</Text>
-                                </View>
-                                {/* )} */}
+                                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                                        <View style={{ width: 30, height: 4, backgroundColor: Color.blue, marginRight: 8, borderRadius: 2 }} />
+                                        <Text style={{ marginRight: 20, color: Color.blue, fontWeight: "bold" }}>Your Games Played</Text>
+                                    </View>
+                                )}
+                                {(graphType === "peerAvg" || graphType === "both") && [
+
+                                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+
+                                        <View style={{ width: 30, height: 4, backgroundColor: "#FFA500", marginRight: 8, borderRadius: 2 }} />
+                                        <Text style={{ color: "#FFA500", fontWeight: "bold" }}>Average of Peers</Text>
+                                    </View>
+                                ]}
                             </View>
 
                             {
@@ -572,20 +556,25 @@ const UserOverviewPerformance = () => {
                                                         grid: { stroke: "#B5B5B5", strokeDasharray: "0" },
                                                     }}
                                                 />
-                                                {selectedGraphs.games && (
+                                                {(graphType === "games" || graphType === "both") && (
                                                     <VictoryBar
                                                         data={weeklySeries}
+                                                        animate={{
+                                                            duration: 1000,
+                                                            onLoad: { duration: 800 },
+                                                            onEnd: () => setBarAnimationDone(true),
+                                                        }}
                                                         cornerRadius={5}
                                                         barWidth={25}
                                                         style={{
                                                             data: { fill: Color.blue, borderRadius: 6 },
                                                             labels: { fill: "#5B6073", fontSize: 15, fontWeight: "bold" },
                                                         }}
-                                                        labels={({ datum }) => (datum.y === 0 ? "" : `${datum.y}`)}
+                                                        labels={({ datum }) => (barAnimationDone && datum.y !== 0 ? `${datum.y}` : "")}
                                                         labelComponent={<VictoryLabel dy={-8} textAnchor="middle" />}
                                                     />
                                                 )}
-                                                {selectedGraphs.peerAvg && peerSeries.length > 0 && [
+                                                {(graphType === "peerAvg" || graphType === "both") && barAnimationDone && [
                                                     <VictoryLine
                                                         key="line"
                                                         data={peerSeries}
