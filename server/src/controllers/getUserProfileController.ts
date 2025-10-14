@@ -34,24 +34,63 @@ export const getUserProfile = async (
     const nextLevel = getNextLevel(user.englishLevel) ?? null;
 
     const requiredPlaytime = LEVEL_THRESHOLDS[user.englishLevel];
+    const prevThreshold =
+      user.englishLevel === "A1"
+        ? 0
+        : user.englishLevel === "A2"
+          ? LEVEL_THRESHOLDS.A1
+          : user.englishLevel === "B1"
+            ? LEVEL_THRESHOLDS.A2
+            : user.englishLevel === "B2"
+              ? LEVEL_THRESHOLDS.B1
+              : user.englishLevel === "C1"
+                ? LEVEL_THRESHOLDS.B2
+                : LEVEL_THRESHOLDS.C1;
+
+    const lastFive = await prisma.game.findMany({
+      where: { userId, isFinished: true },
+      orderBy: { finishedAt: "desc" },
+      take: 5,
+      select: { isHintUsed: true },
+    });
+    const hasUsedHintRecently = lastFive.some((g) => g.isHintUsed);
+
+    let rawProgress = nextLevel
+      ? Math.min(
+        (user.total_playtime / requiredPlaytime) * 100,
+        100
+      )
+      : 100;
+    if (rawProgress >= 99 && hasUsedHintRecently) {
+      rawProgress = 99;
+    }
+
+
+    const progressPercent = Number(rawProgress.toFixed(2));
+
+
     const hasEnoughPlaytime =
       requiredPlaytime !== Number.POSITIVE_INFINITY &&
       user.total_playtime >= requiredPlaytime;
 
-    let canLevelUp = false;
-    if (nextLevel) {
-      const lastFive = await prisma.game.findMany({
-        where: { userId, isFinished: true },
-        orderBy: { finishedAt: "desc" },
-        take: 5,
-        select: { isHintUsed: true },
-      });
+    // let canLevelUp = false;
+    // if (nextLevel) {
+    //   const lastFive = await prisma.game.findMany({
+    //     where: { userId, isFinished: true },
+    //     orderBy: { finishedAt: "desc" },
+    //     take: 5,
+    //     select: { isHintUsed: true },
+    //   });
 
-      const fiveFinished = lastFive.length === 5;
-      const noHintsUsed = fiveFinished && lastFive.every(g => !g.isHintUsed);
+    //   const fiveFinished = lastFive.length === 5;
+    //   const noHintsUsed = fiveFinished && lastFive.every(g => !g.isHintUsed);
+    //   canLevelUp = hasEnoughPlaytime && noHintsUsed;
+    // }
 
-      canLevelUp = hasEnoughPlaytime && noHintsUsed;
-    }
+    const fiveFinished = lastFive.length === 5;
+    const noHintsUsed = fiveFinished && lastFive.every((g) => !g.isHintUsed);
+    const canLevelUp = hasEnoughPlaytime && noHintsUsed;
+
 
     const response = {
       id: user.id,
@@ -61,6 +100,7 @@ export const getUserProfile = async (
       englishLevel: user.englishLevel,
       nextLevel,
       canLevelUp,
+      progressPercent
     };
 
     res.status(200).json(UserProfileResponseSchema.parse(response));
