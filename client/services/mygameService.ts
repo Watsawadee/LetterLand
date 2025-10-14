@@ -20,6 +20,11 @@ export async function getUserGames(
     baseURL,
     headers: { Authorization: `Bearer ${token}` },
   });
+  console.log("[Service] getUserGames raw data:", res.data.items?.map(g => ({
+    id: g.id,
+    title: g.title,
+    gameType: g.gameType,
+  })));
 
   return res.data.items;
 }

@@ -1,9 +1,3 @@
-// utils/gridGenerator.ts
-// Purpose: Build a word-search grid and track positions of each word.
-// Notes:
-// - Ready for future Zod integration: call `validateInputs` at the boundary.
-// - Places longer words first, uses bounded retries, and fills remaining cells with random letters.
-
 type Coord = [number, number];
 type Direction = [number, number];
 type PositionsMap = Record<string, Coord[]>;
@@ -19,13 +13,6 @@ const DIRECTIONS: Direction[] = [
   [1, -1],  // down-left
   [1, 1],   // down-right
 ];
-
-// TODO(Zod): Replace with schema validation when ready.
-// For now, a small runtime check to aid debugging.
-function validateInputs(words: string[], gridSize: number) {
-  if (!Array.isArray(words)) throw new Error("generateGrid: words must be an array");
-  if (typeof gridSize !== "number" || gridSize <= 0) throw new Error("generateGrid: gridSize must be > 0");
-}
 
 const createEmptyGrid = (n: number): string[][] =>
   Array.from({ length: n }, () => Array.from({ length: n }, () => ""));
@@ -76,8 +63,6 @@ const fillRandomLetters = (grid: string[][], letters: string) => {
 };
 
 export function generateGrid(words: string[], gridSize: number): { grid: string[][]; positions: PositionsMap } {
-  validateInputs(words, gridSize);
-
   // Normalize and pre-filter
   const cleanWords = words
     .map((w) => (w ?? "").toUpperCase().trim())

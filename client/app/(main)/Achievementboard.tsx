@@ -6,23 +6,25 @@ import {
   StyleSheet,
   TouchableOpacity,
   useWindowDimensions,
+  ScrollView,
 } from "react-native";
+
 import GardenBackgroundBlueSky from "@/assets/backgroundTheme/GardenBackgroundBlue";
 import WordBankModal from "@/components/WordBank";
 import { ButtonStyles } from "@/theme/ButtonStyles";
 import { Typography } from "@/theme/Font";
-import MyGamesRow from "@/components/mygame";
+
 import UserOverviewCard from "@/components/UserOverViewCard";
 import Book from "@/assets/icon/Book";
 import ArrowLeft from "@/assets/icon/ArrowLeft";
+import AchievementsRow from "@/components/AchievementRow";
 
-export default function Public() {
+export default function Achievementboard() {
   const router = useRouter();
   const [showBook, setShowBook] = useState(false);
   const { width } = useWindowDimensions();
   const isWide = width >= 1024;
 
-  // Navigate back to Home
   const handleBackPress = () => {
     router.push("/Home");
   };
@@ -32,26 +34,22 @@ export default function Public() {
       <GardenBackgroundBlueSky style={styles.bg} />
 
       <View style={[styles.page, { flexDirection: isWide ? "row" : "column" }]}>
-        {/* LEFT PANEL */}
+        {/* LEFT PANEL (scrollable area) */}
         <View
           style={[
             styles.leftPanel,
             { marginRight: isWide ? 24 : 0, marginBottom: isWide ? 0 : 24 },
           ]}
         >
-          {/* Header with back button */}
+          {/* Header with back button and Word Bank */}
           <View style={styles.headerRow}>
-            <TouchableOpacity
-              onPress={handleBackPress}
-              style={styles.backButton}
-            >
+            <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
               <ArrowLeft width={24} height={24} />
               <Text style={[Typography.header30, { marginLeft: 4 }]}>
-                My Board
+                Achievement
               </Text>
             </TouchableOpacity>
 
-            {/* Word Bank Button */}
             <TouchableOpacity
               style={[
                 ButtonStyles.wordBank.container,
@@ -72,17 +70,21 @@ export default function Public() {
               </View>
             </TouchableOpacity>
 
-            <WordBankModal
-              visible={showBook}
-              onClose={() => setShowBook(false)}
-            />
+            <WordBankModal visible={showBook} onClose={() => setShowBook(false)} />
           </View>
-          <View style={styles.publicGamesContainer}>
-            <MyGamesRow
-              title=" "
-              scrollDirection="vertical"
-            />
-          </View>
+
+          {/* ✅ Scrollable content (like in Publicboard) */}
+          <ScrollView
+            contentContainerStyle={{
+              flexGrow: 1,
+              paddingBottom: 24,
+            }}
+            showsVerticalScrollIndicator
+          >
+            <View style={styles.achievementContainer}>
+              <AchievementsRow title="All Achievements" showAll />
+            </View>
+          </ScrollView>
         </View>
 
         {/* RIGHT PANEL */}
@@ -118,11 +120,13 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 24,
     flexDirection: "row",
+    minHeight: 0,
   },
   leftPanel: {
     flex: 2.5,
     borderRadius: 20,
     padding: 16,
+    minHeight: 0,
   },
   rightPanel: {
     flex: 1,
@@ -135,25 +139,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 40,
-  },
-  link: {
-    color: "#2F80ED",
-  },
-  publicGamesContainer: {
-    flexDirection: "column",
-    gap: 16,
-    flex: 1,
-    minHeight: 0,
+    marginBottom: 16,
   },
   backButton: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4, // smaller gap between arrow and text
+    gap: 4,
     paddingVertical: 8,
-    paddingHorizontal: 0, // remove horizontal padding to shift left
-    marginLeft: -8, // nudge it to the left
+    paddingHorizontal: 0,
+    marginLeft: -8,
   },
-  // container: { flex: 1 },
-  listArea: { flex: 1, minHeight: 0 },
+  achievementContainer: {
+    flexDirection: "column",
+    gap: 16,
+    flex: 1,
+    minHeight: 0,
+    marginTop: 8,
+  },
 });

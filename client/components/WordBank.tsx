@@ -1,10 +1,10 @@
-
-// components/WordBankModal.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
-  Platform,
+  PanResponder,
+  PanResponderGestureState,
+  Pressable,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -13,30 +13,36 @@ import {
 
 import { fetchWordBankPage, type ApiOK } from "@/services/wordbankService";
 import Wordbank from "@/assets/backgroundTheme/wordbankBook";
+import { Color } from "@/theme/Color";
+import { Typography } from "@/theme/Font";
 
 type Props = {
   visible: boolean;
   onClose: () => void;
-  /** Override base URL for Android emulator or device if needed */
-  apiBase?: string;
 };
 
-export default function WordBankModal({ visible, onClose, apiBase }: Props) {
-  const [page, setPage] = useState(1); // 1-based
+const BOOK_W = 574;
+const BOOK_H = 377;
+
+const DRAG_THRESHOLD_PCT = 1 / 3;
+const ANGLE_TAN_30 = 0.577;
+
+export default function WordBankModal({ visible, onClose }: Props) {
+  const [page, setPage] = useState(1);
+  const [source, setSource] = useState<"words" | "extra">("words");
   const [data, setData] = useState<ApiOK | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  // Reset when opened
   useEffect(() => {
     if (visible) {
       setPage(1);
+      setSource("words");
       setData(null);
       setErr(null);
     }
   }, [visible]);
 
-  // Fetch current page
   useEffect(() => {
     if (!visible) return;
     let canceled = false;
@@ -45,7 +51,7 @@ export default function WordBankModal({ visible, onClose, apiBase }: Props) {
       try {
         setLoading(true);
         setErr(null);
-        const body = await fetchWordBankPage(page, apiBase);
+        const body = await fetchWordBankPage(page, source);
         if (!canceled) setData(body);
       } catch (e: any) {
         if (!canceled) setErr(e?.message || "Failed to load word bank");
@@ -57,7 +63,7 @@ export default function WordBankModal({ visible, onClose, apiBase }: Props) {
     return () => {
       canceled = true;
     };
-  }, [visible, page, apiBase]);
+  }, [visible, page, source]);
 
   const canPrev = useMemo(() => (data ? page > 1 : false), [page, data]);
   const canNext = useMemo(
@@ -65,33 +71,163 @@ export default function WordBankModal({ visible, onClose, apiBase }: Props) {
     [page, data]
   );
 
+  const goPrev = () => canPrev && setPage((p) => p - 1);
+  const goNext = () => canNext && setPage((p) => p + 1);
+
+  const turnIfThresholdPassed = (dx: number, dy: number) => {
+    if (Math.abs(dy) > Math.abs(dx) * ANGLE_TAN_30) return;
+    const threshold = BOOK_W * DRAG_THRESHOLD_PCT;
+    if (dx <= -threshold) goNext();
+    else if (dx >= threshold) goPrev();
+  };
+
+  const panResponder = React.useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: (_evt, g) =>
+          Math.abs(g.dx) > 6 || Math.abs(g.dy) > 6,
+        onPanResponderRelease: (_evt, g: PanResponderGestureState) =>
+          turnIfThresholdPassed(g.dx, g.dy),
+        onPanResponderTerminate: (_evt, g) => turnIfThresholdPassed(g.dx, g.dy),
+      }),
+    [canPrev, canNext]
+  );
+
+  function titleCaseASCII(s: string) {
+    return (s ?? "")
+      .toString()
+      .toLowerCase()
+      .replace(
+        /(^|[^A-Za-z]+)([A-Za-z])/g,
+        (_, sep, ch) => sep + ch.toUpperCase()
+      );
+  }
+
+  function numberColWidth(
+    left: ApiOK["left"] = [],
+    right: ApiOK["right"] = []
+  ) {
+    const maxN = Math.max(
+      0,
+      ...left.map((i) => i.n ?? 0),
+      ...right.map((i) => i.n ?? 0)
+    );
+    const digits = String(Math.max(1, maxN)).length;
+    return 8 + digits * 10 + 6;
+  }
+
+  const numColW = useMemo(
+    () => numberColWidth(data?.left, data?.right),
+    [data?.left, data?.right]
+  );
+
   const renderSide = (items: ApiOK["left"]) => {
-    if (!items || items.length === 0) {
+    if (!items || items.length === 0)
       return <Text style={styles.empty}>—</Text>;
-    }
     return items.map((it) => (
-      <Text key={it.n} style={styles.line}>
-        <Text style={styles.num}>{it.n}. </Text>
-        {it.word}
-      </Text>
+      <View key={`${source}-${it.n}`} style={styles.lineRow}>
+        <Text style={[styles.numCol, { width: numColW }]}>{it.n}.</Text>
+        <Text style={styles.wordText}>{titleCaseASCII(it.word)}</Text>
+      </View>
     ));
   };
 
-  return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        {/* Close */}
-        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-          <Text style={styles.closeText}>✕</Text>
-        </TouchableOpacity>
+  const Bookmark = ({
+    label,
+    active,
+    onPress,
+  }: {
+    label: string;
+    active: boolean;
+    onPress: () => void;
+  }) => (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+    >
+      {/* Main body */}
+      <View
+        style={[
+          styles.ribbonBody,
+          active ? styles.ribbonBodyActive : styles.ribbonBodyInactive,
+        ]}
+      >
+        <Text
+          style={[
+            styles.ribbonText,
+            active ? styles.ribbonTextActive : styles.ribbonTextInactive,
+          ]}
+        >
+          {label}
+        </Text>
+      </View>
 
-        {/* Book */}
+      <View />
+    </Pressable>
+  );
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <View style={styles.overlay}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+
         <View style={styles.bookWrap}>
           <Wordbank />
 
+          {/* gesture layer */}
+          <View
+            style={styles.gestureLayer}
+            pointerEvents="box-only"
+            {...panResponder.panHandlers}
+          >
+            <Pressable
+              style={styles.leftTapZone}
+              onPress={goPrev}
+              android_ripple={{ borderless: true }}
+            />
+            <Pressable
+              style={styles.rightTapZone}
+              onPress={goNext}
+              android_ripple={{ borderless: true }}
+            />
+          </View>
+
+          {/* RIGHT-SIDE BOOKMARK RAIL */}
+          <View style={styles.bookmarkRailRight}>
+            <Bookmark
+              label="WORDS"
+              active={source === "words"}
+              onPress={() => {
+                if (source !== "words") {
+                  setPage(1);
+                  setSource("words");
+                }
+              }}
+            />
+            <Bookmark
+              label="EXTRA"
+              active={source === "extra"}
+              onPress={() => {
+                if (source !== "extra") {
+                  setPage(1);
+                  setSource("extra");
+                }
+              }}
+            />
+          </View>
+
           {/* Left page */}
           <View style={styles.leftColumn}>
-            <Text style={styles.title}>List of Words</Text>
+            <Text style={styles.title}>
+              {source === "words" ? "List of Words" : "Extra Words"}
+            </Text>
             {loading ? (
               <ActivityIndicator />
             ) : err ? (
@@ -116,23 +252,40 @@ export default function WordBankModal({ visible, onClose, apiBase }: Props) {
           <View style={styles.footer}>
             <TouchableOpacity
               style={[styles.navBtn, !canPrev && styles.navBtnDisabled]}
-              onPress={() => canPrev && setPage((p) => p - 1)}
+              onPress={goPrev}
               disabled={!canPrev}
             >
               <Text style={styles.navText}>‹</Text>
             </TouchableOpacity>
 
             <View style={styles.dots}>
-              {Array.from({ length: Math.max(data?.totalPages || 1, 1) }).map((_, i) => {
-                const idx = i + 1;
-                const active = idx === page;
-                return <View key={idx} style={[styles.dot, active && styles.dotActive]} />;
-              })}
+              {Array.from({ length: Math.max(data?.totalPages || 1, 1) }).map(
+                (_, i) => {
+                  const idx = i + 1;
+                  const active = idx === page;
+                  return (
+                    <Pressable
+                      key={`${source}-dot-${idx}`}
+                      onPress={() => !active && setPage(idx)}
+                      hitSlop={8}
+                      android_ripple={{ borderless: true }}
+                      style={({ pressed }) => [
+                        styles.dotBase,
+                        active ? styles.dotActive : styles.dot,
+                        pressed && styles.dotPressed,
+                      ]}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Go to page ${idx}`}
+                      accessibilityState={{ selected: active }}
+                    />
+                  );
+                }
+              )}
             </View>
 
             <TouchableOpacity
               style={[styles.navBtn, !canNext && styles.navBtnDisabled]}
-              onPress={() => canNext && setPage((p) => p + 1)}
+              onPress={goNext}
               disabled={!canNext}
             >
               <Text style={styles.navText}>›</Text>
@@ -144,16 +297,8 @@ export default function WordBankModal({ visible, onClose, apiBase }: Props) {
   );
 }
 
-const COL_LEFT = {
-  top: 40,
-  left: 70,
-  width: 220,
-};
-const COL_RIGHT = {
-  top: 80,
-  right: 5,
-  width: 240,
-};
+const COL_LEFT = { top: 40, left: 70, width: 220 };
+const COL_RIGHT = { top: 80, right: 5, width: 240 };
 
 const styles = StyleSheet.create({
   overlay: {
@@ -164,23 +309,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   bookWrap: {
-    width: 574,
-    height: 377,
+    width: BOOK_W,
+    height: BOOK_H,
     alignItems: "center",
     justifyContent: "center",
   },
-  closeButton: {
+  gestureLayer: {
     position: "absolute",
-    top: 40,
-    right: 30,
-    zIndex: 10,
-    backgroundColor: "rgba(255,255,255,0.9)",
-    borderRadius: 16,
-    paddingHorizontal: 10,
-    paddingVertical: 2,
+    width: BOOK_W,
+    height: BOOK_H,
+    flexDirection: "row",
   },
-  closeText: { fontSize: 18, fontWeight: "700", color: "#333" },
-
+  leftTapZone: { width: BOOK_W / 2, height: BOOK_H },
+  rightTapZone: { width: BOOK_W / 2, height: BOOK_H },
+  bookmarkRailRight: {
+    position: "absolute",
+    right: -36,
+    top: 50,
+    gap: 5,
+    zIndex: 3,
+    alignItems: "flex-end",
+  },
   leftColumn: {
     position: "absolute",
     ...COL_LEFT,
@@ -190,7 +339,6 @@ const styles = StyleSheet.create({
     ...COL_RIGHT,
     alignItems: "flex-start",
   },
-
   title: {
     fontSize: 26,
     fontWeight: "800",
@@ -224,13 +372,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#e9edf3",
   },
-  navBtnDisabled: {
-    opacity: 0.4,
-  },
+  navBtnDisabled: { opacity: 0.4 },
   navText: { fontSize: 24, fontWeight: "700", color: "#5b6073" },
   dots: {
     flexDirection: "row",
     gap: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dotBase: {
+    width: 9,
+    height: 9,
+    borderRadius: 6,
+    top: 150,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -242,4 +396,51 @@ const styles = StyleSheet.create({
     backgroundColor: "#c3c7cf",
   },
   dotActive: { backgroundColor: "#5b6073" },
+  dotPressed: {
+    transform: [{ scale: 0.9 }],
+  },
+  ribbonBody: {
+    minWidth: 86,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderTopLeftRadius: 5,
+    borderBottomLeftRadius: 5,
+    borderTopRightRadius: 25,
+    borderBottomRightRadius: 25,
+    elevation: 2,
+    shadowColor: Color.black,
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+
+    position: "relative",
+    overflow: "visible",
+  },
+  ribbonBodyActive: {
+    backgroundColor: Color.pink,
+  },
+  ribbonBodyInactive: {
+    backgroundColor: Color.white,
+    borderColor: "#d6d9e0",
+    borderWidth: 1,
+  },
+  ribbonText: { ...Typography.header13, letterSpacing: 0.5 },
+  ribbonTextActive: { color: Color.white },
+  ribbonTextInactive: { color: Color.gray },
+  lineRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    marginVertical: 4,
+  },
+  numCol: {
+    textAlign: "right",
+    marginRight: 6,
+    fontWeight: "700",
+    fontSize: 22,
+    color: "#394150",
+  },
+  wordText: {
+    fontSize: 22,
+    color: "#394150",
+  },
 });
