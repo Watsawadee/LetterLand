@@ -69,11 +69,14 @@ export default function HintShopModal({
   }, [userId, resolveUserId]);
 
   useEffect(() => {
-    if (visible) fetchUserBalance();
+    if (visible) {
+      setBuying(false);
+      fetchUserBalance();
+    }
   }, [visible, fetchUserBalance]);
 
   const handlePurchase = async (qty: Pack) => {
-    if (!userId) return;
+    if (!userId || buying) return;
     const price = prices[qty];
     if (balance < price) return;
 
@@ -85,7 +88,6 @@ export default function HintShopModal({
 
       setBalance(newCoin);
       onPurchased?.(newHint, newCoin);
-
       onClose();
     } catch (e) {
     } finally {
@@ -126,17 +128,39 @@ export default function HintShopModal({
         <Text style={styles.buyText}>{price}</Text>
       </TouchableOpacity>
 
-      {disabled && <Text style={styles.disabledNote}>Not enough coins</Text>}
+      {(disabled || buying) && (
+        <Text style={styles.disabledNote}>
+          {buying ? "Processing..." : "Not enough coins"}
+        </Text>
+      )}
     </View>
   );
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={() => {
+        if (!buying) onClose();
+      }}
+    >
+      <Pressable
+        style={styles.backdrop}
+        onPress={() => {
+          if (!buying) onClose();
+        }}
+      >
         <Pressable style={styles.sheet} onPress={() => {}}>
           <View style={styles.header}>
             <MarketHeaderBG width={530} height={78} />
-            <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={10}>
+            <Pressable
+              style={styles.closeBtn}
+              onPress={() => {
+                if (!buying) onClose();
+              }}
+              hitSlop={10}
+            >
               <Text style={styles.closeText}>×</Text>
             </Pressable>
 
@@ -152,7 +176,13 @@ export default function HintShopModal({
 
           <View style={styles.content}>
             {loadError ? (
-              <Text style={{ ...Typography.body13, color: Color.gray, textAlign: "center" }}>
+              <Text
+                style={{
+                  ...Typography.body13,
+                  color: Color.gray,
+                  textAlign: "center",
+                }}
+              >
                 {loadError}
               </Text>
             ) : (
@@ -192,7 +222,7 @@ export default function HintShopModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: Color.overlay,
     justifyContent: "center",
     alignItems: "center",
     padding: 24,
@@ -214,6 +244,7 @@ const styles = StyleSheet.create({
     height: 40,
     alignItems: "center",
     justifyContent: "center",
+    opacity: 1,
   },
   closeText: { fontSize: 40, lineHeight: 28, color: Color.white },
   balancePill: {

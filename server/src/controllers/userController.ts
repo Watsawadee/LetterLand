@@ -206,73 +206,58 @@ export const useHintController = async (req: Request, res: Response) => {
     const userId = Number(req.params.userId);
     const gameId = Number(req.body?.gameId);
 
-    if (!userId) {
-      res.status(400).json({ message: "Missing userId" });
-      return;
-    }
-    if (!gameId) {
-      res.status(400).json({ message: "Missing gameId" });
-      return;
-    }
+    if (!userId) res.status(400).json({ message: "Missing userId" });
+    if (!gameId) res.status(400).json({ message: "Missing gameId" });
 
-    const game = await prisma.game.findUnique({
-      where: { id: gameId },
-      select: {
-        id: true,
-        userId: true,
-        isFinished: true,
-        isHintUsed: true,
-      },
-    });
-
-    if (!game) {
-      res.status(404).json({ message: "Game not found" });
-      return;
-    }
-    if (game.userId !== userId) {
-      res.status(403).json({ message: "Forbidden: not your game" });
-      return;
-    }
-    if (game.isFinished) {
-      res
-        .status(409)
-        .json({ message: "Game is already finished; cannot use hint" });
-      return;
-    }
-
-    if (game.isHintUsed) {
-      res.status(200).json({
-        message: "Hint already marked as used",
-        data: {
-          user: null,
-          game: { id: game.id, isHintUsed: true },
-          alreadyUsed: true,
-        },
-      });
-      return;
-    }
-
-    const [updatedUser, updatedGame] = await prisma.$transaction(async (tx) => {
-      const newUser = await useHint(userId);
-
-      const newGame = await tx.game.update({
+    const result = await prisma.$transaction(async (tx) => {
+      const game = await tx.game.findUnique({
         where: { id: gameId },
-        data: { isHintUsed: true },
-        select: { id: true, isHintUsed: true },
+        select: { id: true, userId: true, isHintUsed: true },
+      });
+      if (!game) throw new Error("NOT_FOUND");
+      if (game.userId !== userId) throw new Error("FORBIDDEN");
+
+      // Decrement user's hint if they have any left
+      const dec = await tx.user.updateMany({
+        where: { id: userId, hint: { gte: 1 } },
+        data: { hint: { decrement: 1 } },
+      });
+      if (dec.count === 0) throw new Error("NO_HINTS");
+
+      // If game never used a hint before, mark it true once
+      if (!game.isHintUsed) {
+        await tx.game.update({
+          where: { id: gameId },
+          data: { isHintUsed: true },
+        });
+      }
+
+      const updatedUser = await tx.user.findUnique({
+        where: { id: userId },
+        select: { id: true, hint: true },
       });
 
-      return [newUser, newGame] as const;
+      return {
+        remainingHints: updatedUser?.hint ?? 0,
+        alreadyUsedBefore: !!game.isHintUsed,
+      };
     });
 
     res.status(200).json({
       message: "Hint used successfully",
       data: {
-        user: updatedUser,
-        game: updatedGame,
-        alreadyUsed: false,
+        remainingHints: result.remainingHints,
+        alreadyUsedBefore: result.alreadyUsedBefore,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === "NO_HINTS")
+      res.status(400).json({ message: "NO_HINTS" });
+    if (error.message === "FORBIDDEN")
+      res.status(403).json({ message: "Forbidden: not your game" });
+    if (error.message === "NOT_FOUND")
+      res.status(404).json({ message: "Game not found" });
+
     console.error("Use Hint Controller error:", error);
     res.status(500).json({ message: "Failed to use hint" });
   }
@@ -491,7 +476,9 @@ export const getUserLastFinishedGame = async (
     return;
   }
   if (userId !== loggedInUserId) {
-    res.status(403).json({ error: "Forbidden: Cannot access other user's data" });
+    res
+      .status(403)
+      .json({ error: "Forbidden: Cannot access other user's data" });
     return;
   }
 
@@ -525,4 +512,3 @@ export const getUserLastFinishedGame = async (
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
-

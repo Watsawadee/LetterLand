@@ -9,6 +9,7 @@ export const Color: { [key: string]: string } = {
   white: '#FFFFFF',
   orange: '#FAA850',
   yellow: '#FFE88B',
+  overlay: 'rgba(0,0,0,0.5)',
   A1: '#F2B9DD',
   A2: '#FB7FC7',
   B1: '#F19DB8',

@@ -6,11 +6,13 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useEffect, useState } from "react";
 import { getToken } from "@/utils/auth";
 import { ActivityIndicator } from "react-native";
-import * as SecureStore from "expo-secure-store"
+import * as SecureStore from "expo-secure-store";
 import { jwtDecode } from "jwt-decode";
 import { DecodedToken } from "@/types/decodedJwtToken";
 import { storeToken } from "@/utils/storeToken";
 import { clearToken } from "@/utils/clearToken";
+import { GlobalLoadingProvider } from "@/contexts/GlobalLoadingContext";
+import GlobalLoadingOverlay from "@/components/GlobalLoadingOverlay";
 
 const queryClient = new QueryClient();
 
@@ -18,7 +20,6 @@ export default function Layout() {
   const router = useRouter();
   const segments = useSegments();
   const pathName = usePathname();
-
 
   const [isChecking, setIsChecking] = useState(true);
   useEffect(() => {
@@ -71,14 +72,17 @@ export default function Layout() {
     checkAuth();
   }, [segments, pathName]);
   if (isChecking) {
-    return <ActivityIndicator size={"large"} />
+    return <ActivityIndicator size={"large"} />;
   }
   return (
     <QueryClientProvider client={queryClient}>
       <PaperProvider>
         <ThemeProvider>
-          <Stack screenOptions={{ headerShown: false }} />
-          {/* <ReactQueryDevtools initialIsOpen={true} /> */}
+          <GlobalLoadingProvider>
+            <Stack screenOptions={{ headerShown: false }} />
+            {/* <ReactQueryDevtools initialIsOpen={true} /> */}
+            <GlobalLoadingOverlay />
+          </GlobalLoadingProvider>
         </ThemeProvider>
       </PaperProvider>
     </QueryClientProvider>
