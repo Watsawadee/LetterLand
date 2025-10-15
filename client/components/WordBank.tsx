@@ -10,11 +10,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
+import { Animated, Easing } from "react-native";
 import { fetchWordBankPage, type ApiOK } from "@/services/wordbankService";
 import Wordbank from "@/assets/backgroundTheme/wordbankBook";
 import { Color } from "@/theme/Color";
 import { Typography } from "@/theme/Font";
+import ArrowLeft from "@/assets/icon/ArrowLeft";
+import { normalizeWord } from "@/services/dictionaryService";
+import MeaningTooltip  from "./MeaningTooltip";
 
 type Props = {
   visible: boolean;
@@ -26,6 +29,8 @@ const BOOK_H = 377;
 
 const DRAG_THRESHOLD_PCT = 1 / 3;
 const ANGLE_TAN_30 = 0.577;
+const RIBBON_W_INACTIVE = 87;
+const RIBBON_W_ACTIVE = 115;
 
 export default function WordBankModal({ visible, onClose }: Props) {
   const [page, setPage] = useState(1);
@@ -33,6 +38,11 @@ export default function WordBankModal({ visible, onClose }: Props) {
   const [data, setData] = useState<ApiOK | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [tipWord, setTipWord] = useState<string | null>(null);
+
+  useEffect(() => {
+    setTipWord(null);
+  }, [page, source]);
 
   useEffect(() => {
     if (visible) {
@@ -104,32 +114,19 @@ export default function WordBankModal({ visible, onClose }: Props) {
       );
   }
 
-  function numberColWidth(
-    left: ApiOK["left"] = [],
-    right: ApiOK["right"] = []
-  ) {
-    const maxN = Math.max(
-      0,
-      ...left.map((i) => i.n ?? 0),
-      ...right.map((i) => i.n ?? 0)
-    );
-    const digits = String(Math.max(1, maxN)).length;
-    return 8 + digits * 10 + 6;
-  }
-
-  const numColW = useMemo(
-    () => numberColWidth(data?.left, data?.right),
-    [data?.left, data?.right]
-  );
-
   const renderSide = (items: ApiOK["left"]) => {
     if (!items || items.length === 0)
       return <Text style={styles.empty}>—</Text>;
     return items.map((it) => (
-      <View key={`${source}-${it.n}`} style={styles.lineRow}>
-        <Text style={[styles.numCol, { width: numColW }]}>{it.n}.</Text>
+      <Pressable
+        key={`${source}-${it.n}`}
+        style={styles.lineRow}
+        onPress={() => setTipWord(normalizeWord(it.word))}
+        accessibilityRole="button"
+      >
+        <Text style={styles.numCol}>{String(it.n).padStart(2, " ")}.</Text>
         <Text style={styles.wordText}>{titleCaseASCII(it.word)}</Text>
-      </View>
+      </Pressable>
     ));
   };
 
@@ -141,32 +138,152 @@ export default function WordBankModal({ visible, onClose }: Props) {
     label: string;
     active: boolean;
     onPress: () => void;
-  }) => (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={{ selected: active }}
-    >
-      {/* Main body */}
-      <View
-        style={[
-          styles.ribbonBody,
-          active ? styles.ribbonBodyActive : styles.ribbonBodyInactive,
-        ]}
+  }) => {
+    const [widthAnim] = React.useState(
+      () => new Animated.Value(active ? RIBBON_W_ACTIVE : RIBBON_W_INACTIVE)
+    );
+
+    useEffect(() => {
+      Animated.timing(widthAnim, {
+        toValue: active ? RIBBON_W_ACTIVE : RIBBON_W_INACTIVE,
+        duration: 160,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: false,
+      }).start();
+    }, [active, widthAnim]);
+
+    return (
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityState={{ selected: active }}
+        hitSlop={6}
       >
-        <Text
+        <Animated.View
           style={[
-            styles.ribbonText,
-            active ? styles.ribbonTextActive : styles.ribbonTextInactive,
+            styles.ribbonBody,
+            { width: widthAnim },
+            active ? styles.ribbonBodyActive : styles.ribbonBodyInactive,
           ]}
         >
-          {label}
-        </Text>
-      </View>
+          <Text
+            style={[
+              styles.ribbonText,
+              styles.ribbonTextRight,
+              active ? styles.ribbonTextActive : styles.ribbonTextInactive,
+            ]}
+          >
+            {label}
+          </Text>
+        </Animated.View>
+      </Pressable>
+    );
+  };
 
-      <View />
-    </Pressable>
-  );
+  type PageItem = number | "ellipsis";
+
+  function getPaginationRange(
+    current: number,
+    total: number,
+    siblingCount = 1,
+    boundaryCount = 1
+  ): PageItem[] {
+    const range = (s: number, e: number) =>
+      Array.from({ length: e - s + 1 }, (_, i) => s + i);
+
+    const totalNumbers = boundaryCount * 2 + siblingCount * 2 + 3;
+    if (total <= totalNumbers) return range(1, total);
+
+    const left = Math.max(current - siblingCount, boundaryCount + 2);
+    const right = Math.min(current + siblingCount, total - boundaryCount - 1);
+
+    const showLeftDots = left > boundaryCount + 2;
+    const showRightDots = right < total - boundaryCount - 1;
+
+    const leftBoundary = range(1, boundaryCount);
+    const rightBoundary = range(total - boundaryCount + 1, total);
+    const middle = range(left, right);
+
+    if (!showLeftDots && showRightDots) {
+      const leftRange = range(1, boundaryCount + siblingCount * 2 + 2);
+      return [...leftRange, "ellipsis", ...rightBoundary];
+    }
+    if (showLeftDots && !showRightDots) {
+      const rightRange = range(
+        total - (boundaryCount + siblingCount * 2 + 1),
+        total
+      );
+      return [...leftBoundary, "ellipsis", ...rightRange];
+    }
+    return [
+      ...leftBoundary,
+      "ellipsis",
+      ...middle,
+      "ellipsis",
+      ...rightBoundary,
+    ];
+  }
+
+  function DotsPager({
+    page,
+    totalPages,
+    onJump,
+  }: {
+    page: number;
+    totalPages: number;
+    onJump: (p: number) => void;
+  }) {
+    const items = useMemo(
+      () => getPaginationRange(page, totalPages, 1, 1),
+      [page, totalPages]
+    );
+    const compact = totalPages > 5;
+
+    if (!compact) {
+      return (
+        <View style={styles.dots}>
+          {Array.from({ length: totalPages }).map((_, i) => {
+            const idx = i + 1;
+            const active = idx === page;
+            return (
+              <Pressable
+                key={`dot-${idx}`}
+                onPress={() => !active && onJump(idx)}
+                style={[styles.dotBase, active ? styles.dotActive : styles.dot]}
+              />
+            );
+          })}
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.compactRow}>
+        {items.map((it, i) =>
+          it === "ellipsis" ? (
+            <Text key={`el-${i}`} style={styles.ellipsisText}>
+              …
+            </Text>
+          ) : (
+            <Pressable
+              key={`p-${it}`}
+              onPress={() => onJump(it)}
+              style={[styles.pageChip, it === page && styles.pageChipActive]}
+            >
+              <Text
+                style={[
+                  styles.pageChipText,
+                  it === page && styles.pageChipTextActive,
+                ]}
+              >
+                {it}
+              </Text>
+            </Pressable>
+          )
+        )}
+      </View>
+    );
+  }
 
   return (
     <Modal
@@ -178,120 +295,114 @@ export default function WordBankModal({ visible, onClose }: Props) {
       <View style={styles.overlay}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
 
-        <View style={styles.bookWrap}>
-          <Wordbank />
+        <View style={styles.container}>
+          <View style={styles.bookWrap}>
+            <View style={StyleSheet.absoluteFillObject}>
+              <Wordbank width="100%" height="100%" />
+            </View>
+            {/* gesture layer */}
+            <View
+              style={styles.gestureLayer}
+              pointerEvents="box-only"
+              {...panResponder.panHandlers}
+            >
+              <Pressable style={styles.leftTapZone} onPress={goPrev} />
+              <Pressable style={styles.rightTapZone} onPress={goNext} />
+            </View>
+            {/* RIGHT-SIDE BOOKMARK RAIL */}
+            <View style={styles.bookmarkRailRight}>
+              <Bookmark
+                label="WORDS"
+                active={source === "words"}
+                onPress={() => {
+                  if (source !== "words") {
+                    setPage(1);
+                    setSource("words");
+                  }
+                }}
+              />
+              <Bookmark
+                label="EXTRA"
+                active={source === "extra"}
+                onPress={() => {
+                  if (source !== "extra") {
+                    setPage(1);
+                    setSource("extra");
+                  }
+                }}
+              />
+            </View>
+            {/* Left page */}
+            <View style={styles.leftColumn}>
+              <Text style={styles.title}>
+                {source === "words" ? "List of Words" : "Extra Words"}
+              </Text>
+              {loading ? (
+                <ActivityIndicator />
+              ) : err ? (
+                <Text style={styles.error}>{err}</Text>
+              ) : data ? (
+                renderSide(data.left)
+              ) : null}
+            </View>
+            {/* Right page */}
+            <View style={styles.rightColumn}>
+              {loading ? (
+                <ActivityIndicator />
+              ) : err ? (
+                <Text style={styles.error} />
+              ) : data ? (
+                renderSide(data.right)
+              ) : null}
+            </View>
 
-          {/* gesture layer */}
-          <View
-            style={styles.gestureLayer}
-            pointerEvents="box-only"
-            {...panResponder.panHandlers}
-          >
-            <Pressable
-              style={styles.leftTapZone}
-              onPress={goPrev}
-              android_ripple={{ borderless: true }}
-            />
-            <Pressable
-              style={styles.rightTapZone}
-              onPress={goNext}
-              android_ripple={{ borderless: true }}
-            />
-          </View>
-
-          {/* RIGHT-SIDE BOOKMARK RAIL */}
-          <View style={styles.bookmarkRailRight}>
-            <Bookmark
-              label="WORDS"
-              active={source === "words"}
-              onPress={() => {
-                if (source !== "words") {
-                  setPage(1);
-                  setSource("words");
-                }
-              }}
-            />
-            <Bookmark
-              label="EXTRA"
-              active={source === "extra"}
-              onPress={() => {
-                if (source !== "extra") {
-                  setPage(1);
-                  setSource("extra");
-                }
-              }}
-            />
-          </View>
-
-          {/* Left page */}
-          <View style={styles.leftColumn}>
-            <Text style={styles.title}>
-              {source === "words" ? "List of Words" : "Extra Words"}
-            </Text>
-            {loading ? (
-              <ActivityIndicator />
-            ) : err ? (
-              <Text style={styles.error}>{err}</Text>
-            ) : data ? (
-              renderSide(data.left)
-            ) : null}
-          </View>
-
-          {/* Right page */}
-          <View style={styles.rightColumn}>
-            {loading ? (
-              <ActivityIndicator />
-            ) : err ? (
-              <Text style={styles.error} />
-            ) : data ? (
-              renderSide(data.right)
-            ) : null}
-          </View>
-
-          {/* Pager */}
-          <View style={styles.footer}>
+            {/* SIDE NAV ARROWS */}
             <TouchableOpacity
-              style={[styles.navBtn, !canPrev && styles.navBtnDisabled]}
+              style={[
+                styles.sideNav,
+                styles.sideNavLeft,
+                !canPrev && styles.navBtnDisabled,
+              ]}
               onPress={goPrev}
               disabled={!canPrev}
             >
-              <Text style={styles.navText}>‹</Text>
+              <View style={styles.navBtn}>
+                <ArrowLeft color="#5B6073" width={30} height={30} />
+              </View>
             </TouchableOpacity>
 
-            <View style={styles.dots}>
-              {Array.from({ length: Math.max(data?.totalPages || 1, 1) }).map(
-                (_, i) => {
-                  const idx = i + 1;
-                  const active = idx === page;
-                  return (
-                    <Pressable
-                      key={`${source}-dot-${idx}`}
-                      onPress={() => !active && setPage(idx)}
-                      hitSlop={8}
-                      android_ripple={{ borderless: true }}
-                      style={({ pressed }) => [
-                        styles.dotBase,
-                        active ? styles.dotActive : styles.dot,
-                        pressed && styles.dotPressed,
-                      ]}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Go to page ${idx}`}
-                      accessibilityState={{ selected: active }}
-                    />
-                  );
-                }
-              )}
-            </View>
-
+            {/* RIGHT */}
             <TouchableOpacity
-              style={[styles.navBtn, !canNext && styles.navBtnDisabled]}
+              style={[
+                styles.sideNav,
+                styles.sideNavRight,
+                !canNext && styles.navBtnDisabled,
+              ]}
               onPress={goNext}
               disabled={!canNext}
             >
-              <Text style={styles.navText}>›</Text>
+              <View style={[styles.navBtn, styles.navIconRight]}>
+                <ArrowLeft color="#5B6073" width={30} height={30} />
+              </View>
             </TouchableOpacity>
+
+            {/* Pager */}
+            <View style={styles.footer}>
+              <View style={[styles.footerCol, styles.footerColCenter]}>
+                <DotsPager
+                  page={page}
+                  totalPages={data?.totalPages ?? 1}
+                  onJump={(p) => setPage(p)}
+                />
+              </View>
+            </View>
           </View>
         </View>
+        <MeaningTooltip
+          visible={!!tipWord}
+          word={tipWord}
+          onClose={() => setTipWord(null)}
+        />
       </View>
     </Modal>
   );
@@ -303,28 +414,27 @@ const COL_RIGHT = { top: 80, right: 5, width: 240 };
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.35)",
+    backgroundColor: Color.overlay,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 10,
+  },
+  container: {
+    width: BOOK_W,
+    height: BOOK_H,
   },
   bookWrap: {
-    width: BOOK_W,
-    height: BOOK_H,
-    alignItems: "center",
-    justifyContent: "center",
+    width: "100%",
+    height: "100%",
   },
   gestureLayer: {
-    position: "absolute",
-    width: BOOK_W,
-    height: BOOK_H,
+    ...StyleSheet.absoluteFillObject,
     flexDirection: "row",
   },
-  leftTapZone: { width: BOOK_W / 2, height: BOOK_H },
-  rightTapZone: { width: BOOK_W / 2, height: BOOK_H },
+  leftTapZone: { flex: 1 },
+  rightTapZone: { flex: 1 },
   bookmarkRailRight: {
     position: "absolute",
-    right: -36,
+    right: -54,
     top: 50,
     gap: 5,
     zIndex: 3,
@@ -345,102 +455,115 @@ const styles = StyleSheet.create({
     color: "#4a5261",
     marginBottom: 12,
   },
-  line: {
-    fontSize: 22,
-    color: "#394150",
-    marginVertical: 4,
-  },
-  num: { fontWeight: "700" },
   empty: { color: "#9aa0a6", fontSize: 18 },
-
   error: { color: "#c0392b", fontSize: 14 },
-
   footer: {
     position: "absolute",
-    bottom: 200,
-    width: "100%",
+    bottom: 78,
+    left: 0,
+    right: 0,
     flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 32,
+  },
+  footerCol: {
+    flex: 1,
     alignItems: "center",
   },
-  navBtn: {
+  footerColCenter: {
+    flex: 1.4,
+    alignItems: "center",
+  },
+  sideNav: {
+    position: "absolute",
     width: 34,
     height: 34,
     borderRadius: 17,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#e9edf3",
+    backgroundColor: Color.lightblue,
+    zIndex: 5,
+    top: "50%",
+    transform: [{ translateY: -21 }],
+    elevation: 3,
+  },
+  sideNavLeft: {
+    left: 8,
+  },
+  sideNavRight: {
+    right: 8,
+  },
+  navBtn: {},
+  navIconRight: {
+    transform: [{ rotate: "180deg" }],
   },
   navBtnDisabled: { opacity: 0.4 },
-  navText: { fontSize: 24, fontWeight: "700", color: "#5b6073" },
   dots: {
     flexDirection: "row",
     gap: 8,
     alignItems: "center",
     justifyContent: "center",
+    minHeight: 24,
   },
   dotBase: {
-    width: 9,
-    height: 9,
-    borderRadius: 6,
-    top: 150,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     alignItems: "center",
     justifyContent: "center",
   },
-  dot: {
-    width: 8,
-    height: 8,
-    top: 150,
-    borderRadius: 4,
-    backgroundColor: "#c3c7cf",
-  },
-  dotActive: { backgroundColor: "#5b6073" },
-  dotPressed: {
-    transform: [{ scale: 0.9 }],
-  },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#c3c7cf" },
+  dotActive: { backgroundColor: Color.gray },
   ribbonBody: {
-    minWidth: 86,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 8,
     borderTopLeftRadius: 5,
     borderBottomLeftRadius: 5,
     borderTopRightRadius: 25,
     borderBottomRightRadius: 25,
     elevation: 2,
-    shadowColor: Color.black,
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-
     position: "relative",
     overflow: "visible",
+    backgroundColor: Color.white,
   },
-  ribbonBodyActive: {
-    backgroundColor: Color.pink,
-  },
+  ribbonText: { ...Typography.header13, letterSpacing: 0.5 },
+  ribbonTextActive: { color: Color.white },
+  ribbonTextInactive: { color: Color.gray },
+  ribbonTextRight: { width: "100%", textAlign: "right" },
+  ribbonBodyActive: { backgroundColor: Color.pink },
   ribbonBodyInactive: {
     backgroundColor: Color.white,
     borderColor: "#d6d9e0",
     borderWidth: 1,
   },
-  ribbonText: { ...Typography.header13, letterSpacing: 0.5 },
-  ribbonTextActive: { color: Color.white },
-  ribbonTextInactive: { color: Color.gray },
   lineRow: {
     flexDirection: "row",
     alignItems: "baseline",
     marginVertical: 4,
   },
   numCol: {
-    textAlign: "right",
-    marginRight: 6,
+    minWidth: 50,
+    textAlign: "center",
+    marginRight: 4,
     fontWeight: "700",
     fontSize: 22,
-    color: "#394150",
+    color: Color.gray,
   },
-  wordText: {
-    fontSize: 22,
-    color: "#394150",
+  wordText: { fontSize: 22, color: Color.gray },
+  compactRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    minHeight: 24,
   },
+  pageChip: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#d3d7df",
+    backgroundColor: Color.white,
+  },
+  pageChipActive: { backgroundColor: Color.gray },
+  pageChipText: { fontSize: 12, color: Color.gray },
+  pageChipTextActive: { color: Color.white, fontWeight: "700" },
+  ellipsisText: { fontSize: 14, color: Color.gray, marginHorizontal: 4 },
 });

@@ -25,7 +25,7 @@ import {
 } from "@/services/gameService";
 import { deleteIncompleteGame } from "@/services/gameService";
 import { getLoggedInUserId } from "@/utils/auth";
-import { isValidEnglishWord } from "@/services/dictionaryService";
+import { isValidEnglishWord } from "@/services/wordValidationService";
 import SideToolBar, { SideToolBarHandle } from "./SideToolBar";
 import HintShopModal from "../components/HintShopModal";
 import FontSizeModal from "./FontSizeModal";
@@ -81,6 +81,18 @@ export default function SharedGameScreen({
   const boardRef = useRef<GameBoardHandle | null>(null);
   const cluesRef = useRef<CluesPanelHandle | null>(null);
   const sideToolRef = useRef<SideToolBarHandle | null>(null);
+  const lettersOnlyLen = (s?: string | null) =>
+    String(s ?? "").replace(/[^A-Za-z]/g, "").length;
+
+  const safeQA = useMemo(
+    () =>
+      (questionsAndAnswers ?? []).filter(
+        (q) =>
+          lettersOnlyLen(q?.answer) > 0 &&
+          lettersOnlyLen(q?.answer) <= GRID_SIZE
+      ),
+    [questionsAndAnswers, GRID_SIZE]
+  );
 
   useEffect(() => {
     if (!gameData?.id) return;
@@ -98,17 +110,14 @@ export default function SharedGameScreen({
     layoutRef,
     panResponder,
     revealedAnswers,
-  } = useGameLogic({ GRID_SIZE, CELL_SIZE, questionsAndAnswers, mode });
+  } = useGameLogic({ GRID_SIZE, CELL_SIZE, questionsAndAnswers: safeQA, mode });
 
   const foundWordsList = useMemo(
     () => foundWords.map((fw) => fw.word),
     [foundWords]
   );
 
-  const allAnswers = useMemo(
-    () => questionsAndAnswers.map((q) => q.answer),
-    [questionsAndAnswers]
-  );
+  const allAnswers = useMemo(() => safeQA.map((q) => q.answer), [safeQA]);
 
   const allAnswersLower = useMemo(() => {
     const s = new Set<string>();
@@ -139,7 +148,7 @@ export default function SharedGameScreen({
   } = useHints({
     mode,
     gameId: gameData?.id,
-    questionsAndAnswers,
+    questionsAndAnswers: safeQA,
     foundWordsList,
     revealedAnswers,
     activeQuestionIndex,
@@ -149,12 +158,10 @@ export default function SharedGameScreen({
   const isCrossword = mode === "CROSSWORD_SEARCH";
   const activeAnswerKey = useMemo(() => {
     if (!isCrossword) return "";
-    const qa = questionsAndAnswers?.[activeQuestionIndex] as
-      | QuestionAnswer
-      | undefined;
+    const qa = safeQA?.[activeQuestionIndex] as QuestionAnswer | undefined;
     if (!qa) return "";
     return `${qa.id}:${norm(qa.answer)}`;
-  }, [questionsAndAnswers, activeQuestionIndex]);
+  }, [safeQA, activeQuestionIndex, mode]);
 
   const hasTimer = !!(gameData?.timer && gameData.timer > 0);
 
@@ -269,7 +276,7 @@ export default function SharedGameScreen({
         hasPostedWordsRef,
         gameData?.id,
         foundWordsList,
-        questionsAndAnswers
+        safeQA
       );
     } catch {}
     try {
@@ -301,7 +308,7 @@ export default function SharedGameScreen({
       hasPostedWordsRef,
       gameData?.id,
       foundWordsList,
-      questionsAndAnswers
+      safeQA
     ).catch((err) => console.error("[wordfound] post failed:", err));
     postCompletionOnce().catch((err) =>
       console.error("[completeGame] post failed:", err)
@@ -503,7 +510,7 @@ export default function SharedGameScreen({
         <CluesPanel
           ref={cluesRef}
           mode={mode}
-          questionsAndAnswers={questionsAndAnswers}
+          questionsAndAnswers={safeQA}
           foundWordsList={foundWordsList}
           activeIndex={activeQuestionIndex}
           onChangeIndex={setActiveQuestionIndex}

@@ -403,7 +403,7 @@ export default function PublicGames({
       setSelectedType(null);
       setSelectedTemplateId(null);
 
-      router.push({ pathname: "/gameScreen", params: { gameId: String(started.id) } });
+      router.push({ pathname: "/GameScreen", params: { gameId: String(started.id) } });
     } catch (err: any) {
       console.error("[PublicGames] start failed:", err?.response?.data || err?.message || err);
       Alert.alert("Couldn’t start game", err?.response?.data?.error ?? "Please try again.");
