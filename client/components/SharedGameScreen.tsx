@@ -25,7 +25,7 @@ import {
 } from "@/services/gameService";
 import { deleteIncompleteGame } from "@/services/gameService";
 import { getLoggedInUserId } from "@/utils/auth";
-import { isValidEnglishWord } from "@/services/dictionaryService";
+import { isValidEnglishWord } from "@/services/wordValidationService";
 import SideToolBar, { SideToolBarHandle } from "./SideToolBar";
 import HintShopModal from "../components/HintShopModal";
 import FontSizeModal from "./FontSizeModal";

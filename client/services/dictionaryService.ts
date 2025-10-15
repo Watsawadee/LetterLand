@@ -1,27 +1,49 @@
-const POS_TTL_MS = 24 * 60 * 60 * 1000;
-const NEG_TTL_MS = 2 * 60 * 60 * 1000;
-const TIMEOUT_MS = 2500;
+export type DictDefinition = { definition: string; example?: string };
+export type DictMeaning = {
+  partOfSpeech: string;
+  definitions: DictDefinition[];
+  synonyms?: string[];
+};
+export type DictEntry = {
+  word: string;
+  phonetic?: string;
+  meanings: DictMeaning[];
+  audioUrls: string[];
+  synonyms?: string[];
+};
 
-type CacheEntry = { ok: boolean; ts: number };
-const cache = new Map<string, CacheEntry>();
-const inflight = new Map<string, Promise<boolean>>();
+const DICT_POS_TTL_MS = 24 * 60 * 60 * 1000;
+const DICT_NEG_TTL_MS = 2 * 60 * 60 * 1000;
+const DICT_TIMEOUT_MS = 8000;
 
-function clean(word: string) {
-  return (word || "").trim().toLowerCase().replace(/[^a-z]/g, "");
+type DictCacheEntry = { entry: DictEntry | null; ts: number };
+const dictCache = new Map<string, DictCacheEntry>();
+const dictInflight = new Map<string, Promise<DictEntry>>();
+
+export function normalizeWord(s: string) {
+  return String(s ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z']/g, "");
 }
 
-function getFromCache(w: string): boolean | null {
-  const e = cache.get(w);
-  if (!e) return null;
-  const ttl = e.ok ? POS_TTL_MS : NEG_TTL_MS;
-  return Date.now() - e.ts < ttl ? e.ok : null;
+function getDictFromCache(key: string): DictEntry | null | undefined {
+  const e = dictCache.get(key);
+  if (!e) return undefined;
+  const ttl = e.entry ? DICT_POS_TTL_MS : DICT_NEG_TTL_MS;
+  if (Date.now() - e.ts < ttl) return e.entry;
+  dictCache.delete(key);
+  return undefined;
 }
 
-function setCache(w: string, ok: boolean) {
-  cache.set(w, { ok, ts: Date.now() });
+function setDictCache(key: string, entry: DictEntry | null) {
+  dictCache.set(key, { entry, ts: Date.now() });
 }
 
-async function fetchWithTimeout(url: string, ms = TIMEOUT_MS): Promise<Response> {
+async function fetchWithTimeout(
+  url: string,
+  ms = DICT_TIMEOUT_MS
+): Promise<Response> {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), ms);
   try {
@@ -31,57 +53,112 @@ async function fetchWithTimeout(url: string, ms = TIMEOUT_MS): Promise<Response>
   }
 }
 
-export async function isValidEnglishWord(raw: string): Promise<boolean> {
-  const w = clean(raw);
-  if (w.length < 3) return false;
+export async function fetchDictionaryEntry(word: string): Promise<DictEntry> {
+  const key = normalizeWord(word);
+  if (!key) throw new Error("Invalid word");
 
-  const cached = getFromCache(w);
-  if (cached != null) return cached;
+  const cached = getDictFromCache(key);
+  if (cached !== undefined) {
+    if (cached) return cached;
+    throw new Error("No definition found");
+  }
 
-  if (inflight.has(w)) return inflight.get(w)!;
+  if (dictInflight.has(key)) return dictInflight.get(key)!;
 
-  const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(w)}`;
+  const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(
+    key
+  )}`;
 
   const pending = (async () => {
     try {
-      const res = await fetchWithTimeout(url, TIMEOUT_MS);
-
+      const res = await fetchWithTimeout(url, DICT_TIMEOUT_MS);
       if (!res.ok) {
-        setCache(w, false);
-        return false;
+        if (res.status === 404) setDictCache(key, null);
+        throw new Error("No definition found");
       }
 
-      const data = await res.json();
-      const ok =
-        Array.isArray(data) &&
-        data.length > 0 &&
-        typeof data[0]?.word === "string" &&
-        Array.isArray(data[0]?.meanings) &&
-        data[0].meanings.some(
-          (m: any) => Array.isArray(m?.definitions) && m.definitions.length > 0
-        );
+      let json: any;
+      try {
+        json = await res.json();
+      } catch {
+        throw new Error("No definition found");
+      }
 
-      setCache(w, !!ok);
-      return !!ok;
-    } catch {
-      setCache(w, false);
-      return false;
+      const first = json?.[0];
+      if (!first?.word || !Array.isArray(first?.meanings)) {
+        setDictCache(key, null);
+        throw new Error("No definition found");
+      }
+
+      // Collect audio urls from phonetics
+      const audioUrls: string[] = Array.from(
+        new Set(
+          (first.phonetics || [])
+            .map((p: any) => String(p?.audio || "").trim())
+            .filter((u: string) => !!u)
+        )
+      );
+
+      // Map meanings + gather synonyms
+      const meanings: DictMeaning[] = (first.meanings || [])
+        .filter((m: any) => Array.isArray(m?.definitions))
+        .map((m: any) => ({
+          partOfSpeech: String(m.partOfSpeech || ""),
+          definitions: (m.definitions || [])
+            .filter(
+              (d: any) =>
+                typeof d?.definition === "string" && d.definition.length > 0
+            )
+            .map((d: any) => ({
+              definition: String(d.definition),
+              example: d?.example ? String(d.example) : undefined,
+            })),
+          synonyms: Array.isArray(m?.synonyms)
+            ? m.synonyms.map((s: any) => String(s)).filter(Boolean)
+            : undefined,
+        }))
+        .filter((m: DictMeaning) => m.definitions.length > 0);
+
+      if (!meanings.length) {
+        setDictCache(key, null);
+        throw new Error("No definition found");
+      }
+
+      // Aggregate synonyms across meanings (deduped)
+      const aggSynonyms = Array.from(
+        new Set(meanings.flatMap((m) => m.synonyms ?? []))
+      );
+
+      const entry: DictEntry = {
+        word: String(first.word),
+        phonetic:
+          first.phonetic ||
+          first.phonetics?.find((p: any) => p?.text)?.text ||
+          undefined,
+        meanings,
+        audioUrls,
+        synonyms: aggSynonyms.length ? aggSynonyms : undefined,
+      };
+
+      setDictCache(key, entry);
+      return entry;
     } finally {
-      inflight.delete(w);
+      dictInflight.delete(key);
     }
   })();
 
-  inflight.set(w, pending);
+  dictInflight.set(key, pending);
   return pending;
 }
 
-export function getWordCacheSnapshot() {
-  return Array.from(cache.entries()).map(([word, v]) => ({
+export function getDictionaryCacheSnapshot() {
+  return Array.from(dictCache.entries()).map(([word, v]) => ({
     word,
-    ok: v.ok,
+    hitType: v.entry ? "pos" : "neg",
     ageMs: Date.now() - v.ts,
   }));
 }
-export function clearWordCache() {
-  cache.clear();
+
+export function clearDictionaryCache() {
+  dictCache.clear();
 }
