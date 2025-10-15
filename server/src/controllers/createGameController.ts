@@ -141,6 +141,7 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
         })
       )
     );
+    console.log("Created questions:", createdQuestions);
 
     let imageData = null;
     let fileName: string | null = null;
@@ -174,6 +175,8 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
       pronunciationUrl: pronunciationResults[idx]?.url,
 
     }));
+
+    console.log("Game template questions:", game.gameTemplate.questions);
 
     const result = CreateGameFromGeminiResponseSchema.safeParse({
       message: "Game created successfully from Gemini",

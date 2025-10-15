@@ -8,25 +8,25 @@ function cleanApiResponse(rawText: string): string {
   cleaned = cleaned.replace(/,\s*([\]}])/g, "$1");
   return cleaned;
 }
-// async function isDictionaryWord(word: string): Promise<boolean> {
-//   try {
-//     await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${word.toLowerCase()}`);
-//     return true;
-//   } catch (error) {
-//     return false;
-//   }
-// }
 async function isDictionaryWord(word: string): Promise<boolean> {
   try {
-    const res = await axios.get(
-      "https://api.datamuse.com/words",
-      { params: { sp: word.toLowerCase(), max: 1 } }
-    );
-    return Array.isArray(res.data) && res.data.length > 0 && res.data[0].word.toLowerCase() === word.toLowerCase();
+    await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${word.toLowerCase()}`);
+    return true;
   } catch (error) {
     return false;
   }
 }
+// async function isDictionaryWord(word: string): Promise<boolean> {
+//   try {
+//     const res = await axios.get(
+//       "https://api.datamuse.com/words",
+//       { params: { sp: word.toLowerCase(), max: 1 } }
+//     );
+//     return Array.isArray(res.data) && res.data.length > 0 && res.data[0].word.toLowerCase() === word.toLowerCase();
+//   } catch (error) {
+//     return false;
+//   }
+// }
 
 async function validateAnswer(
   rawAnswer: string | undefined | null,
