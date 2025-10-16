@@ -1,10 +1,10 @@
 import { Platform } from "react-native";
-import { WeeklyGameData } from "../types/weeklyGamePlayedProps"
+import { GamesPlayedPerPeriod } from "../types/gamesPlayedPerPeriod"
 import { getLoggedInUserId, getToken } from "@/utils/auth";
 import axios from "axios";
 import api from "./api";
-import { GamesPlayedPerWeekOrError, TotalPlaytimeOrError, WordsLearnedOrError } from "@/libs/type";
-import { AverageGamesByLevelResponseSchema, AverageGamesEachDayResponseSchema, GamesPlayedPerWeekOrErrorSchema, GamesPlayedPerWeekResponseSchema, TotalPlaytimeOrErrorSchema, WordsLearnedOrErrorSchema } from "../types/dashboard.schema";
+import { AverageGamesByLevelPeerOrError, TotalPlaytimeOrError, WordsLearnedOrError } from "@/libs/type";
+import { AverageGamesByLevelPeerPeriodResponseSchema, GamesPlayedPerPeriodResponseSchema, TotalPlaytimeOrErrorSchema, WordsLearnedOrErrorSchema } from "../types/dashboard.schema";
 import { ErrorResponseSchema } from "../types/setup.schema";
 
 export async function getAuthHeader() {
@@ -15,14 +15,18 @@ export async function getAuthHeader() {
         },
     };
 }
-export async function getTotalGameThisWeek(offSet = 0): Promise<WeeklyGameData> {
+export async function getTotalGamePerPeriod(period: "week" | "month" | "year" = "week",
+    date?: string,
+    offSet = 0): Promise<GamesPlayedPerPeriod> {
     const userId = await getLoggedInUserId();
     const config = await getAuthHeader();
-    const res = await api.get<WeeklyGameData>(
-        `/dashboard/user/${userId}/gameplayedperweek?offset=${offSet}`,
-        config
+    const params: Record<string, string | number> = { period, offset: offSet };
+    if (date) params.date = date;
+
+    const res = await api.get<GamesPlayedPerPeriod>(
+        `/dashboard/user/${userId}/gameplayedperperiod`, { ...config, params }
     );
-    const ok = GamesPlayedPerWeekResponseSchema.safeParse(res.data);
+    const ok = GamesPlayedPerPeriodResponseSchema.safeParse(res.data);
     if (ok.success) return ok.data;
 
     const err = ErrorResponseSchema.safeParse(res.data);
@@ -30,24 +34,23 @@ export async function getTotalGameThisWeek(offSet = 0): Promise<WeeklyGameData> 
 
     throw new Error("Invalid response from server");
 }
+// export const getAverageGamesByLevel = async (offSet = 0) => {
+//     const token = await getToken();
+//     if (!token) throw new Error("No token");
 
-export const getAverageGamesByLevel = async (offSet = 0) => {
-    const token = await getToken();
-    if (!token) throw new Error("No token");
+//     const res = await api.get(`/dashboard/user/averagebylevel`, {
+//         headers: { Authorization: `Bearer ${token}` },
+//         params: { offSet }, // ✅ match backend param name
+//     });
 
-    const res = await api.get(`/dashboard/user/averagebylevel`, {
-        headers: { Authorization: `Bearer ${token}` },
-        params: { offSet }, // ✅ match backend param name
-    });
+//     const parsed = AverageGamesByLevelResponseSchema.safeParse(res.data);
+//     if (!parsed.success) {
+//         console.error("❌ Invalid response shape", parsed.error);
+//         throw new Error("Invalid response from server");
+//     }
 
-    const parsed = AverageGamesByLevelResponseSchema.safeParse(res.data);
-    if (!parsed.success) {
-        console.error("❌ Invalid response shape", parsed.error);
-        throw new Error("Invalid response from server");
-    }
-
-    return parsed.data;
-};
+//     return parsed.data;
+// };
 
 
 
@@ -73,20 +76,26 @@ export async function getUserWordLearned(): Promise<WordsLearnedOrError> {
     return WordsLearnedOrErrorSchema.parse(res.data);
 }
 
-export const getAverageGamesEachDay = async (offSet = 0) => {
+export const getPeerAverageGamesPerPeriod = async (
+    period: "week" | "month" | "year" = "week",
+    date?: string
+): Promise<AverageGamesByLevelPeerOrError> => {
     const token = await getToken();
     if (!token) throw new Error("No token");
 
-    const res = await api.get(`/dashboard/average/daily`, {
+    const params: Record<string, string> = { period };
+    if (date) params.date = date;
+
+    const res = await api.get(`/dashboard/average/eachperiod`, {
         headers: { Authorization: `Bearer ${token}` },
-        params: { offset: offSet },
+        params,
     });
 
-    const parsed = AverageGamesEachDayResponseSchema.safeParse(res.data);
-    if (!parsed.success) {
-        console.error("❌ Invalid response shape", parsed.error);
-        throw new Error("Invalid response from server");
-    }
+    const parsed = AverageGamesByLevelPeerPeriodResponseSchema.safeParse(res.data);
+    if (parsed.success) return parsed.data;
 
-    return parsed.data;
+    const err = ErrorResponseSchema.safeParse(res.data);
+    if (err.success) throw new Error(err.data.error);
+
+    throw new Error("Invalid response from server");
 };
