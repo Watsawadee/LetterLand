@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { ErrorResponseSchema } from "./setup.schema";
 
+
+export const PeriodEnum = z.enum(["week", "month", "year"]);
 export const TotalPlaytimeResponseSchema = z.object({
     totalPlaytime: z.number(),
 });
@@ -9,31 +11,20 @@ export const WordsLearnedResponseSchema = z.object({
     wordsLearned: z.number(),
 });
 
-export const GamesPlayedPerWeekResponseSchema = z.object({
+export const GamesPlayedPerPeriodResponseSchema = z.object({
     labels: z.array(z.string()),
     counts: z.array(z.number()),
     range: z.object({
         start: z.string(),
         end: z.string(),
     }),
-    weekLabel: z.string(),
-    offSet: z.number(),
+    period: PeriodEnum,
 });
-
-export const AverageGamesByLevelResponseSchema = z.object({
-    englishLevel: z.enum(["A1", "A2", "B1", "B2", "C1", "C2"]),
-    averageGamesPlayedThisWeek: z.number(),
-    userCount: z.number(),
-    range: z.object({
-        start: z.date().or(z.string()),
-        end: z.date().or(z.string()),
-    }),
-    offSet: z.number(),
-});
-export const AverageGamesByLevelOrErrorSchema = z.union([
-    AverageGamesByLevelResponseSchema,
+export const GamesPlayedPerPeriodOrErrorSchema = z.union([
+    GamesPlayedPerPeriodResponseSchema,
     ErrorResponseSchema,
 ]);
+
 
 
 export const TotalPlaytimeOrErrorSchema = z.union([
@@ -46,22 +37,21 @@ export const WordsLearnedOrErrorSchema = z.union([
     ErrorResponseSchema,
 ]);
 
-export const GamesPlayedPerWeekOrErrorSchema = z.union([
-    GamesPlayedPerWeekResponseSchema,
-    ErrorResponseSchema,
-]);
 
-
-export const AverageGamesEachDayResponseSchema = z.object({
+export const AverageGamesByLevelPeerPeriodResponseSchema = z.object({
     englishLevel: z.enum(["A1", "A2", "B1", "B2", "C1", "C2"]),
     userCount: z.number().int().nonnegative(),
-    labels: z.array(z.string().length(2)),
+    labels: z.array(z.string()),
     counts: z.array(z.number()),
-    weekLabel: z.string(),
-    offSet: z.number().int(),
+    period: PeriodEnum,
+    range: z.object({
+        start: z.string(),
+        end: z.string(),
+    }),
 });
-export const AverageGamesEachDayOrErrorSchema = z.union([
-    AverageGamesEachDayResponseSchema,
+export const AverageGamesByLevelPeerPeriodResponseSchemaOrErrorSchema = z.union([
+    AverageGamesByLevelPeerPeriodResponseSchema,
     ErrorResponseSchema,
 ]);
+
 
