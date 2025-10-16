@@ -102,6 +102,16 @@ export default function GameScreen() {
     return { CELL_SIZE: 55, GRID_SIZE: 12 };
   }, [gameData?.gameTemplate?.difficulty]);
 
+  const lettersOnlyLen = (s?: string | null) =>
+    String(s ?? "").replace(/[^A-Za-z]/g, "").length;
+  const filteredQuestions = useMemo(() => {
+    const qa = gameData?.gameTemplate?.questions ?? [];
+    return qa.filter((q) => {
+      const L = lettersOnlyLen(q?.answer);
+      return L > 0 && L <= GRID_SIZE;
+    });
+  }, [gameData?.gameTemplate?.questions, GRID_SIZE]);
+
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flex: 1, opacity: imageReady ? 1 : 0 }}>
@@ -124,7 +134,7 @@ export default function GameScreen() {
             title={gameData.gameTemplate.gameTopic}
             CELL_SIZE={CELL_SIZE}
             GRID_SIZE={GRID_SIZE}
-            questionsAndAnswers={gameData.gameTemplate.questions}
+            questionsAndAnswers={filteredQuestions}
             gameData={gameData}
           />
         ) : null}
