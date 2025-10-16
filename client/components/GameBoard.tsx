@@ -90,14 +90,11 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(
 
     const normalizeWordKey = (s: string) => (s ?? "").trim().toLowerCase();
 
-    // persistent map so colors don’t reshuffle on re-renders
     const wordColorMapRef = useRef<Map<string, string>>(new Map());
 
-    // Golden-angle color generator for overflow beyond BASE_PALETTE
     const goldenAngle = 137.508;
     const genColorByIndex = (i: number) => {
       const hue = (i * goldenAngle) % 360;
-      // light pastel-ish fill
       return `hsl(${hue} 70% 80%)`;
     };
 
@@ -106,14 +103,12 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(
       const map = wordColorMapRef.current;
       if (map.has(key)) return map.get(key)!;
 
-      // pick next unused from base palette first
       const used = new Set(map.values());
       const nextFixed = BASE_PALETTE.find((c) => !used.has(c));
       let color: string;
       if (nextFixed) {
         color = nextFixed;
       } else {
-        // overflow: generate a new unique-ish color
         const idx = map.size - BASE_PALETTE.length;
         color = genColorByIndex(idx);
       }
