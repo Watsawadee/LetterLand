@@ -78,8 +78,8 @@ export default function Home() {
           hour < 12
             ? `Good morning 🌞 ${userName}!`
             : hour < 18
-            ? `Good afternoon 🌤️ ${userName}!`
-            : `Good evening 🌙 ${userName}!`;
+              ? `Good afternoon 🌤️ ${userName}!`
+              : `Good evening 🌙 ${userName}!`;
 
         let visitMsg = "";
         if (lastVisitStr) {
@@ -99,12 +99,17 @@ export default function Home() {
           visitMsg = `Hi ${userName}! Nice to meet you for the first time`;
         }
 
-        const gameMsg = lastFinishedGame
-          ? `Your last puzzle was "${lastFinishedGame.topic}" — finished ${formatDistanceToNow(
-              new Date(lastFinishedGame.finishedAt),
-              { addSuffix: true }
-            )}`
-          : "You haven’t finished any games yet — let’s start one today!";
+        let gameMsg = "You haven’t finished any games yet — let’s start one today!";
+        if (
+          lastFinishedGame &&
+          lastFinishedGame.finishedAt &&
+          !isNaN(new Date(lastFinishedGame.finishedAt).getTime())
+        ) {
+          gameMsg = `Your last puzzle was "${lastFinishedGame.topic}" — finished ${formatDistanceToNow(
+            new Date(lastFinishedGame.finishedAt),
+            { addSuffix: true }
+          )}`;
+        }
 
         let coinMsg = "";
         if (profile && !("error" in profile)) {
@@ -142,62 +147,62 @@ export default function Home() {
           ]}
         >
           {/* HEADER ROW */}
-<View style={styles.headerRow}>
-  {/* LEFT SIDE: Mascot + Greeting */}
-  <View style={styles.greetingContainer}>
-    <Image
-      source={mascot}
-      style={{
-        width: 90,
-        height: 90,
-        borderRadius: 25,
-        transform: [{ scaleX: -1 }],
-      }}
-      resizeMode="contain"
-    />
-    <View style={{ flex: 1 }}>
-      <Text style={[Typography.header25, { marginBottom: 4 }]}>
-        Hello {username}
-      </Text>
-      <Text
-        style={[
-          Typography.body20,
-          { opacity: 0.8, flexShrink: 1, flexWrap: "wrap" },
-        ]}
-      >
-        {greeting}
-      </Text>
-    </View>
-  </View>
+          <View style={styles.headerRow}>
+            {/* LEFT SIDE: Mascot + Greeting */}
+            <View style={styles.greetingContainer}>
+              <Image
+                source={mascot}
+                style={{
+                  width: 90,
+                  height: 90,
+                  borderRadius: 25,
+                  transform: [{ scaleX: -1 }],
+                }}
+                resizeMode="contain"
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={[Typography.header25, { marginBottom: 4 }]}>
+                  Hello {username}
+                </Text>
+                <Text
+                  style={[
+                    Typography.body20,
+                    { opacity: 0.8, flexShrink: 1, flexWrap: "wrap" },
+                  ]}
+                >
+                  {greeting}
+                </Text>
+              </View>
+            </View>
 
-  {/* RIGHT SIDE: Word Bank Button */}
-  <TouchableOpacity
-    style={[
-      ButtonStyles.wordBank.container,
-      {
-        flexDirection: "row",
-        alignItems: "center",
-        alignSelf: "flex-start", // stay top-aligned
-        marginLeft: 16,
-      },
-    ]}
-    onPress={() => setShowBook(true)}
-  >
-    <Book width={50} height={50} style={{ marginRight: 4 }} />
-    <View
-      style={{
-        flexDirection: "column",
-        alignItems: "flex-start",
-        paddingLeft: 8,
-      }}
-    >
-      <Text style={ButtonStyles.wordBank.text}>Word</Text>
-      <Text style={ButtonStyles.wordBank.text}>Bank</Text>
-    </View>
-  </TouchableOpacity>
+            {/* RIGHT SIDE: Word Bank Button */}
+            <TouchableOpacity
+              style={[
+                ButtonStyles.wordBank.container,
+                {
+                  flexDirection: "row",
+                  alignItems: "center",
+                  alignSelf: "flex-start", // stay top-aligned
+                  marginLeft: 16,
+                },
+              ]}
+              onPress={() => setShowBook(true)}
+            >
+              <Book width={50} height={50} style={{ marginRight: 4 }} />
+              <View
+                style={{
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  paddingLeft: 8,
+                }}
+              >
+                <Text style={ButtonStyles.wordBank.text}>Word</Text>
+                <Text style={ButtonStyles.wordBank.text}>Bank</Text>
+              </View>
+            </TouchableOpacity>
 
-  <WordBankModal visible={showBook} onClose={() => setShowBook(false)} />
-</View>
+            <WordBankModal visible={showBook} onClose={() => setShowBook(false)} />
+          </View>
 
           {/* ACHIEVEMENT SECTION */}
           <View style={styles.section}>

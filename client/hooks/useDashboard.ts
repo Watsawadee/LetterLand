@@ -1,17 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
-import { getPeerAverageGamesPerPeriod, getTotalGamePerPeriod, getUserTotalPlaytime, getUserWordLearned } from "@/services/dashboardService";
+import { getPeerAverageGamesPerPeriod, getTotalGamePerPeriod, getUserGameStreak, getUserProgress, getUserTotalPlaytime, getUserWordLearned } from "@/services/dashboardService";
 import { GamesPlayedPerPeriod } from "@/types/gamesPlayedPerPeriod";
 
 
 const DEFAULT_STALE = 1000 * 60 * 5;
 export const useTotalGamesPerPeriod = (
     period: "week" | "month" | "year",
-    date?: string,
-    offSet = 0
+    date: string,
 ) =>
     useQuery<GamesPlayedPerPeriod>({
-        queryKey: ["dashboard", "gamesPerPeriod", period, date, offSet],
-        queryFn: () => getTotalGamePerPeriod(period, date, offSet),
+        queryKey: ["dashboard", "gamesPerPeriod", period, date],
+        queryFn: () => getTotalGamePerPeriod(period, date),
         staleTime: DEFAULT_STALE,
         retry: false,
         refetchOnWindowFocus: false,
@@ -39,6 +38,32 @@ export const usePeerAverageGamesPerPeriod = (
 //         refetchOnWindowFocus: false,
 //     });
 // }
+
+
+//Streak
+export function useUserGameStreak() {
+    return useQuery({
+        queryKey: ["dashboard", "gameStreak"],
+        queryFn: getUserGameStreak,
+        staleTime: DEFAULT_STALE,
+        retry: false,
+        refetchOnWindowFocus: false,
+    })
+}
+
+
+//User Progress
+export function useUserProgress() {
+    return useQuery({
+        queryKey: ['dashboard', 'userProgress'],
+        queryFn: getUserProgress,
+        staleTime: DEFAULT_STALE,
+        retry: false,
+        refetchOnWindowFocus: false,
+    });
+}
+
+
 
 export function useUserTotalPlaytime() {
     return useQuery({
