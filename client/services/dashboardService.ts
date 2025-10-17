@@ -3,8 +3,8 @@ import { GamesPlayedPerPeriod } from "../types/gamesPlayedPerPeriod"
 import { getLoggedInUserId, getToken } from "@/utils/auth";
 import axios from "axios";
 import api from "./api";
-import { AverageGamesByLevelPeerOrError, TotalPlaytimeOrError, WordsLearnedOrError } from "@/libs/type";
-import { AverageGamesByLevelPeerPeriodResponseSchema, GamesPlayedPerPeriodResponseSchema, TotalPlaytimeOrErrorSchema, WordsLearnedOrErrorSchema } from "../types/dashboard.schema";
+import { AverageGamesByLevelPeerOrError, GameStreakOrError, TotalPlaytimeOrError, WordsLearnedOrError } from "@/libs/type";
+import { AverageGamesByLevelPeerPeriodResponseSchema, GamesPlayedPerPeriodResponseSchema, GameStreakOrErrorSchema, TotalPlaytimeOrErrorSchema, WordsLearnedOrErrorSchema } from "../types/dashboard.schema";
 import { ErrorResponseSchema } from "../types/setup.schema";
 
 export async function getAuthHeader() {
@@ -92,6 +92,22 @@ export const getPeerAverageGamesPerPeriod = async (
     });
 
     const parsed = AverageGamesByLevelPeerPeriodResponseSchema.safeParse(res.data);
+    if (parsed.success) return parsed.data;
+
+    const err = ErrorResponseSchema.safeParse(res.data);
+    if (err.success) throw new Error(err.data.error);
+
+    throw new Error("Invalid response from server");
+};
+
+
+
+//Streaks
+export const getUserGameStreak = async (): Promise<GameStreakOrError> => {
+    const config = await getAuthHeader();
+    const res = await api.get(`/dashboard/user/gameplayedstreak`, config);
+
+    const parsed = GameStreakOrErrorSchema.safeParse(res.data);
     if (parsed.success) return parsed.data;
 
     const err = ErrorResponseSchema.safeParse(res.data);
