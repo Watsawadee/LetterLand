@@ -3,6 +3,7 @@ import {
   getAverageGamesByLevelPerPeriod,
   getUserGamesPlayedPerPeriod,
   getUserGameStreak,
+  getUserProgress,
   getUserTotalPlaytime,
   getUserWordLearned,
 } from "../controllers/dashboardController";
@@ -24,5 +25,7 @@ router.get("/user/gameplayedstreak", authenticatedUser, getUserGameStreak);
 //   getAverageGamesPlayedByLevel
 // );
 router.get("/average/eachperiod", authenticatedUser, getAverageGamesByLevelPerPeriod);
+
+router.get("/user/gameprogress", authenticatedUser, getUserProgress)
 
 export default router;

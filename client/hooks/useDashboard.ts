@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getPeerAverageGamesPerPeriod, getTotalGamePerPeriod, getUserGameStreak, getUserTotalPlaytime, getUserWordLearned } from "@/services/dashboardService";
+import { getPeerAverageGamesPerPeriod, getTotalGamePerPeriod, getUserGameStreak, getUserProgress, getUserTotalPlaytime, getUserWordLearned } from "@/services/dashboardService";
 import { GamesPlayedPerPeriod } from "@/types/gamesPlayedPerPeriod";
 
 
@@ -49,6 +49,18 @@ export function useUserGameStreak() {
         retry: false,
         refetchOnWindowFocus: false,
     })
+}
+
+
+//User Progress
+export function useUserProgress() {
+    return useQuery({
+        queryKey: ['dashboard', 'userProgress'],
+        queryFn: getUserProgress,
+        staleTime: DEFAULT_STALE,
+        retry: false,
+        refetchOnWindowFocus: false,
+    });
 }
 
 

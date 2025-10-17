@@ -4,7 +4,7 @@ import { getLoggedInUserId, getToken } from "@/utils/auth";
 import axios from "axios";
 import api from "./api";
 import { AverageGamesByLevelPeerOrError, GameStreakOrError, TotalPlaytimeOrError, WordsLearnedOrError } from "@/libs/type";
-import { AverageGamesByLevelPeerPeriodResponseSchema, GamesPlayedPerPeriodResponseSchema, GameStreakOrErrorSchema, TotalPlaytimeOrErrorSchema, WordsLearnedOrErrorSchema } from "../types/dashboard.schema";
+import { AverageGamesByLevelPeerPeriodResponseSchema, GamesPlayedPerPeriodResponseSchema, GameStreakOrErrorSchema, TotalPlaytimeOrErrorSchema, UserProgressResponseSchema, WordsLearnedOrErrorSchema } from "../types/dashboard.schema";
 import { ErrorResponseSchema } from "../types/setup.schema";
 
 export async function getAuthHeader() {
@@ -115,3 +115,19 @@ export const getUserGameStreak = async (): Promise<GameStreakOrError> => {
 
     throw new Error("Invalid response from server");
 };
+
+
+//Get user progress
+export async function getUserProgress() {
+    const userId = await getLoggedInUserId();
+    const token = await getToken();
+    if (!token) throw new Error("No token");
+
+    const res = await api.get(`/dashboard/user/gameprogress`, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const parsed = UserProgressResponseSchema.safeParse(res.data);
+    if (!parsed.success) throw new Error("Invalid response from server");
+    return parsed.data;
+}

@@ -11,14 +11,14 @@ export const getUserProfile = async (
 ) => {
 
   const LEVEL_THRESHOLDS: Record<EnglishLevel, number> = {
-    A1: 200 * 60 * 60,   // 200h to reach A2
-    A2: 400 * 60 * 60,   // 400h total to reach B1
-    B1: 600 * 60 * 60,   // 600h total to reach B2
-    B2: 800 * 60 * 60,   // 800h total to reach C1
-    C1: 1000 * 60 * 60,  // 1000h total to reach C2
-    C2: Number.POSITIVE_INFINITY, // top; no next level
+    A1: 200,
+    A2: 400,
+    B1: 600,
+    B2: 800,
+    C1: 1000,
+    C2: 1200,
   };
-
+  const levels: EnglishLevel[] = ["A1", "A2", "B1", "B2", "C1", "C2"];
   const userId = req.user?.id;
 
   if (!userId) {
@@ -31,21 +31,19 @@ export const getUserProfile = async (
       res.status(404).json({ error: "User not found" })
       return;
     }
-    const nextLevel = getNextLevel(user.englishLevel) ?? null;
+    const currentLevel = user.englishLevel;
+    const currentIdx = levels.indexOf(currentLevel);
+    const nextLevel = levels[Math.min(currentIdx + 1, levels.length - 1)];
+    const requiredPlaytimeHours = LEVEL_THRESHOLDS[nextLevel];
+    const prevThreshold = currentIdx > 0 ? LEVEL_THRESHOLDS[levels[currentIdx - 1]] : 0;
+    const totalPlaytimeHours = user.total_playtime / 3600;
+
+    // Progress for current level
+    const playtimeForCurrentLevel = Math.max(totalPlaytimeHours - prevThreshold, 0);
+    const progress = Math.min((playtimeForCurrentLevel / 200) * 100, 100);
+    const progressPercent = Number(progress.toFixed(2));
 
     const requiredPlaytime = LEVEL_THRESHOLDS[user.englishLevel];
-    const prevThreshold =
-      user.englishLevel === "A1"
-        ? 0
-        : user.englishLevel === "A2"
-          ? LEVEL_THRESHOLDS.A1
-          : user.englishLevel === "B1"
-            ? LEVEL_THRESHOLDS.A2
-            : user.englishLevel === "B2"
-              ? LEVEL_THRESHOLDS.B1
-              : user.englishLevel === "C1"
-                ? LEVEL_THRESHOLDS.B2
-                : LEVEL_THRESHOLDS.C1;
 
     const lastFive = await prisma.game.findMany({
       where: { userId, isFinished: true },
@@ -64,11 +62,6 @@ export const getUserProfile = async (
     if (rawProgress >= 99 && hasUsedHintRecently) {
       rawProgress = 99;
     }
-
-
-    const progressPercent = Number(rawProgress.toFixed(2));
-
-
     const hasEnoughPlaytime =
       requiredPlaytime !== Number.POSITIVE_INFINITY &&
       user.total_playtime >= requiredPlaytime;

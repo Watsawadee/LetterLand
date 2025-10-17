@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react"
 import { View, Text, ScrollView, Image, TouchableOpacity, Platform } from "react-native"
-import { useTotalGamesPerPeriod, usePeerAverageGamesPerPeriod, useUserTotalPlaytime, useUserWordLearned, useUserGameStreak } from "@/hooks/useDashboard";
+import { useTotalGamesPerPeriod, usePeerAverageGamesPerPeriod, useUserTotalPlaytime, useUserWordLearned, useUserGameStreak, useUserProgress } from "@/hooks/useDashboard";
 import { Color } from "@/theme/Color";
-import { Button, Card, Checkbox, IconButton, Modal, PaperProvider, Portal } from "react-native-paper";
+import { Button, Card, Checkbox, IconButton, List, Modal, PaperProvider, Portal } from "react-native-paper";
 import { ActivityIndicator } from "react-native";
 import Clock from "@/assets/icon/Clock";
 import Pencil from "@/assets/icon/Pencil";
-import { VictoryAxis, VictoryBar, VictoryChart, VictoryLabel, VictoryLine, VictoryScatter, VictoryTheme, VictoryVoronoiContainer } from "victory-native";
+import { VictoryAxis, VictoryBar, VictoryChart, VictoryLabel, VictoryLine, VictoryPie, VictoryScatter, VictoryTheme, VictoryVoronoiContainer } from "victory-native";
 import { Dimensions } from "react-native";
 import Carousel, { Pagination, ICarouselInstance } from "react-native-reanimated-carousel";
 import { useSharedValue } from "react-native-reanimated";
@@ -20,6 +20,8 @@ import WordBankModal from "./WordBank";
 import Book from "@/assets/icon/Book";
 import { ButtonStyles } from "@/theme/ButtonStyles";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
+import { format } from "date-fns";
+
 
 const MAX_WEEKS = 5;
 const UserOverviewPerformance = () => {
@@ -53,6 +55,7 @@ const UserOverviewPerformance = () => {
         });
     };
 
+
     const CHART_W = 750;
     const CHART_H = 300;
 
@@ -69,6 +72,7 @@ const UserOverviewPerformance = () => {
 
     const { data: TotalgamesData, isLoading: loadingChart } = useTotalGamesPerPeriod(period, formattedDate);
     const { data: peerAvgData, isLoading: loadingPeer } = usePeerAverageGamesPerPeriod(period, formattedDate);
+    const { data: userProgress, isLoading: loadingProgress } = useUserProgress();
 
     const { data: totalPlaytime } = useUserTotalPlaytime();
     const { data: wordsLearned } = useUserWordLearned();
@@ -111,7 +115,7 @@ const UserOverviewPerformance = () => {
 
 
     const router = useRouter();
-    const loading = loadingChart || loadingPeer;
+    const loading = loadingChart || loadingPeer || loadingProgress;
     return (
         <>
             <View style={{ width: "69%", height: "100%", gap: 15 }}>
@@ -296,17 +300,19 @@ const UserOverviewPerformance = () => {
                                             labels={({ datum }) => (datum.y !== 0 ? `${datum.y}` : "")}
                                             labelComponent={<VictoryLabel dy={-8} textAnchor="middle" />}
                                         />
-                                        <VictoryLine
-                                            data={peerSeries}
-                                            style={{ data: { stroke: Color.green, strokeWidth: 3 } }}
-                                        />
-                                        <VictoryScatter
-                                            data={peerSeries}
-                                            size={5}
-                                            style={{ data: { fill: Color.green } }}
-                                            labels={({ datum }) => datum.y.toFixed(1)}
-                                            labelComponent={<VictoryLabel dy={-10} style={{ fill: Color.green, fontSize: 12 }} />}
-                                        />
+                                        {peerSeries.some((d) => d.y !== 0) && ([
+                                            <VictoryLine
+                                                data={peerSeries}
+                                                style={{ data: { stroke: Color.green, strokeWidth: 3 } }}
+                                            />,
+                                            <VictoryScatter
+                                                data={peerSeries}
+                                                size={5}
+                                                style={{ data: { fill: Color.green } }}
+                                                labels={({ datum }) => datum.y.toFixed(1)}
+                                                labelComponent={<VictoryLabel dy={-10} style={{ fill: Color.green, fontSize: 12 }} />}
+                                            />
+                                        ])}
                                     </VictoryChart>
                                 </Card>
                             ) : (
@@ -378,16 +384,16 @@ const UserOverviewPerformance = () => {
                         margin: 20,
                         borderRadius: 16,
                         alignSelf: "center",
-                        justifyContent: "flex-start",
-                        padding: 50,
-                        height: "90%",
+                        // justifyContent: "flex-start",
+                        padding: 30,
+                        height: "100%",
                         width: "70%"
                     }}
                 >
                     {loading ? (
                         <ActivityIndicator />
                     ) : isSuccess(TotalgamesData) && isSuccess(peerAvgData) ? (
-                        <View style={{ width: "95%", flexDirection: "column", gap: 30 }}>
+                        <View style={{ width: "90%", flexDirection: "column", gap: 30, height: "100%", alignSelf: "center" }}>
                             <View style={{ flexDirection: "row" }}>
                                 <View style={{ flexDirection: "column", alignItems: "center", width: "100%" }}>
                                     <Text style={{ fontWeight: "bold", fontSize: 20, color: Color.gray, marginBottom: 5 }}>
@@ -405,19 +411,20 @@ const UserOverviewPerformance = () => {
                                     accessibilityLabel="Close dialog"
                                 />
                             </View>
-                            <View style={{ flexDirection: "column", justifyContent: "space-between", height: "100%" }}>
-                                <ScrollView horizontal={false} style={{ height: "100%" }}>
-                                    <View style={{ width: "100%" }}>
+                            <ScrollView horizontal={false} style={{ height: "100%", minWidth: "100%" }}>
+                                <View style={{ flexDirection: "column", justifyContent: "space-between", height: "100%" }}>
+
+                                    <View style={{ width: "100%", height: "100%", }}>
                                         <Text style={{ fontWeight: "bold", fontSize: 20, color: Color.gray, marginBottom: 5, textAlign: "left" }}>
                                             Gameplayed Streak
                                         </Text>
-                                        <View style={{ display: "flex", flexDirection: "row", gap: 5, justifyContent: "space-around" }}>
+                                        <View style={{ display: "flex", flexDirection: "row", gap: 5, justifyContent: "space-around", height: "100%" }}>
                                             {/* <ScrollView horizontal={true} style={{ width: "100%" }}> */}
                                             {loadingStreak ? (
                                                 <ActivityIndicator />
                                             ) : (
                                                 streakCards.map((card, idx) => (
-                                                    <Card key={idx} style={{ backgroundColor: Color.blue, padding: 10, height: "100%", width: "32%", flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+                                                    <Card key={idx} style={{ backgroundColor: Color.blue, padding: 10, height: "80%", width: "32%", flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
                                                         <Text style={{ color: Color.white, fontWeight: "bold", fontSize: 16, textAlign: "center" }}>
                                                             {card.label}
                                                         </Text>
@@ -439,9 +446,101 @@ const UserOverviewPerformance = () => {
                                         <Text style={{ fontWeight: "bold", fontSize: 20, color: Color.gray, marginBottom: 5, textAlign: "left" }}>
                                             User Current Progress
                                         </Text>
+                                        {loadingProgress ? (
+                                            <ActivityIndicator />
+                                        ) : isSuccess(userProgress) ? (
+                                            <>
+                                                <View
+                                                    style={{
+                                                        alignItems: "center",
+                                                        justifyContent: "center",
+                                                        // marginVertical: 10,
+                                                    }}
+                                                >
+                                                    <View style={{ position: "relative", alignItems: "center", justifyContent: "center" }}>
+                                                        <VictoryPie
+                                                            data={[
+                                                                { x: "Progress", y: userProgress.donut.filled },
+                                                                { x: "Remaining", y: userProgress.donut.remaining },
+                                                            ]}
+                                                            width={250}
+                                                            height={250}
+                                                            colorScale={[Color.green, "#EAEAEA"]}
+                                                            innerRadius={70}
+                                                            labels={() => null}
+                                                            padding={45}
+                                                        />
+                                                        <View
+                                                            style={{
+                                                                position: "absolute",
+                                                                top: "50%",
+                                                                left: "50%",
+                                                                transform: [{ translateX: -15 }, { translateY: -30 }],
+                                                                alignItems: "center",
+                                                                justifyContent: "center",
+                                                            }}
+                                                        >
+                                                            <Text
+                                                                style={{
+                                                                    fontSize: 25,
+                                                                    fontWeight: "bold",
+                                                                    color: Color.gray,
+                                                                    textAlign: "center",
+                                                                }}
+                                                            >
+                                                                {userProgress.donut.filled.toFixed(0)}%
+                                                            </Text>
+                                                            <Text
+                                                                style={{
+                                                                    color: Color.gray,
+                                                                    fontSize: 16,
+                                                                    textAlign: "center",
+                                                                    fontWeight: "500",
+                                                                }}
+                                                            >
+                                                                {userProgress.englishLevel}
+                                                            </Text>
+                                                        </View>
+                                                    </View>
+
+                                                    <View style={{ minWidth: "60%", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+                                                        {userProgress.summary.map((line, idx) => (
+                                                            <List.Item
+                                                                key={idx}
+                                                                title={line}
+                                                                titleNumberOfLines={3}
+                                                                titleStyle={{
+                                                                    color: Color.blue,
+                                                                    fontSize: Typography.body16.fontSize,
+                                                                    lineHeight: 20,
+                                                                    textAlign: "center"
+                                                                }}
+                                                                left={(props) => (
+                                                                    <List.Icon
+                                                                        {...props}
+                                                                        icon="alert-box"
+                                                                        color={"red"}
+                                                                        style={{ marginRight: 0 }}
+                                                                    />
+                                                                )}
+                                                                style={{
+                                                                    backgroundColor: "transparent",
+                                                                    borderRadius: 10,
+                                                                    paddingHorizontal: 20,
+                                                                    width: "100%"
+                                                                }}
+                                                            />
+                                                        ))}
+                                                    </View>
+                                                </View>
+                                            </>
+                                        ) : (
+                                            <Text style={{ color: Color.gray }}>No progress data available</Text>
+                                        )}
                                     </View>
-                                </ScrollView>
-                            </View>
+                                </View>
+
+                            </ScrollView>
 
 
                         </View>
