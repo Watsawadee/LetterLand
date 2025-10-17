@@ -2,6 +2,7 @@ import express from "express";
 import {
   getAverageGamesByLevelPerPeriod,
   getUserGamesPlayedPerPeriod,
+  getUserGameStreak,
   getUserTotalPlaytime,
   getUserWordLearned,
 } from "../controllers/dashboardController";
@@ -14,6 +15,8 @@ router.get(
   authenticatedUser,
   getUserGamesPlayedPerPeriod
 );
+
+router.get("/user/gameplayedstreak", authenticatedUser, getUserGameStreak);
 
 // router.get(
 //   "/user/averagebylevel",

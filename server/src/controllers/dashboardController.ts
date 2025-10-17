@@ -1,7 +1,7 @@
 import prisma from "../configs/db";
 import { Request, Response } from "express";
 import { AuthenticatedRequest } from "../types/authenticatedRequest";
-import { startOfWeek, endOfWeek, eachDayOfInterval, format, addWeeks } from "date-fns";
+import { startOfWeek, endOfWeek, eachDayOfInterval, format, addWeeks, startOfDay, isSameDay, addDays } from "date-fns";
 import {
   TotalPlaytimeResponseSchema,
   WordsLearnedResponseSchema,
@@ -402,3 +402,91 @@ export const getAverageGamesByLevelPerPeriod = async (
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+
+export const getUserGameStreak = async (req: AuthenticatedRequest, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  try {
+
+    // Get all finished games for this user, sorted by startedAt
+    const games = await prisma.game.findMany({
+      where: { userId, isFinished: true },
+      orderBy: { startedAt: "asc" },
+      select: { startedAt: true, gameTemplate: { select: { difficulty: true } } },
+    });
+    if (games.length === 0) {
+      res.json({ allTime: 0, currentLevel: 0, highestLevelStreak: 0 });
+      return;
+    }
+    function getMaxStreak(dates: Date[]) {
+      if (dates.length === 0) return 0;
+      let maxStreak = 1, curStreak = 1;
+      for (let i = 1; i < dates.length; i++) {
+        const prev = startOfDay(dates[i - 1]);
+        const curr = startOfDay(dates[i]);
+        if (isSameDay(addDays(prev, 1), curr)) {
+          curStreak++;
+        } else if (!isSameDay(prev, curr)) {
+          curStreak = 1;
+        }
+        if (curStreak > maxStreak) maxStreak = curStreak;
+      }
+      return maxStreak;
+    }
+
+    // All-time streak
+    const allDates = Array.from(new Set(games.map(g => startOfDay(g.startedAt))));
+    allDates.sort((a, b) => a.getTime() - b.getTime());
+    const allTime = getMaxStreak(allDates);
+
+
+    // Current level streak
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { englishLevel: true } });
+    const currentLevel = user?.englishLevel;
+    const levelDates = Array.from(
+      new Set(
+        games.filter(g => g.gameTemplate.difficulty === currentLevel).map(g => startOfDay(g.startedAt))
+      )
+    );
+    levelDates.sort((a, b) => a.getTime() - b.getTime());
+    const currentLevelStreak = getMaxStreak(levelDates);
+
+
+
+
+
+    const usersAtLevel = await prisma.user.findMany({
+      where: { englishLevel: currentLevel },
+      select: { id: true },
+    });
+    let highestLevelStreak = 0;
+    for (const u of usersAtLevel) {
+      const userGames = await prisma.game.findMany({
+        where: { userId: u.id, isFinished: true },
+        orderBy: { startedAt: "asc" },
+        select: { startedAt: true, gameTemplate: { select: { difficulty: true } } },
+      });
+      const userDates = Array.from(
+        new Set(
+          userGames.filter(g => g.gameTemplate.difficulty === currentLevel).map(g => startOfDay(g.startedAt))
+        )
+      );
+      userDates.sort((a, b) => a.getTime() - b.getTime());
+      const streak = getMaxStreak(userDates);
+      if (streak > highestLevelStreak) highestLevelStreak = streak;
+    }
+
+    res.json({
+      allTime: allTime,
+      currentLevel: currentLevelStreak,
+      highestStreakInThisLevel: highestLevelStreak,
+    });
+  }
+  catch (error: any) {
+    res.status(500).json({ message: "Internal Server Error" })
+  }
+}

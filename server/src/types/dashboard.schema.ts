@@ -55,3 +55,14 @@ export const AverageGamesByLevelPeerPeriodResponseSchemaOrErrorSchema = z.union(
 ]);
 
 
+
+
+export const GameStreakResponseSchema = z.object({
+    allTime: z.number().int().nonnegative(),
+    currentLevel: z.number().int().nonnegative(),
+    highestStreakInThisLevel: z.number().int().nonnegative(),
+});
+export const GameStreakOrErrorSchema = z.union([
+    GameStreakResponseSchema,
+    ErrorResponseSchema,
+]);
