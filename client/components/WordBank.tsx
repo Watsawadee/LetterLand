@@ -16,8 +16,6 @@ import Wordbank from "@/assets/backgroundTheme/wordbankBook";
 import { Color } from "@/theme/Color";
 import { Typography } from "@/theme/Font";
 import ArrowLeft from "@/assets/icon/ArrowLeft";
-import { normalizeWord } from "@/services/dictionaryService";
-import MeaningTooltip  from "./MeaningTooltip";
 
 type Props = {
   visible: boolean;
@@ -38,11 +36,22 @@ export default function WordBankModal({ visible, onClose }: Props) {
   const [data, setData] = useState<ApiOK | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [tipWord, setTipWord] = useState<string | null>(null);
+  const lastOnRight = (data?.right?.length ?? 0) > 0;
 
-  useEffect(() => {
-    setTipWord(null);
-  }, [page, source]);
+  const sinceIso = useMemo(
+    () => (source === "words" ? data?.wordsSince : data?.extraSince) ?? null,
+    [data, source]
+  );
+  const isLastPage = useMemo(
+    () => (data ? page === data.totalPages : false),
+    [data, page]
+  );
+
+  // const [tipWord, setTipWord] = useState<string | null>(null);
+
+  // useEffect(() => {
+  //   setTipWord(null);
+  // }, [page, source]);
 
   useEffect(() => {
     if (visible) {
@@ -114,6 +123,13 @@ export default function WordBankModal({ visible, onClose }: Props) {
       );
   }
 
+  const fmt = (iso: string) =>
+    new Date(iso).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+    });
+
   const renderSide = (items: ApiOK["left"]) => {
     if (!items || items.length === 0)
       return <Text style={styles.empty}>—</Text>;
@@ -121,7 +137,7 @@ export default function WordBankModal({ visible, onClose }: Props) {
       <Pressable
         key={`${source}-${it.n}`}
         style={styles.lineRow}
-        onPress={() => setTipWord(normalizeWord(it.word))}
+        // onPress={() => setTipWord(normalizeWord(it.word))}
         accessibilityRole="button"
       >
         <Text style={styles.numCol}>{String(it.n).padStart(2, " ")}.</Text>
@@ -342,9 +358,15 @@ export default function WordBankModal({ visible, onClose }: Props) {
               ) : err ? (
                 <Text style={styles.error}>{err}</Text>
               ) : data ? (
-                renderSide(data.left)
+                <>
+                  {renderSide(data.left)}
+                  {!lastOnRight && isLastPage && sinceIso && (
+                    <Text style={styles.sinceText}>Since {fmt(sinceIso)}</Text>
+                  )}
+                </>
               ) : null}
             </View>
+
             {/* Right page */}
             <View style={styles.rightColumn}>
               {loading ? (
@@ -352,7 +374,12 @@ export default function WordBankModal({ visible, onClose }: Props) {
               ) : err ? (
                 <Text style={styles.error} />
               ) : data ? (
-                renderSide(data.right)
+                <>
+                  {renderSide(data.right)}
+                  {lastOnRight && isLastPage && sinceIso && (
+                    <Text style={styles.sinceText}>Since {fmt(sinceIso)}</Text>
+                  )}
+                </>
               ) : null}
             </View>
 
@@ -398,11 +425,11 @@ export default function WordBankModal({ visible, onClose }: Props) {
             </View>
           </View>
         </View>
-        <MeaningTooltip
+        {/* <MeaningTooltip
           visible={!!tipWord}
           word={tipWord}
           onClose={() => setTipWord(null)}
-        />
+        /> */}
       </View>
     </Modal>
   );
@@ -566,4 +593,11 @@ const styles = StyleSheet.create({
   pageChipText: { fontSize: 12, color: Color.gray },
   pageChipTextActive: { color: Color.white, fontWeight: "700" },
   ellipsisText: { fontSize: 14, color: Color.gray, marginHorizontal: 4 },
+  sinceText: {
+    marginTop: 10,
+    ...Typography.body13,
+    fontStyle: "italic",
+    color: Color.gray,
+    alignSelf: "center",
+  },
 });
