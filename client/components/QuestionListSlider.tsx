@@ -1,8 +1,55 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { QuestionListSliderProps } from "../types/type";
 import { Typography } from "@/theme/Font";
 import { Color } from "@/theme/Color";
+
+function computeRevealCount(letterCount: number): number {
+  if (letterCount <= 4) return 1;
+  if (letterCount <= 6) return 2;
+  if (letterCount <= 9) return 3;
+  if (letterCount <= 12) return 4;
+  return Math.min(5, Math.max(1, Math.floor(letterCount * 0.3)));
+}
+
+function maskAnswerRandom(answerRaw: string): string {
+  const answer = answerRaw ?? "";
+  const chars = Array.from(answer);
+
+  const letterIdxs: number[] = [];
+  for (let i = 0; i < chars.length; i++) {
+    if (/[A-Za-z]/.test(chars[i])) letterIdxs.push(i);
+  }
+  const L = letterIdxs.length;
+  if (L === 0) return answer;
+
+  const revealCount = Math.min(computeRevealCount(L), L);
+
+  const shuffled = [...letterIdxs];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  const selected = shuffled.slice(0, revealCount).sort((a, b) => a - b);
+  const revealSet = new Set<number>(selected);
+
+  const masked = chars.map((ch, i) => {
+    if (!/[A-Za-z]/.test(ch)) return ch;
+    return revealSet.has(i) ? ch : "_";
+  });
+
+  const pretty: string[] = [];
+  for (let i = 0; i < masked.length; i++) {
+    const ch = masked[i];
+    const prev = i > 0 ? masked[i - 1] : "";
+    if (i > 0 && /[A-Za-z_]/.test(ch) && /[A-Za-z_]/.test(prev)) {
+      pretty.push(" ");
+    }
+    pretty.push(ch);
+  }
+  return pretty.join("");
+}
 
 export default function QuestionListSlider({
   questionsAndAnswers,
@@ -18,15 +65,21 @@ export default function QuestionListSlider({
   const changeIndex = (direction: -1 | 1) => {
     let newIndex = activeIndex + direction;
     const len = questionsAndAnswers.length;
-
     if (newIndex < 0) {
       newIndex = len - 1;
     } else if (newIndex >= len) {
       newIndex = 0;
     }
-
     onChangeIndex(newIndex);
   };
+
+  const shouldShowHint =
+    showQuestion && !found && revealedAnswers.includes(currentQA.answer);
+
+  const maskedHint = useMemo(
+    () => (shouldShowHint ? maskAnswerRandom(currentQA.answer) : ""),
+    [shouldShowHint, currentQA.answer]
+  );
 
   return (
     <View style={styles.container}>
@@ -39,9 +92,8 @@ export default function QuestionListSlider({
         </TouchableOpacity>
 
         <View style={styles.questionInfo}>
-
           <Text
-            style={[styles.questionText]}
+            style={styles.questionText}
             numberOfLines={1}
             ellipsizeMode="tail"
           >
@@ -55,8 +107,14 @@ export default function QuestionListSlider({
                 <Text style={styles.answerText}>
                   Answer: {currentQA.answer}
                 </Text>
-              ) : revealedAnswers.includes(currentQA.answer) ? (
-                <Text style={styles.hintText}>Hint: {currentQA.hint}</Text>
+              ) : shouldShowHint ? (
+                <Text
+                  style={styles.hintText}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  Hint: {maskedHint}
+                </Text>
               ) : (
                 <Text style={styles.hiddenAnswer}> </Text>
               )}
@@ -151,9 +209,8 @@ const styles = StyleSheet.create({
   },
   hintText: {
     marginTop: 8,
-    fontStyle: "italic",
     color: Color.grey,
     textAlign: "center",
-    fontSize: 14,
+    fontSize: 20,
   },
 });

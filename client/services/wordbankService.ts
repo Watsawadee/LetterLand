@@ -13,6 +13,8 @@ export type ApiOK = {
   right: SideItem[];
   words?: BankSection;
   extra?: BankSection;
+  wordsSince?: string | null;
+  extraSince?: string | null;
 };
 type ApiErr = { error?: string; message?: string };
 
@@ -28,6 +30,8 @@ type BackendRes = {
   spreadSize: number;
   words: BankSection;
   extra: BankSection;
+  wordsSince?: string | null;
+  extraSince?: string | null;
 };
 
 export async function fetchWordBankPage(
@@ -56,6 +60,8 @@ export async function fetchWordBankPage(
       perSide: res.data.perSide,
       left: section.left,
       right: section.right,
+      wordsSince: res.data.wordsSince ?? null,
+      extraSince: res.data.extraSince ?? null,
     };
   } catch (err: any) {
     if (axios.isAxiosError<ApiErr>(err)) {
