@@ -291,7 +291,7 @@ export default function MyGamesRow({
               {...item}
               onPress={() =>
                 router.push({
-                  pathname: "/gameScreen",
+                  pathname: "/GameScreen",
                   params: { gameId: String(item.id) },
                 })
               }
@@ -309,7 +309,7 @@ export default function MyGamesRow({
               {...item}
               onPress={() =>
                 router.push({
-                  pathname: "/gameScreen",
+                  pathname: "/GameScreen",
                   params: { gameId: String(item.id) },
                 })
               }

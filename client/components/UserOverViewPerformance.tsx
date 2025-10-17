@@ -1,9 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import React, { useEffect, useMemo, useRef, useState } from "react"
 import { View, Text, ScrollView, Image, TouchableOpacity } from "react-native"
-import { useTotalGamesThisWeek, useAverageGamesByLevel, useUserTotalPlaytime, useUserWordLearned } from "@/hooks/useDashboard";
-import Swiper from "react-native-swiper";
+import { useTotalGamesPerPeriod, usePeerAverageGamesPerPeriod, useUserTotalPlaytime, useUserWordLearned } from "@/hooks/useDashboard";
 import { Color } from "@/theme/Color";
-import { Card, Checkbox, IconButton, Modal, Portal } from "react-native-paper";
+import { Button, Card, Checkbox, IconButton, Modal, Portal } from "react-native-paper";
 import { ActivityIndicator } from "react-native";
 import Clock from "@/assets/icon/Clock";
 import Pencil from "@/assets/icon/Pencil";
@@ -16,29 +15,17 @@ import NoGamePlayed from "@/assets/backgroundTheme/NoGamePlayed";
 import { Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import ArrowLeft from "@/assets/icon/ArrowLeft";
-import { useAverageGamesEachDay } from "@/hooks/useAverageGameEachDay";
 import CloseIcon from "@/assets/icon/CloseIcon";
 import WordBankModal from "./WordBank";
 import Book from "@/assets/icon/Book";
 import { ButtonStyles } from "@/theme/ButtonStyles";
-import { Dropdown } from "react-native-element-dropdown";
-
 const MAX_WEEKS = 5;
 const UserOverviewPerformance = () => {
-    type ListItem = { _id: string; value: string };
     const [carouselIndex, setCarouselIndex] = useState(0);
     const [forceLoading, setForceLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
     const [showBook, setShowBook] = useState(false);
-    const [graphType, setGraphType] = useState("games");
-    const [barAnimationDone, setBarAnimationDone] = useState(false);
-
-    const graphOptions = [
-        { label: "Games Played", value: "games" },
-        { label: "Average of Peer", value: "peerAvg" },
-        { label: "Both", value: "both" },
-    ];
-
+    const [period, setPeriod] = useState<"week" | "month" | "year">("week");
 
     const CHART_W = 750;
     const CHART_H = 300;
@@ -53,281 +40,275 @@ const UserOverviewPerformance = () => {
         return () => clearTimeout(timer);
     }, []);
 
-    const weekOffset = carouselIndex - (MAX_WEEKS - 1);
-    const { data: TotalgamesData, isLoading: loadingChart, isError: chartError } = useTotalGamesThisWeek(weekOffset);
-    const { data: avgGames, isLoading: avgLoading } = useAverageGamesByLevel(weekOffset);
-    const { data: dailyAvg, isLoading: loadingDaily } = useAverageGamesEachDay(weekOffset);
-    const dailyData = dailyAvg
-    const avgValue = avgGames && "averageGamesPlayedThisWeek" in avgGames
-        ? Number(avgGames.averageGamesPlayedThisWeek).toFixed(2)
-        : "0.00";
-
-    const counts = TotalgamesData?.counts ?? [0, 0, 0, 0, 0, 0, 0];
-    const labels = TotalgamesData?.labels ?? ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-    const weekLabel = TotalgamesData?.weekLabel ?? "";
-    const weeklySeries = useMemo(
-        () =>
-            labels.map((label, index) => ({
-                x: label,
-                y: typeof counts[index] === "number" ? counts[index] : 0,
-            })),
-        [labels, counts]
-    );
-    const modalWeeklySeries = useMemo(() => {
-        if (!dailyData?.labels || !dailyData?.counts) return [];
-        return dailyData.labels.map((label, index) => ({
-            x: label,
-            y: typeof dailyData.counts[index] === "number" ? dailyData.counts[index] : 0,
-        }));
-    }, [dailyData]);
-
-    const peerSeries = useMemo(() => {
-        if (!dailyData?.labels || !dailyData?.counts) {
-            return [];
-        }
-        return dailyData.labels.map((label, index) => {
-            const value = dailyData.counts[index];
-            return {
-                x: label,
-                y: typeof value === "number" && Number.isFinite(value) ? value : 0,
-            };
-        });
-    }, [dailyData]);
-
-    const modalTickValues = useMemo(() => {
-        const set = new Set<string>();
-        weeklySeries.forEach(point => set.add(String(point.x)));
-        peerSeries.forEach(point => set.add(String(point.x)));
-        return Array.from(set);
-    }, [peerSeries, weeklySeries]);
-
-    const modalMaxY = useMemo(() => {
-        const userMax = weeklySeries.reduce((max, point) => Math.max(max, point.y ?? 0), 0);
-        const peerMax = peerSeries.reduce((max, point) => Math.max(max, point.y ?? 0), 0);
-        return Math.max(1, userMax, peerMax);
-    }, [peerSeries, weeklySeries]);
-
-    const maxY = Math.max(1, ...counts);
-    const router = useRouter();
-
-
+    const { data: TotalgamesData, isLoading: loadingChart } = useTotalGamesPerPeriod(period);
+    const { data: peerAvgData, isLoading: loadingPeer } = usePeerAverageGamesPerPeriod(period);
     const { data: totalPlaytime } = useUserTotalPlaytime();
     const { data: wordsLearned } = useUserWordLearned();
 
-    function getLongestStreak(counts: number[]): number {
-        let maxStreak = 0;
-        let currentStreak = 0;
-        for (let i = 0; i < counts.length; i++) {
-            if (counts[i] > 0) {
-                currentStreak++;
-                maxStreak = Math.max(maxStreak, currentStreak);
-            } else {
-                currentStreak = 0;
-            }
-        }
-        return maxStreak;
+    function isSuccess<T>(data: T | undefined): data is Exclude<T, { error: string }> {
+        return !!data && typeof data === "object" && !("error" in data);
     }
-    function isValidArray(arr1: number[] | undefined, arr2: number[] | undefined): boolean {
-        return Array.isArray(arr1) && Array.isArray(arr2) && arr1.length === arr2.length && arr1.length > 0;
-    }
+    const periodSeries =
+        isSuccess(TotalgamesData)
+            ? TotalgamesData.labels.map((label, i) => ({
+                x: label,
+                y: TotalgamesData.counts[i],
+            }))
+            : [];
 
-    function getWeekLabels(startDateStr: string) {
-        const days = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-        const startDate = new Date(startDateStr);
-        const startIdx = startDate.getUTCDay(); // 0=Sun, 6=Sat
-        return Array.from({ length: 7 }, (_, i) => days[(startIdx + i) % 7]);
-    }
+    const peerSeries =
+        isSuccess(peerAvgData)
+            ? peerAvgData.labels.map((label, i) => ({
+                x: label,
+                y: peerAvgData.counts[i],
+            }))
+            : [];
+    const maxY = isSuccess(TotalgamesData)
+        ? Math.max(1, ...TotalgamesData.counts)
+        : 1;
 
-    // Usage in your statCards:
-    const longestStreak = getLongestStreak(counts);
 
-    const statCards = [
-        {
-            key: "peak",
-            content: (
-                <Card style={{ backgroundColor: "#F2F8F9", padding: 16, borderRadius: 16, alignItems: "center", justifyContent: "center", width: 250, minHeight: 100, marginHorizontal: 8 }}>
-                    <Text style={{ fontWeight: "bold", color: Color.black }}>Peak Learning Day</Text>
-                    <Text style={{ color: Color.blue, fontSize: 18, fontWeight: "bold" }}>
-                        {labels[counts.indexOf(Math.max(...counts))]} — {Math.max(...counts)} games
-                    </Text>
-                    <Text style={{ color: Color.black }}>You’re most active on this day!</Text>
-                </Card>
-            ),
-        },
-        {
-            key: "avg",
-            content: (
-                <Card style={{ backgroundColor: "#F2F8F9", padding: 16, borderRadius: 16, alignItems: "center", justifyContent: "center", width: 250, minHeight: 100, marginHorizontal: 8 }}>
-                    <Text style={{ color: Color.black, fontWeight: "bold", fontSize: 16 }}>
-                        Average games played by all users this week:{" "}
-                        <Text style={{ color: Color.blue, fontWeight: "bold", fontSize: 18 }}>{avgValue}</Text>
-                    </Text>
-                </Card>
-            ),
-        },
-        {
-            key: "level",
-            content: (
-                <Card style={{ backgroundColor: "#F2F8F9", padding: 16, borderRadius: 16, alignItems: "center", justifyContent: "center", width: 250, minHeight: 100, marginHorizontal: 8 }}>
-                    <Text style={{ fontWeight: "bold", color: Color.black }}>
-                        English Level: <Text style={{ color: Color.black }}>{dailyData?.englishLevel}</Text>
-                    </Text>
-                    <Text style={{ color: Color.blue, fontWeight: "bold" }}>
-                        {dailyData?.userCount} peers in this level
-                    </Text>
-                </Card>
-            ),
-        },
-        {
-            key: "streak",
-            content: (
-                <Card style={{ backgroundColor: "#F2F8F9", padding: 16, borderRadius: 16, alignItems: "center", justifyContent: "center", width: 250, minHeight: 100, marginHorizontal: 8 }}>
-                    <Text style={{ color: Color.black, fontWeight: "bold" }}>Longest Streak of this week</Text>
-                    <Text style={{ color: Color.blue, fontSize: 18, fontWeight: "bold" }}>
-                        {longestStreak} {longestStreak === 1 ? "day" : "days"}
-                    </Text>
-                </Card>
-            ),
-        },
-    ];
-    const renderChart = ({ index }: { index: number }) => {
-        const weekOffset = index - (MAX_WEEKS - 1);
-        const { data: TotalgamesData, isLoading: loadingChart, isError: chartError } = useTotalGamesThisWeek(weekOffset);
+    const router = useRouter();
+    // function getLongestStreak(counts: number[]): number {
+    //     let maxStreak = 0;
+    //     let currentStreak = 0;
+    //     for (let i = 0; i < counts.length; i++) {
+    //         if (counts[i] > 0) {
+    //             currentStreak++;
+    //             maxStreak = Math.max(maxStreak, currentStreak);
+    //         } else {
+    //             currentStreak = 0;
+    //         }
+    //     }
+    //     return maxStreak;
+    // }
+    // function isValidArray(arr1: number[] | undefined, arr2: number[] | undefined): boolean {
+    //     return Array.isArray(arr1) && Array.isArray(arr2) && arr1.length === arr2.length && arr1.length > 0;
+    // }
 
-        if (chartError) {
-            return (
-                <View style={{ width: CHART_W, height: CHART_H, justifyContent: "center", alignItems: "center" }}>
-                    <Text style={{ color: Color.gray }}>❌ Failed to load chart</Text>
-                </View>
-            );
-        }
+    // function getWeekLabels(startDateStr: string) {
+    //     const days = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+    //     const startDate = new Date(startDateStr);
+    //     const startIdx = startDate.getUTCDay(); // 0=Sun, 6=Sat
+    //     return Array.from({ length: 7 }, (_, i) => days[(startIdx + i) % 7]);
+    // }
 
-        if (loadingChart || !TotalgamesData) {
-            return (
-                <View style={{ width: CHART_W, height: CHART_H, justifyContent: "center", alignItems: "center" }}>
-                    <ActivityIndicator size="large" />
-                </View>
-            );
-        }
+    // // Usage in your statCards:
+    // const longestStreak = getLongestStreak(counts);
 
-        const counts = TotalgamesData.counts ?? [0, 0, 0, 0, 0, 0, 0];
-        const labels = TotalgamesData.range
-            ? getWeekLabels(TotalgamesData.range.start)
-            : ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-        const weekLabel = TotalgamesData.weekLabel ?? "";
-        const maxY = Math.max(1, ...counts);
-        const noGamePlayed = counts.every((c) => c === 0);
+    // const statCards = [
+    //     {
+    //         key: "peak",
+    //         content: (
+    //             <Card style={{ backgroundColor: "#F2F8F9", padding: 16, borderRadius: 16, alignItems: "center", justifyContent: "center", width: 250, height: 100, marginHorizontal: 8 }}>
+    //                 <Text style={{ fontWeight: "bold", color: Color.black }}>Peak Learning Day</Text>
+    //                 <Text style={{ color: Color.blue, fontSize: 18, fontWeight: "bold" }}>
+    //                     {labels[counts.indexOf(Math.max(...counts))]} — {Math.max(...counts)} games
+    //                 </Text>
+    //                 <Text style={{ color: Color.black }}>You’re most active on this day!</Text>
+    //             </Card>
+    //         ),
+    //     },
+    //     {
+    //         key: "avg",
+    //         content: (
+    //             <Card style={{ backgroundColor: "#F2F8F9", padding: 16, borderRadius: 16, alignItems: "center", justifyContent: "center", width: 250, height: 100, marginHorizontal: 8 }}>
+    //                 <Text style={{ color: Color.black, fontWeight: "bold", fontSize: 16 }}>
+    //                     Average games played by all users this week:{" "}
+    //                     <Text style={{ color: Color.blue, fontWeight: "bold", fontSize: 18 }}>{avgValue}</Text>
+    //                 </Text>
+    //             </Card>
+    //         ),
+    //     },
+    //     {
+    //         key: "level",
+    //         content: (
+    //             <Card style={{ backgroundColor: "#F2F8F9", padding: 16, borderRadius: 16, alignItems: "center", justifyContent: "center", width: 250, height: 100, marginHorizontal: 8 }}>
+    //                 <Text style={{ fontWeight: "bold", color: Color.black }}>
+    //                     English Level: <Text style={{ color: Color.black }}>{dailyData?.englishLevel}</Text>
+    //                 </Text>
+    //                 <Text style={{ color: Color.blue, fontWeight: "bold" }}>
+    //                     {dailyData?.userCount} peers in this level
+    //                 </Text>
+    //             </Card>
+    //         ),
+    //     },
+    //     {
+    //         key: "streak",
+    //         content: (
+    //             <Card style={{ backgroundColor: "#F2F8F9", padding: 16, borderRadius: 16, alignItems: "center", justifyContent: "center", width: 250, height: 100, marginHorizontal: 8 }}>
+    //                 <Text style={{ color: Color.black, fontWeight: "bold" }}>Longest Streak of this week</Text>
+    //                 <Text style={{ color: Color.blue, fontSize: 18, fontWeight: "bold" }}>
+    //                     {longestStreak} {longestStreak === 1 ? "day" : "days"}
+    //                 </Text>
+    //             </Card>
+    //         ),
+    //     },
+    // ];
+    // const renderChart = ({ index }: { index: number }) => {
+    //     const weekOffset = index - (MAX_WEEKS - 1);
+    //     const { data: weekData, isLoading: loadingChart, isError: chartError } = useTotalGamesThisWeek(weekOffset);
+    //     const { data: avgGames } = useAverageGamesByLevel(weekOffset);
+    //     const { data: dailyAvg } = useAverageGamesEachDay(weekOffset);
 
-        if (noGamePlayed) {
-            return (
-                <View style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%" }}>
-                    <Card style={{
-                        backgroundColor: Color.white, borderRadius: 16,
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        width: "100%",
-                        height: "100%",
-                    }}>
-                        <Card.Title
-                            title={weekLabel}
-                            titleStyle={{ color: Color.gray, textAlign: "center", fontSize: 20 }}
-                            style={{ alignItems: "center", paddingBottom: 0 }}
-                        />
-                        <Text style={{ color: Color.grey, fontWeight: "bold", fontSize: 20, textAlign: "center" }}>
-                            No games played this week!
-                        </Text>
-                        <NoGamePlayed />
-                    </Card>
-                </View>
-            )
-        }
-        return (
-            <View style={{ flex: 1 }}>
+    //     if (chartError) {
+    //         return (
+    //             <View style={{ width: CHART_W, height: CHART_H, justifyContent: "center", alignItems: "center" }}>
+    //                 <Text style={{ color: Color.gray }}>❌ Failed to load chart</Text>
+    //             </View>
+    //         );
+    //     }
 
-                <Card style={{
-                    backgroundColor: Color.white, borderRadius: 16,
-                    overflow: "visible",
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    width: "100%",
-                    height: "100%",
-                    padding: 25
+    //     if (loadingChart || !weekData) {
+    //         return (
+    //             <View style={{ width: CHART_W, height: CHART_H, justifyContent: "center", alignItems: "center" }}>
+    //                 <ActivityIndicator size="large" />
+    //             </View>
+    //         );
+    //     }
 
-                }
-                }>
-                    <Card.Title
-                        title={!("error" in TotalgamesData) && TotalgamesData?.range
-                            ? (() => {
-                                return TotalgamesData.offSet === 0
-                                    ? `This week detail (${weekLabel})`
-                                    : `${weekLabel}`;
-                            })()
-                            : "Week unavailable"
-                        }
-                        subtitle="Total game play per week"
-                        titleStyle={{ color: Color.gray, fontWeight: "bold", fontSize: 25, textAlign: "left" }}
-                        subtitleStyle={{ color: Color.gray, textAlign: "left", fontSize: 20 }}
-                        style={{ justifyContent: "flex-start", width: "100%", paddingBottom: 0 }}
-                    />
+    //     const counts = weekData.counts ?? [0, 0, 0, 0, 0, 0, 0];
+    //     const labels = weekData.labels ?? ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+    //     const weekLabel = weekData.weekLabel ?? "";
+    //     const maxY = Math.max(1, ...counts);
+    //     const noGamePlayed = counts.every((c) => c === 0);
 
-                    <VictoryChart
-                        theme={VictoryTheme.material}
-                        width={CHART_W}
-                        height={CHART_H - 30}
-                        domainPadding={{ x: [30, 40] }}
-                        domain={{ y: [0, maxY + 2] }}
-                    >
-                        <VictoryAxis
-                            dependentAxis
-                            tickFormat={(t) => `${t}`}
-                            style={{
-                                grid: { stroke: "#B5B5B5", strokeDasharray: "0" },
-                                axis: { stroke: "transparent" }
-                            }}
-                        />
+    //     // Calculate weeklySeries and peerSeries for this chart only
+    //     const weeklySeries = labels.map((label, idx) => ({
+    //         x: label,
+    //         y: typeof counts[idx] === "number" ? counts[idx] : 0,
+    //     }));
 
-                        <VictoryAxis
-                            tickValues={labels}
-                            tickFormat={(t) => t}
-                            style={{
-                                tickLabels: { fontSize: 15, fill: Color.gray },
-                                grid: { stroke: "transparent" },
-                                ticks: { stroke: "transparent" }
-                            }}
-                        />
+    //     const peerSeries = dailyAvg?.labels && dailyAvg?.counts
+    //         ? dailyAvg.labels.map((label, idx) => ({
+    //             x: label,
+    //             y: typeof dailyAvg.counts[idx] === "number" && Number.isFinite(dailyAvg.counts[idx]) ? dailyAvg.counts[idx] : 0,
+    //         }))
+    //         : [];
 
-                        <VictoryBar
-                            data={labels.map((label, i) => ({ x: label, y: counts[i] }))}
-                            barWidth={52}
-                            cornerRadius={5}
-                            style={{
-                                data: { fill: Color.blue, borderRadius: 6 },
-                                labels: { fill: "#5B6073", fontSize: 20, fontWeight: 600 },
-                            }}
-                            labels={({ datum }) => (datum.y === 0 ? "" : `${datum.y}`)}
-                            labelComponent={<VictoryLabel dy={-8} textAnchor="middle" />}
-                        />
-                    </VictoryChart>
-                    <Pressable
-                        style={{
-                            position: "absolute",
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                        }}
-                        onLongPress={() => {
-                            console.log("Chart Press Detected");
-                            setModalVisible(true);
-                        }}
-                    />
-                </Card >
-            </View>
+    //     const modalTickValues = Array.from(new Set([
+    //         ...weeklySeries.map(point => String(point.x)),
+    //         ...peerSeries.map(point => String(point.x)),
+    //     ]));
 
-        )
-    }
+    //     if (noGamePlayed) {
+    //         return (
+    //             <View style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%" }}>
+    //                 <Card style={{
+    //                     backgroundColor: Color.white, borderRadius: 16,
+    //                     display: "flex",
+    //                     justifyContent: "center",
+    //                     alignItems: "center",
+    //                     width: "100%",
+    //                     height: "100%",
+    //                 }}>
+    //                     <Card.Title
+    //                         title={weekLabel}
+    //                         titleStyle={{ color: Color.gray, textAlign: "center", fontSize: 20 }}
+    //                         style={{ alignItems: "center", paddingBottom: 0 }}
+    //                     />
+    //                     <Text style={{ color: Color.grey, fontWeight: "bold", fontSize: 20, textAlign: "center" }}>
+    //                         No games played this week!
+    //                     </Text>
+    //                     <NoGamePlayed />
+    //                 </Card>
+    //             </View>
+    //         );
+    //     }
+
+    //     return (
+    //         <View style={{ flex: 1 }}>
+    //             <Card style={{
+    //                 backgroundColor: Color.white, borderRadius: 16,
+    //                 overflow: "visible",
+    //                 display: "flex",
+    //                 justifyContent: "center",
+    //                 alignItems: "center",
+    //                 width: "100%",
+    //                 height: "100%",
+    //                 padding: 25
+    //             }}>
+    //                 <Card.Title
+    //                     title={!("error" in weekData) && weekData?.range
+    //                         ? weekData.offSet === 0
+    //                             ? `This week detail (${weekLabel})`
+    //                             : `${weekLabel}`
+    //                         : "Week unavailable"
+    //                     }
+    //                     titleStyle={{ color: Color.gray, fontWeight: "bold", fontSize: 25, textAlign: "left" }}
+    //                     style={{ width: "100%", paddingBottom: 0 }}
+    //                 />
+    //                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "flex-start", paddingLeft: 20 }}>
+    //                     <View style={{ flexDirection: "row", alignItems: "center" }}>
+    //                         <View style={{ width: 30, height: 4, backgroundColor: Color.blue, marginRight: 8, borderRadius: 2 }} />
+    //                         <Text style={{ marginRight: 20, color: Color.blue, fontWeight: "bold" }}>Your Games Played</Text>
+    //                     </View>
+    //                     <View style={{ flexDirection: "row", alignItems: "center" }}>
+    //                         <View style={{ width: 30, height: 4, backgroundColor: "#71CB86", marginRight: 8, borderRadius: 2 }} />
+    //                         <Text style={{ color: "#71CB86", fontWeight: "bold" }}>Average of Peers</Text>
+    //                     </View>
+    //                 </View>
+    //                 <VictoryChart
+    //                     theme={VictoryTheme.material}
+    //                     width={CHART_W}
+    //                     height={CHART_H - 30}
+    //                     domainPadding={{ x: [30, 40] }}
+    //                     domain={{ y: [0, maxY + 2] }}
+    //                 >
+    //                     <VictoryAxis
+    //                         tickValues={modalTickValues}
+    //                         style={{ tickLabels: { fontSize: 12, fill: Color.gray }, grid: { stroke: "#B5B5B5", strokeDasharray: "0" } }}
+    //                     />
+    //                     <VictoryAxis
+    //                         dependentAxis
+    //                         tickFormat={t => `${t}`}
+    //                         style={{
+    //                             grid: { stroke: "#B5B5B5", strokeDasharray: "0" },
+    //                         }}
+    //                     />
+    //                     <VictoryBar
+    //                         data={weeklySeries}
+    //                         animate={{
+    //                             duration: 1000,
+    //                             onLoad: { duration: 800 },
+    //                             onEnd: () => setBarAnimationDone(true),
+    //                         }}
+    //                         cornerRadius={5}
+    //                         barWidth={25}
+    //                         style={{
+    //                             data: { fill: Color.blue, borderRadius: 6 },
+    //                             labels: { fill: "#5B6073", fontSize: 15, fontWeight: "bold" },
+    //                         }}
+    //                         labels={({ datum }) => (barAnimationDone && datum.y !== 0 ? `${datum.y}` : "")}
+    //                         labelComponent={<VictoryLabel dy={-8} textAnchor="middle" />}
+    //                     />
+    //                     <VictoryLine
+    //                         key="line"
+    //                         data={peerSeries}
+    //                         style={{
+    //                             data: { stroke: "#71CB86", strokeWidth: 4 },
+    //                         }}
+    //                     />
+    //                     <VictoryScatter
+    //                         key="scatter"
+    //                         data={peerSeries}
+    //                         size={5}
+    //                         style={{ data: { fill: "#71CB86" } }}
+    //                         labels={({ datum }) =>
+    //                             typeof datum.y === "number" ? datum.y.toFixed(1) : ""
+    //                         }
+    //                         labelComponent={
+    //                             <VictoryLabel
+    //                                 dy={-10}
+    //                                 style={{ fill: "#71CB86", fontSize: 15, fontWeight: "bold" }}
+    //                             />
+    //                         }
+    //                     />
+    //                 </VictoryChart>
+    //             </Card>
+    //         </View>
+    //     );
+    // };
 
     const onPressPagination = (targetIndex: number) => {
         ref.current?.scrollTo({
@@ -335,11 +316,10 @@ const UserOverviewPerformance = () => {
             animated: true,
         });
     };
-
-    const data = Array.from({ length: MAX_WEEKS }, (_, i) => i);
+    const loading = loadingChart || loadingPeer;
     return (
         <>
-            <View style={{ width: "68%", height: "100%", gap: 23 }}>
+            <View style={{ width: "69%", height: "100%", gap: 15 }}>
                 <View style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", width: "100%" }}>
                     <View style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
                         <Pressable
@@ -374,7 +354,7 @@ const UserOverviewPerformance = () => {
 
                 </View>
 
-                <Carousel
+                {/* <Carousel
                     width={CHART_W + 100}
                     height={CHART_H + 80}
                     data={Array.from({ length: MAX_WEEKS }, (_, i) => i)}
@@ -401,16 +381,103 @@ const UserOverviewPerformance = () => {
                     dotStyle={{ width: 8, height: 8, borderRadius: 999, backgroundColor: "#C7D3D9" }}
                     activeDotStyle={{ width: 8, height: 8, borderRadius: 999, backgroundColor: Color.blue }}
                     onPress={onPressPagination}
-                />
+                /> */}
+                <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 10 }}>
+                    {(["week", "month", "year"] as const).map((p) => (
+                        <TouchableOpacity
+                            key={p}
+                            onPress={() => setPeriod(p)}
+                            style={{
+                                backgroundColor: p === period ? Color.blue : Color.white,
+                                paddingVertical: 8,
+                                paddingHorizontal: 16,
+                                borderRadius: 12,
+                                marginHorizontal: 6,
+                            }}
+                        >
+                            <Text style={{ color: p === period ? Color.white : Color.blue, fontWeight: "bold" }}>
+                                {p.charAt(0).toUpperCase() + p.slice(1)}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                    <View style={{ alignItems: "center" }}>
+                        {loading ? (
+                            <ActivityIndicator size="large" />
+                        ) : isSuccess(TotalgamesData) && isSuccess(peerAvgData) ? (
+                            <Card
+                                style={{
+                                    backgroundColor: Color.white,
+                                    borderRadius: 16,
+                                    padding: 20,
+                                    width: CHART_W,
+                                }}
+                            >
+                                <Card.Title
+                                    title={`Games Played (${period})`}
+                                    titleStyle={{ color: Color.gray, fontWeight: "bold", fontSize: 20 }}
+                                />
+                                <VictoryChart
+                                    theme={VictoryTheme.material}
+                                    width={CHART_W}
+                                    height={CHART_H}
+                                    domainPadding={{ x: [30, 40] }}
+                                    domain={{ y: [0, maxY + 2] }}
+                                >
+                                    <VictoryAxis
+                                        tickValues={TotalgamesData.labels}
+                                        style={{ tickLabels: { fontSize: 12, fill: Color.gray } }}
+                                    />
+                                    <VictoryAxis dependentAxis />
+                                    <VictoryBar
+                                        data={periodSeries}
+                                        barWidth={25}
+                                        cornerRadius={5}
+                                        style={{
+                                            data: { fill: Color.blue },
+                                            labels: { fill: Color.gray, fontSize: 13, fontWeight: "bold" },
+                                        }}
+                                        labels={({ datum }) => (datum.y !== 0 ? `${datum.y}` : "")}
+                                        labelComponent={<VictoryLabel dy={-8} textAnchor="middle" />}
+                                    />
+                                    <VictoryLine
+                                        data={peerSeries}
+                                        style={{ data: { stroke: Color.green, strokeWidth: 3 } }}
+                                    />
+                                    <VictoryScatter
+                                        data={peerSeries}
+                                        size={5}
+                                        style={{ data: { fill: Color.green } }}
+                                        labels={({ datum }) => datum.y.toFixed(1)}
+                                        labelComponent={<VictoryLabel dy={-10} style={{ fill: Color.green, fontSize: 12 }} />}
+                                    />
+                                </VictoryChart>
+                            </Card>
+                        ) : (
+                            <Text style={{ color: Color.gray }}>No chart data available</Text>
+                        )}
+                    </View>
+                </View>
+
                 <View
                     style={{
                         width: "100%",
-                        height: "15%",
+                        height: "20%",
                         alignSelf: "center",
-                        marginTop: 5,
                     }}
                 >
-                    <ScrollView
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 25 }}>
+                        <Text style={{ fontSize: Typography.header20.fontSize, fontWeight: Typography.header20.fontWeight, color: Color.gray }}>Overview statistcs for this week</Text>
+                        <Button onPress={() => {
+                            setModalVisible(true);
+                        }}
+                            rippleColor={"transparent"}
+                        >
+                            <Text style={{ color: Color.blue }} >
+                                More details
+                            </Text>
+                        </Button>
+                    </View>
+                    {/* <ScrollView
                         horizontal
                         showsHorizontalScrollIndicator={false}
                         contentContainerStyle={{
@@ -419,13 +486,13 @@ const UserOverviewPerformance = () => {
                         }}
                     >
                         {statCards.map((card) => (
-                            <View key={card.key} style={{ marginHorizontal: GAP / 2 }}>
+                            <View key={card.key} style={{ height: "100%" }}>
                                 {card.content}
                             </View>
                         ))}
-                    </ScrollView>
-                </View>
-                <View style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", height: "70%" }}>
+                    </ScrollView> */}
+                </View >
+                <View style={{ display: "flex", flexDirection: "row", justifyContent: "space-around", height: "70%" }}>
                     <Card style={{ width: "45%", height: "20%", backgroundColor: "#F2F8F9", padding: 10, justifyContent: "center", alignItems: "center" }}>
                         <View style={{ display: "flex", flexDirection: "row", justifyContent: "center", alignItems: "center" }}>
                             <Pencil width={50} height={50} />
@@ -444,7 +511,7 @@ const UserOverviewPerformance = () => {
                     <Card style={{ width: "45%", height: "20%", backgroundColor: "#F2F8F9", padding: 10, justifyContent: "center", alignItems: "center" }}>
                         <View style={{ display: "flex", flexDirection: "row", justifyContent: "center", alignItems: "center" }}>
                             <Clock width={50} height={50} />
-                            <View style={{ display: "flex", flexDirection: "column" }}>
+                            <View style={{ display: "flex", flexDirection: "column", }}>
                                 <Text style={{ fontWeight: "bold" }}>
                                     Total Playtime
                                 </Text>
@@ -459,7 +526,7 @@ const UserOverviewPerformance = () => {
 
                 </View >
             </View >
-            <Portal>
+            <Portal >
                 <Modal
                     visible={modalVisible}
                     onDismiss={() => setModalVisible(false)}
@@ -467,14 +534,15 @@ const UserOverviewPerformance = () => {
                         backgroundColor: Color.white,
                         margin: 20,
                         borderRadius: 16,
+                        alignSelf: "center",
                         alignItems: "center",
                         justifyContent: "flex-start",
                         padding: 50,
-                        height: "80%",
+                        height: "90%",
+                        width: "70%"
                     }}
                 >
-
-                    {loadingDaily ? (
+                    {/* {loadingDaily ? (
                         <ActivityIndicator />
                     ) : dailyData ? (
                         <>
@@ -497,41 +565,19 @@ const UserOverviewPerformance = () => {
                             <View style={{
                                 width: "20%", marginTop: 10, marginBottom: 20
                             }}>
-                                <Dropdown
-                                    data={graphOptions}
-                                    labelField="label"
-                                    valueField="value"
-                                    value={graphType}
-                                    placeholder="Select graph type"
-                                    onChange={(item) => setGraphType(item.value)}
-                                    style={{
-                                        height: 40,
-                                        borderColor: "#ccc",
-                                        borderWidth: 1,
-                                        borderRadius: 8,
-                                        paddingHorizontal: 10,
-                                        backgroundColor: "white",
-                                    }}
-                                    placeholderStyle={{ color: Color.gray }}
-                                    selectedTextStyle={{ color: Color.gray, fontWeight: "bold" }}
-                                />
                             </View>
                             <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
-                                {(graphType === "games" || graphType === "both") && (
 
-                                    <View style={{ flexDirection: "row", alignItems: "center" }}>
-                                        <View style={{ width: 30, height: 4, backgroundColor: Color.blue, marginRight: 8, borderRadius: 2 }} />
-                                        <Text style={{ marginRight: 20, color: Color.blue, fontWeight: "bold" }}>Your Games Played</Text>
-                                    </View>
-                                )}
-                                {(graphType === "peerAvg" || graphType === "both") && [
+                                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                                    <View style={{ width: 30, height: 4, backgroundColor: Color.blue, marginRight: 8, borderRadius: 2 }} />
+                                    <Text style={{ marginRight: 20, color: Color.blue, fontWeight: "bold" }}>Your Games Played</Text>
+                                </View>
 
-                                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                                <View style={{ flexDirection: "row", alignItems: "center" }}>
 
-                                        <View style={{ width: 30, height: 4, backgroundColor: "#FFA500", marginRight: 8, borderRadius: 2 }} />
-                                        <Text style={{ color: "#FFA500", fontWeight: "bold" }}>Average of Peers</Text>
-                                    </View>
-                                ]}
+                                    <View style={{ width: 30, height: 4, backgroundColor: "#FFA500", marginRight: 8, borderRadius: 2 }} />
+                                    <Text style={{ color: "#FFA500", fontWeight: "bold" }}>Average of Peers</Text>
+                                </View>
                             </View>
 
                             {
@@ -556,48 +602,44 @@ const UserOverviewPerformance = () => {
                                                         grid: { stroke: "#B5B5B5", strokeDasharray: "0" },
                                                     }}
                                                 />
-                                                {(graphType === "games" || graphType === "both") && (
-                                                    <VictoryBar
-                                                        data={weeklySeries}
-                                                        animate={{
-                                                            duration: 1000,
-                                                            onLoad: { duration: 800 },
-                                                            onEnd: () => setBarAnimationDone(true),
-                                                        }}
-                                                        cornerRadius={5}
-                                                        barWidth={25}
-                                                        style={{
-                                                            data: { fill: Color.blue, borderRadius: 6 },
-                                                            labels: { fill: "#5B6073", fontSize: 15, fontWeight: "bold" },
-                                                        }}
-                                                        labels={({ datum }) => (barAnimationDone && datum.y !== 0 ? `${datum.y}` : "")}
-                                                        labelComponent={<VictoryLabel dy={-8} textAnchor="middle" />}
-                                                    />
-                                                )}
-                                                {(graphType === "peerAvg" || graphType === "both") && barAnimationDone && [
-                                                    <VictoryLine
-                                                        key="line"
-                                                        data={peerSeries}
-                                                        style={{
-                                                            data: { stroke: "#f8a958", strokeWidth: 4 },
-                                                        }}
-                                                    />,
-                                                    <VictoryScatter
-                                                        key="scatter"
-                                                        data={peerSeries}
-                                                        size={5}
-                                                        style={{ data: { fill: "#f8a958" } }}
-                                                        labels={({ datum }) =>
-                                                            typeof datum.y === "number" ? datum.y.toFixed(1) : ""
-                                                        }
-                                                        labelComponent={
-                                                            <VictoryLabel
-                                                                dy={-10}
-                                                                style={{ fill: "#f8a958", fontSize: 15, fontWeight: "bold" }}
-                                                            />
-                                                        }
-                                                    />,
-                                                ]}
+                                                <VictoryBar
+                                                    data={weeklySeries}
+                                                    animate={{
+                                                        duration: 1000,
+                                                        onLoad: { duration: 800 },
+                                                        onEnd: () => setBarAnimationDone(true),
+                                                    }}
+                                                    cornerRadius={5}
+                                                    barWidth={25}
+                                                    style={{
+                                                        data: { fill: Color.blue, borderRadius: 6 },
+                                                        labels: { fill: "#5B6073", fontSize: 15, fontWeight: "bold" },
+                                                    }}
+                                                    labels={({ datum }) => (barAnimationDone && datum.y !== 0 ? `${datum.y}` : "")}
+                                                    labelComponent={<VictoryLabel dy={-8} textAnchor="middle" />}
+                                                />
+                                                <VictoryLine
+                                                    key="line"
+                                                    data={peerSeries}
+                                                    style={{
+                                                        data: { stroke: "#f8a958", strokeWidth: 4 },
+                                                    }}
+                                                />,
+                                                <VictoryScatter
+                                                    key="scatter"
+                                                    data={peerSeries}
+                                                    size={5}
+                                                    style={{ data: { fill: "#f8a958" } }}
+                                                    labels={({ datum }) =>
+                                                        typeof datum.y === "number" ? datum.y.toFixed(1) : ""
+                                                    }
+                                                    labelComponent={
+                                                        <VictoryLabel
+                                                            dy={-10}
+                                                            style={{ fill: "#f8a958", fontSize: 15, fontWeight: "bold" }}
+                                                        />
+                                                    }
+                                                />,
                                             </VictoryChart>)
                                     } catch (e) {
                                         console.log("Chart error:", e);
@@ -605,8 +647,40 @@ const UserOverviewPerformance = () => {
                                     }
                                 })()
                             }
-
                         </>
+                    ) : (
+                        <Text>No data available</Text>
+                    )
+                    }
+                    <View>
+
+                    </View> */}
+                    {loading ? (
+                        <ActivityIndicator />
+                    ) : isSuccess(TotalgamesData) && isSuccess(peerAvgData) ? (
+                        <View style={{ width: "95%" }}>
+                            <View style={{ flexDirection: "row" }}>
+                                <View style={{ flexDirection: "column", alignItems: "center", width: "100%" }}>
+                                    <Text style={{ fontWeight: "bold", fontSize: 20, color: Color.gray, marginBottom: 5 }}>
+                                        Overview Statistics
+                                    </Text>
+                                    <Text style={{ fontWeight: "bold", fontSize: 16, color: Color.gray }}>
+                                        {period.charAt(0).toUpperCase() + period.slice(1)}:{" "}
+                                        {new Date(TotalgamesData.range.start).toLocaleDateString()} -{" "}
+                                        {new Date(TotalgamesData.range.end).toLocaleDateString()}
+                                    </Text>
+                                </View>
+                                <IconButton
+                                    icon={(p) => <CloseIcon width={18} height={18} fillColor={Color.gray} {...p} />}
+                                    onPress={() => setModalVisible(false)}
+                                    style={{ margin: 0 }}
+                                    accessibilityLabel="Close dialog"
+                                />
+                            </View>
+                            <ScrollView horizontal={false}>
+                            </ScrollView>
+
+                        </View>
                     ) : (
                         <Text>No data available</Text>
                     )

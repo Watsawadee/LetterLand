@@ -6,8 +6,8 @@ import { Color } from "@/theme/Color";
 import { Typography } from "@/theme/Font";
 import FontHeaderBG from "../assets/backgroundTheme/FontHeaderBG";
 
-const MIN = 30;
-const MAX = 40;
+const MIN = 25;
+const MAX = 50;
 const STEP = 1;
 
 export default function FontSizeModal({

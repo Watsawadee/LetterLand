@@ -97,7 +97,7 @@ export const getGameData = async (gameId: number) => {
 
 export const getAllWordFound = async (gameId: number) => {
   try {
-    const wordFound = prisma.wordFound.findMany({
+    const wordFound = await prisma.wordFound.findMany({
       where: { gameId },
       include: {
         question: true,
@@ -326,6 +326,7 @@ export async function getGameForCompletion(gameId: number) {
       isFinished: true,
       isHintUsed: true,
       timer: true,
+      gameType: true,
       gameTemplateId: true,
       startedAt: true,
       finishedAt: true,
@@ -341,9 +342,10 @@ async function hasFinishedBefore(opts: {
   userId: number;
   gameTemplateId: number;
   timer: number | null;
+  gameType?: "CROSSWORD_SEARCH" | "WORD_SEARCH" | null;
   excludeGameId?: number;
 }): Promise<boolean> {
-  const { userId, gameTemplateId, timer, excludeGameId } = opts;
+  const { userId, gameTemplateId, timer,gameType, excludeGameId } = opts;
 
   const found = await prisma.game.findFirst({
     where: {
@@ -351,6 +353,7 @@ async function hasFinishedBefore(opts: {
       gameTemplateId,
       isFinished: true,
       timer: timer === null ? null : timer,
+      ...(gameType ? { gameType } : {}),
       ...(excludeGameId ? { NOT: { id: excludeGameId } } : {}),
     },
     select: { id: true },
@@ -485,6 +488,7 @@ export async function completeGame(
         userId,
         gameTemplateId: game.gameTemplateId!,
         timer: game.timer ?? null,
+        gameType: game.gameType ?? null,
         excludeGameId: gameId,
       });
 
