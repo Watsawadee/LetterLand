@@ -1,13 +1,14 @@
 import prisma from "../configs/db";
 import { Request, Response } from "express";
 import { AuthenticatedRequest } from "../types/authenticatedRequest";
-import { startOfWeek, endOfWeek, eachDayOfInterval, format, addWeeks } from "date-fns";
+import { startOfWeek, endOfWeek, eachDayOfInterval, format, addWeeks, startOfDay, isSameDay, addDays } from "date-fns";
 import {
   TotalPlaytimeResponseSchema,
   WordsLearnedResponseSchema,
   GamesPlayedPerPeriodResponseSchema,
   AverageGamesByLevelPeerPeriodResponseSchemaOrErrorSchema,
   AverageGamesByLevelPeerPeriodResponseSchema,
+  UserProgressResponseSchema,
 } from "../types/dashboard.schema";
 import {
   TotalPlaytimeOrError, WordsLearnedOrError,
@@ -402,3 +403,206 @@ export const getAverageGamesByLevelPerPeriod = async (
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+
+export const getUserGameStreak = async (req: AuthenticatedRequest, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  try {
+
+    // Get all finished games for this user, sorted by startedAt
+    const games = await prisma.game.findMany({
+      where: { userId, isFinished: true },
+      orderBy: { startedAt: "asc" },
+      select: { startedAt: true, gameTemplate: { select: { difficulty: true } } },
+    });
+    if (games.length === 0) {
+      res.json({ allTime: 0, currentLevel: 0, highestLevelStreak: 0 });
+      return;
+    }
+    function getMaxStreak(dates: Date[]) {
+      if (dates.length === 0) return 0;
+      let maxStreak = 1, curStreak = 1;
+      for (let i = 1; i < dates.length; i++) {
+        const prev = startOfDay(dates[i - 1]);
+        const curr = startOfDay(dates[i]);
+        if (isSameDay(addDays(prev, 1), curr)) {
+          curStreak++;
+        } else if (!isSameDay(prev, curr)) {
+          curStreak = 1;
+        }
+        if (curStreak > maxStreak) maxStreak = curStreak;
+      }
+      return maxStreak;
+    }
+
+    // All-time streak
+    const allDates = Array.from(new Set(games.map(g => startOfDay(g.startedAt))));
+    allDates.sort((a, b) => a.getTime() - b.getTime());
+    const allTime = getMaxStreak(allDates);
+
+
+    // Current level streak
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { englishLevel: true } });
+    const currentLevel = user?.englishLevel;
+    const levelDates = Array.from(
+      new Set(
+        games.filter(g => g.gameTemplate.difficulty === currentLevel).map(g => startOfDay(g.startedAt))
+      )
+    );
+    levelDates.sort((a, b) => a.getTime() - b.getTime());
+    const currentLevelStreak = getMaxStreak(levelDates);
+
+
+
+
+
+    const usersAtLevel = await prisma.user.findMany({
+      where: { englishLevel: currentLevel },
+      select: { id: true },
+    });
+    let highestLevelStreak = 0;
+    for (const u of usersAtLevel) {
+      const userGames = await prisma.game.findMany({
+        where: { userId: u.id, isFinished: true },
+        orderBy: { startedAt: "asc" },
+        select: { startedAt: true, gameTemplate: { select: { difficulty: true } } },
+      });
+      const userDates = Array.from(
+        new Set(
+          userGames.filter(g => g.gameTemplate.difficulty === currentLevel).map(g => startOfDay(g.startedAt))
+        )
+      );
+      userDates.sort((a, b) => a.getTime() - b.getTime());
+      const streak = getMaxStreak(userDates);
+      if (streak > highestLevelStreak) highestLevelStreak = streak;
+    }
+
+    res.json({
+      allTime: allTime,
+      currentLevel: currentLevelStreak,
+      highestStreakInThisLevel: highestLevelStreak,
+    });
+  }
+  catch (error: any) {
+    res.status(500).json({ message: "Internal Server Error" })
+  }
+}
+
+
+export const getUserProgress = async (req: AuthenticatedRequest, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { englishLevel: true, total_playtime: true } });
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    // Cumulative thresholds in hours
+    const LEVEL_THRESHOLDS: Record<string, number> = {
+      A1: 200,
+      A2: 400,
+      B1: 600,
+      B2: 800,
+      C1: 1000,
+      C2: 1200,
+    };
+
+    const levels = ["A1", "A2", "B1", "B2", "C1", "C2"];
+    const currentLevel = user.englishLevel;
+    const currentIdx = levels.indexOf(currentLevel);
+    const nextLevel = levels[Math.min(currentIdx + 1, levels.length - 1)];
+    const requiredPlaytimeHours = LEVEL_THRESHOLDS[nextLevel];
+    const prevThreshold = currentIdx > 0 ? LEVEL_THRESHOLDS[levels[currentIdx - 1]] : 0;
+    const totalPlaytimeHours = user.total_playtime / 3600;
+
+    const playtimeForCurrentLevel = Math.max(totalPlaytimeHours - prevThreshold, 0);
+    const hoursLeft = Math.max(requiredPlaytimeHours - totalPlaytimeHours, 0);
+
+    const progress = Math.min((playtimeForCurrentLevel / 200) * 100, 100);
+    const filled = Number(progress.toFixed(2));
+    const remaining = Number(Math.max(0, Math.min(100, 100 - filled)).toFixed(2));
+
+    //Check hint used last five game
+    const lastFiveGames = await prisma.game.findMany({
+      where: { userId, isFinished: true },
+      orderBy: { finishedAt: "desc" },
+      take: 5,
+      select: { isHintUsed: true },
+    });
+    const noHintsUsedRecently = lastFiveGames.length === 5 && lastFiveGames.every(g => !g.isHintUsed);
+
+    //Enough playtime
+    const hasEnoughPlaytime = playtimeForCurrentLevel >= 200;
+
+    //Play current week > prev week
+    const now = new Date();
+    const startCurrentWeek = startOfWeek(now, { weekStartsOn: 1 });
+    const endCurrentWeek = endOfWeek(now, { weekStartsOn: 1 });
+    const startPrevWeek = addDays(startCurrentWeek, -7);
+    const endPrevWeek = addDays(endCurrentWeek, -7);
+
+    const currentWeekGames = await prisma.game.count({
+      where: {
+        userId,
+        isFinished: true,
+        startedAt: { gte: startCurrentWeek, lte: endCurrentWeek },
+      },
+    });
+
+    const prevWeekGames = await prisma.game.count({
+      where: {
+        userId,
+        isFinished: true,
+        startedAt: { gte: startPrevWeek, lte: endPrevWeek },
+      },
+    });
+    const hasImprovedPerformance = currentWeekGames > prevWeekGames;
+
+    const summary: string[] = [];
+    if (!hasEnoughPlaytime) {
+      if (currentLevel === "C2") {
+        summary.push(`You need ${Math.ceil(200 - playtimeForCurrentLevel)} more hour(s) to complete the highest level of Letterland.`);
+      } else {
+        summary.push(`You need ${Math.ceil(200 - playtimeForCurrentLevel)} more hour(s) of playtime to reach ${nextLevel}.`);
+      }
+    }
+    if (!noHintsUsedRecently) {
+      summary.push("You must not use hints in your last 5 games.");
+    }
+    if (!hasImprovedPerformance) {
+      summary.push("Your performance this week must exceed last week.");
+    }
+    if (summary.length === 0) {
+      summary.push(`You are ready to advance to ${nextLevel}!`);
+    }
+    const response = UserProgressResponseSchema.parse({
+      englishLevel: currentLevel,
+      progress: filled,
+      criteria: {
+        hasImprovedPerformance,
+        noHintsUsedRecently,
+        hasEnoughPlaytime,
+      },
+      summary,
+      donut: {
+        filled,
+        remaining,
+      },
+    });
+
+    res.status(200).json(response);
+  }
+  catch (error: any) {
+    console.error("getUserProgress error:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+}
