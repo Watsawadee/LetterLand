@@ -7,7 +7,6 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  TouchableOpacity,
   Pressable,
   StyleSheet,
   Platform,
@@ -19,7 +18,7 @@ import { Portal, Dialog, IconButton } from "react-native-paper";
 
 import { Typography } from "@/theme/Font";
 import { Color } from "@/theme/Color";
-import { cardStyles as card } from "@/theme/CardStyles";
+// NOTE: old cardStyles import removed because we now use the MyGamesRow-style card UI
 
 import { getCardBGImage } from "@/services/mygameService";
 import {
@@ -32,11 +31,11 @@ import { PublicGameItem, PublicGameType } from "@/types/publicgametypes";
 
 import GameTypeCard from "@/components/GameTypeModal";
 import InfoIcon from "@/assets/icon/infoIcon";
-import GameTypeBackground from "@/assets/backgroundTheme/GameTypeBackground";
 import CloseIcon from "@/assets/icon/CloseIcon";
 
 /* ---------- use your existing profile service (returns CEFR level) ---------- */
 import { getUserProfile } from "@/services/getUserProfileService";
+import GameTypeDetails from "./GameTypeDetails";
 
 /* ------------------ Timer pills (UiTimer = seconds-as-strings) ------------------ */
 export type UiTimer = "none" | "60" | "180" | "300";
@@ -59,7 +58,8 @@ function TimerChips({
         {TIMER_OPTIONS.map((opt, i) => {
           const selected = value === opt;
           const mins = opt === "none" ? null : Number(opt) / 60;
-          const label = mins === null ? "None" : `${mins} min${mins === 1 ? "" : "s"}`;
+          const label =
+            mins === null ? "None" : `${mins} min${mins === 1 ? "" : "s"}`;
           return (
             <Pressable
               key={opt}
@@ -70,7 +70,9 @@ function TimerChips({
                 i !== TIMER_OPTIONS.length - 1 && { marginRight: 12 },
               ]}
             >
-              <Text style={[t.chipText, selected && t.chipTextSelected]}>{label}</Text>
+              <Text style={[t.chipText, selected && t.chipTextSelected]}>
+                {label}
+              </Text>
             </Pressable>
           );
         })}
@@ -113,7 +115,7 @@ const LEVEL_COLORS: Record<string, string> = {
   C2: "#AE7EDF",
 };
 
-/* ------------------ Grid Card ------------------ */
+/* ------------------ Grid Card (MyGamesRow-style, no subtitle) ------------------ */
 type GridCardProps = {
   id: number;
   image: string | null | undefined;
@@ -123,57 +125,154 @@ type GridCardProps = {
   onPress?: () => void;
 };
 
+const CARD_RADIUS = 18;
+const CARD_WIDTH_GRID = 200;
+const IMAGE_HEIGHT_GRID = 110;
+
 const GridCard: React.FC<GridCardProps> = ({
   image,
   title,
   level,
   locked = false,
   onPress,
-}) => (
-  <TouchableOpacity
-    style={[card.card, locked && { opacity: 0.6 }]}
-    onPress={() => {
-      if (locked) return;
-      onPress?.();
-    }}
-    activeOpacity={locked ? 1 : 0.7}
-  >
-    {!!image && <Image source={{ uri: image }} style={card.image} />}
-    {locked && (
-      <View style={lockStyles.overlay}>
-        <Text style={lockStyles.lockEmoji}>🔒</Text>
-        <Text style={lockStyles.lockText}>Locked</Text>
-      </View>
-    )}
-    <View style={card.content}>
-      <View style={card.row}>
-        <Text style={card.title}>{title}</Text>
-        {!!level && (
-          <Text
-            style={[
-              card.level,
-              {
-                backgroundColor: LEVEL_COLORS[level] || "#F3F4F6",
-                opacity: locked ? 0.6 : 1,
-              },
-            ]}
-          >
-            {level}
-          </Text>
+}) => {
+  const W = CARD_WIDTH_GRID;
+  const H = IMAGE_HEIGHT_GRID;
+  const levelBg =
+    level && LEVEL_COLORS[level] ? LEVEL_COLORS[level] : "#EAEAEA";
+
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        pg.card,
+        { width: W, borderRadius: CARD_RADIUS },
+        locked && { opacity: 0.75 },
+        !locked && pressed ? { opacity: 0.9 } : null,
+      ]}
+      onPress={() => {
+        if (locked) return;
+        onPress?.();
+      }}
+    >
+      {/* Top image area */}
+      <View
+        style={[
+          pg.imageWrap,
+          {
+            borderTopLeftRadius: CARD_RADIUS,
+            borderTopRightRadius: CARD_RADIUS,
+          },
+        ]}
+      >
+        {image ? (
+          <Image
+            source={{ uri: image }}
+            style={{ width: "100%", height: H }}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={[{ width: "100%", height: H }, pg.imagePlaceholder]} />
+        )}
+
+        {locked && (
+          <View style={pg.lockOverlay}>
+            <Text style={pg.lockEmoji}>🔒</Text>
+            <Text style={pg.lockText}>Locked</Text>
+          </View>
         )}
       </View>
-    </View>
-  </TouchableOpacity>
-);
 
-const lockStyles = StyleSheet.create({
-  overlay: {
+      {/* Bottom info panel */}
+      <View
+        style={[
+          pg.bottomPanel,
+          {
+            borderBottomLeftRadius: CARD_RADIUS,
+            borderBottomRightRadius: CARD_RADIUS,
+          },
+        ]}
+      >
+        <View style={pg.titleRow}>
+          <Text numberOfLines={1} style={pg.title}>
+            {title}
+          </Text>
+          {!!level && (
+            <View style={[pg.levelPill, { backgroundColor: levelBg }]}>
+              <Text style={pg.levelText}>{level}</Text>
+            </View>
+          )}
+        </View>
+        {/* No subtitle */}
+      </View>
+    </Pressable>
+  );
+};
+
+const pg = StyleSheet.create({
+  card: {
+    backgroundColor: "#ffffff",
+    // marginRight: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 6 },
+      },
+      android: {
+        elevation: 4,
+      },
+      default: {
+        shadowColor: "rgba(0,0,0,0.10)",
+        shadowOpacity: 1,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 6 },
+      },
+    }),
+    marginBottom: 14,
+  },
+  imageWrap: {
+    overflow: "hidden",
+    position: "relative",
+  },
+  imagePlaceholder: {
+    backgroundColor: "#E8EEF5",
+  },
+  bottomPanel: {
+    backgroundColor: "#F7F9FB",
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 12,
+    minHeight: 52,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 6,
+  },
+  title: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#2A2A2A",
+  },
+  levelPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 13,
+  },
+  levelText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#5A5270",
+  },
+  lockOverlay: {
     position: "absolute",
     inset: 0 as any,
     backgroundColor: "rgba(0,0,0,0.35)",
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 16,
   },
   lockEmoji: { fontSize: 28, marginBottom: 4, color: "white" },
   lockText: { color: "white", fontWeight: "800" },
@@ -200,12 +299,15 @@ export default function PublicGames({
   const [items, setItems] = useState<PublicGameItem[]>([]);
 
   /* ---------- user CEFR level ---------- */
-  const [userLevel, setUserLevel] =
-    useState<"A1" | "A2" | "B1" | "B2" | "C1" | "C2" | null>(null);
+  const [userLevel, setUserLevel] = useState<
+    "A1" | "A2" | "B1" | "B2" | "C1" | "C2" | null
+  >(null);
   const [loadingUser, setLoadingUser] = useState(true);
 
   // selection/time flow
-  const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(
+    null
+  );
   const [selectedType, setSelectedType] = useState<PublicGameType | null>(null);
   const [timer, setTimer] = useState<UiTimer>("none"); // "none" | "60" | "180" | "300"
 
@@ -220,8 +322,16 @@ export default function PublicGames({
 
   const gameOptions = useMemo(
     () => [
-      { type: "WORD_SEARCH" as const, question: "Q. Cat", label: "Word search" },
-      { type: "CROSSWORD_SEARCH" as const, question: "Q. What is mammal?", label: "Crossword search" },
+      {
+        type: "CROSSWORD_SEARCH" as const,
+        question: "Q. What is mammal?",
+        label: "Crossword search",
+      },
+      {
+        type: "WORD_SEARCH" as const,
+        question: "Q. Cat",
+        label: "Word search",
+      },
     ],
     []
   );
@@ -240,13 +350,21 @@ export default function PublicGames({
 
       if (typeof lvl === "string") {
         const valid = ["A1", "A2", "B1", "B2", "C1", "C2"] as const;
-        setUserLevel(valid.includes(lvl as any) ? (lvl as typeof valid[number]) : null);
+        setUserLevel(
+          valid.includes(lvl as any) ? (lvl as (typeof valid)[number]) : null
+        );
       } else {
         setUserLevel(null);
       }
     } catch (err: any) {
-      console.error("[PublicGames] load user failed:", err?.response?.data || err?.message || err);
-      Alert.alert("Couldn’t load your profile", "Some games may not be correctly locked.");
+      console.error(
+        "[PublicGames] load user failed:",
+        err?.response?.data || err?.message || err
+      );
+      Alert.alert(
+        "Couldn’t load your profile",
+        "Some games may not be correctly locked."
+      );
       setUserLevel(null);
     } finally {
       setLoadingUser(false);
@@ -273,8 +391,14 @@ export default function PublicGames({
       );
       setItems(withImages);
     } catch (err: any) {
-      console.error("[PublicGames] load failed:", err?.response?.data || err?.message || err);
-      Alert.alert("Couldn’t load public games", err?.response?.data?.error ?? "Please try again.");
+      console.error(
+        "[PublicGames] load failed:",
+        err?.response?.data || err?.message || err
+      );
+      Alert.alert(
+        "Couldn’t load public games",
+        err?.response?.data?.error ?? "Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -290,7 +414,8 @@ export default function PublicGames({
 
   /* ---------- filter by whitelistIds when provided ---------- */
   const visibleItems = useMemo(
-    () => (whitelistIds ? items.filter((i) => whitelistIds.includes(i.id)) : items),
+    () =>
+      whitelistIds ? items.filter((i) => whitelistIds.includes(i.id)) : items,
     [items, whitelistIds]
   );
 
@@ -300,7 +425,9 @@ export default function PublicGames({
 
     const mapped = visibleItems.map((g) => {
       const gRank = rank(g.difficulty);
-      const locked = userRank !== Number.POSITIVE_INFINITY ? gRank > userRank : false;
+      // Unlocked if game level <= user level
+      const locked =
+        userRank !== Number.POSITIVE_INFINITY ? gRank > userRank : false;
 
       let priority = 2;
       if (!locked) {
@@ -366,7 +493,10 @@ export default function PublicGames({
         });
         if (active) setAlreadyPlayed(resp.alreadyPlayed);
       } catch (e: any) {
-        console.error("[checkPublicGamePlayed] failed:", e?.response?.data || e?.message || e);
+        console.error(
+          "[checkPublicGamePlayed] failed:",
+          e?.response?.data || e?.message || e
+        );
         if (active) setAlreadyPlayed(false);
       } finally {
         if (active) setCheckingReplay(false);
@@ -403,10 +533,19 @@ export default function PublicGames({
       setSelectedType(null);
       setSelectedTemplateId(null);
 
-      router.push({ pathname: "/GameScreen", params: { gameId: String(started.id) } });
+      router.push({
+        pathname: "/GameScreen",
+        params: { gameId: String(started.id) },
+      });
     } catch (err: any) {
-      console.error("[PublicGames] start failed:", err?.response?.data || err?.message || err);
-      Alert.alert("Couldn’t start game", err?.response?.data?.error ?? "Please try again.");
+      console.error(
+        "[PublicGames] start failed:",
+        err?.response?.data || err?.message || err
+      );
+      Alert.alert(
+        "Couldn’t start game",
+        err?.response?.data?.error ?? "Please try again."
+      );
     }
   }, [router, selectedTemplateId, selectedType, timer]);
 
@@ -426,7 +565,7 @@ export default function PublicGames({
       ) : cards.length > 0 ? (
         <FlatList<GridCardProps>
           style={{ flex: 1 }}
-          contentContainerStyle={{ paddingBottom: 16 }}
+          contentContainerStyle={{ paddingBottom: 16, paddingHorizontal: 12 }}
           data={cards}
           numColumns={3}
           keyExtractor={(item) => String(item.id)}
@@ -437,7 +576,11 @@ export default function PublicGames({
             />
           )}
           showsVerticalScrollIndicator
-          columnWrapperStyle={{ justifyContent: "space-between", marginBottom: 16 }}
+          columnWrapperStyle={{
+            justifyContent: "flex-start",
+            gap: 56,
+            marginBottom: 16,
+          }}
         />
       ) : (
         <Text style={{ color: "gray", textAlign: "center", marginTop: 10 }}>
@@ -452,20 +595,12 @@ export default function PublicGames({
           visible={comboDialogVisible && !infoDialogVisible}
           dismissable={!infoDialogVisible}
           onDismiss={() => setComboDialogVisible(false)}
-          style={[
-            {
-              backgroundColor: Color.white,
-              alignSelf: "center",
-              borderRadius: 20,
-              shadowColor: "#000",
-              shadowOpacity: 0.15,
-              shadowOffset: { width: 0, height: 2 },
-              shadowRadius: 10,
-            },
-            // shorter height than before so Timer fits
-            isTablet ? { width: "70%", height: "58%" } : { width: "92%", height: "95%" },
-
-          ]}
+          style={{
+            backgroundColor: Color.white,
+            width: 650,
+            alignSelf: "center",
+            minHeight: 550,
+          }}
         >
           {/* Title Row */}
           <View style={s.titleRow}>
@@ -474,7 +609,9 @@ export default function PublicGames({
                 Game Types Selection
               </Dialog.Title>
               <IconButton
-                icon={(p) => <InfoIcon size={16} color={p.color ?? Color.gray} />}
+                icon={(p) => (
+                  <InfoIcon size={16} color={p.color ?? Color.gray} />
+                )}
                 size={16}
                 onPress={() => setInfoDialogVisible(true)}
                 iconColor={Color.gray}
@@ -485,7 +622,12 @@ export default function PublicGames({
             </View>
             <IconButton
               icon={(p) => (
-                <CloseIcon width={18} height={18} fillColor={Color.gray} {...p} />
+                <CloseIcon
+                  width={18}
+                  height={18}
+                  fillColor={Color.gray}
+                  {...p}
+                />
               )}
               onPress={() => setComboDialogVisible(false)}
               style={{ margin: 0 }}
@@ -494,109 +636,54 @@ export default function PublicGames({
           </View>
 
           <Dialog.Content>
-            <ScrollView
-              contentContainerStyle={{ paddingBottom: 40 }}
-              keyboardShouldPersistTaps="handled"
-            >
-              {/* === Game type cards (shorter) === */}
-              <View style={s.typeRow}>
-                {gameOptions.map(({ type, question, label }, idx) => (
-                  <View
-                    key={type}
-                    style={[
-                      { width: CARD_W },
-                      idx === 0 ? { marginRight: 18 } : null,
-                    ]}
-                  >
-                    <GameTypeCard
-                      style={{ height: 170, paddingVertical: 8 }}  // SHORTER CARD
-                      question={question}
-                      gameType={label}
-                      selected={selectedType === type}
-                      onPress={() => setSelectedType(type)}
-                    />
-                  </View>
-                ))}
+            {/* Type Cards */}
+            <View style={s.typeRow}>
+              {gameOptions.map(({ type, question, label }) => (
+                <GameTypeCard
+                  key={type}
+                  question={question}
+                  gameType={label}
+                  selected={selectedType === type}
+                  onPress={() => setSelectedType(type)}
+                />
+              ))}
+            </View>
+
+            {/* Timer Pills (UiTimer seconds, displayed as minutes) */}
+            <TimerChips value={timer} onChange={setTimer} />
+
+            alreadyPlayed ? (
+              <View style={s.inlineBadge}>
+                <Text style={s.inlineBadgeText}>
+                  You’ve played this setup before. Replays don’t earn coins
+                  (extra word still gives 1).
+                </Text>
               </View>
 
-              {/* === Timer section === */}
-              <View style={{ marginTop: 8 }}>
-                <TimerChips value={timer} onChange={setTimer} />
-              </View>
-
-              {alreadyPlayed ? (
-                <View style={s.inlineBadge}>
-                  <Text style={s.inlineBadgeText}>
-                    You’ve played this setup before. Replays don’t earn coins (extra word still gives 1).
-                  </Text>
-                </View>
-              ) : null}
-
-              {/* Buttons */}
-              <View style={s.actions}>
-                <Pressable
-                  style={[m.btn, m.outline]}
-                  onPress={() => setComboDialogVisible(false)}
-                >
-                  <Text style={[m.btnText, { color: "#333" }]}>Cancel</Text>
-                </Pressable>
-                <Pressable
-                  style={[m.btn, m.primary, { opacity: selectedType ? 1 : 0.5 }]}
-                  disabled={!selectedType}
-                  onPress={confirmAndStart}
-                >
-                  <Text style={[m.btnText, { color: "white" }]}>Start</Text>
-                </Pressable>
-              </View>
-            </ScrollView>
+            {/* Actions */}
+            <View style={s.actions}>
+              <Pressable
+                style={[m.btn, m.outline]}
+                onPress={() => setComboDialogVisible(false)}
+              >
+                <Text style={[m.btnText, { color: Color.gray }]}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[m.btn, m.primary, { opacity: selectedType ? 1 : 0.5 }]}
+                disabled={!selectedType}
+                onPress={confirmAndStart}
+              >
+                <Text style={[m.btnText, { color: "white" }]}>Start</Text>
+              </Pressable>
+            </View>
           </Dialog.Content>
         </Dialog>
 
-        {/* -------- Info Dialog (unchanged) -------- */}
-        <Dialog
+        {/* -------- Info Dialog -------- */}
+        <GameTypeDetails
           visible={infoDialogVisible}
           onDismiss={() => setInfoDialogVisible(false)}
-          style={{
-            width: Platform.OS === "web" ? "60%" : "35%",
-            alignSelf: "center",
-            height: "90%",
-            backgroundColor: Color.white,
-            borderRadius: 20,
-            overflow: "hidden",
-          }}
-        >
-          <View style={s.bgHalf}>
-            <GameTypeBackground pointerEvents="none" style={{ width: "100%", height: "100%" }} />
-          </View>
-          <View style={s.infoHeader}>
-            <Dialog.Title style={{ fontWeight: "800", color: Color.gray }}>Game Type</Dialog.Title>
-            <IconButton icon={(p) => <CloseIcon width={18} height={18} fillColor={Color.gray} {...p} />} onPress={() => setInfoDialogVisible(false)} style={{ margin: 0 }} />
-          </View>
-          <Dialog.Content>
-            <View style={{ height: 300 }} />
-          </Dialog.Content>
-        </Dialog>
-
-        {/* -------- Remark Dialog (replay) -------- */}
-        <Dialog
-          visible={remarkVisible}
-          onDismiss={() => setRemarkVisible(false)}
-          style={{ width: "50%", alignSelf: "center", backgroundColor: Color.white, borderRadius: 24 }}
-        >
-          <Dialog.Content>
-            <Text style={{ fontSize: 28, fontWeight: "800", color: "#4B5563", marginBottom: 12 }}>
-              Remark
-            </Text>
-            <Text style={{ fontSize: 18, lineHeight: 26, color: "#4B5563", marginBottom: 22 }}>
-              You won’t earn coins for replaying this game, but finding the extra word will still reward you a coin.
-              Time spent will count toward your progress.
-            </Text>
-
-            <Pressable onPress={reallyStart} style={s.playBtn}>
-              <Text style={{ color: "white", fontSize: 18, fontWeight: "800" }}>Play</Text>
-            </Pressable>
-          </Dialog.Content>
-        </Dialog>
+        />
       </Portal>
     </View>
   );
@@ -613,35 +700,55 @@ const s = StyleSheet.create({
   typeRow: {
     flexDirection: "row",
     justifyContent: "center",
-    alignItems: "stretch",
-    marginTop: 8,
-    marginBottom: 6,
+    alignItems: "center",
+    gap: 16,
+    marginBottom: 18,
+    height: 200,
   },
   actions: {
     flexDirection: "row",
     justifyContent: "flex-end",
+    gap: 12,
     marginTop: 16,
+    alignItems: 'center',
   },
   inlineBadge: {
     marginTop: 10,
     borderRadius: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 12,
     backgroundColor: "#F3F4F6",
   },
-  inlineBadgeText: {
-    color: "#4B5563",
-    fontSize: 13,
-    fontWeight: "600",
-    textAlign: "center",
+  inlineBadgeText: { color: "#4B5563", fontSize: 13, fontWeight: "600" },
+  inlineNotice: { marginTop: 10, color: "#6B7280", fontStyle: "italic" },
+  summaryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 12,
   },
+  summaryText: { color: "#6B7280", fontWeight: "700" },
+  summaryBadge: {
+    backgroundColor: "#EEF2FF",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  summaryBadgeText: { color: "#374151", fontWeight: "700" },
   infoHeader: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
     padding: 5,
   },
-  bgHalf: { position: "absolute", bottom: 0, left: 0, width: "100%", height: "50%", zIndex: 0 },
+  bgHalf: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    width: "100%",
+    height: "50%",
+    zIndex: 0,
+  },
   playBtn: {
     backgroundColor: "#5EA1FF",
     paddingVertical: 14,
@@ -658,5 +765,5 @@ const m = StyleSheet.create({
   btn: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 10 },
   outline: { backgroundColor: "#F2F2F2" },
   primary: { backgroundColor: "#4D9DFE" },
-  btnText: { fontSize: 16, fontWeight: "700" },
+  btnText: { ...Typography.header16 },
 });

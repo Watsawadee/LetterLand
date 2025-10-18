@@ -69,7 +69,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(
     const CELL_PITCH = CELL_SIZE + CELL_MARGIN * 2;
     const GRID_WIDTH = grid.length * CELL_PITCH;
 
-    const PALETTE = [
+    const BASE_PALETTE = [
       "#A0E7E5",
       "#B4F8C8",
       "#FBE7C6",
@@ -80,13 +80,40 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(
       "#D3F8E2",
       "#FFCFD2",
       "#F1EAFF",
+      "#E6FFB3",
+      "#B3FFF2",
+      "#FFB3E6",
+      "#B3C6FF",
+      "#FFC6B3",
+      "#D1FFD1",
     ];
 
-    const colorFromWord = (word: string) => {
-      let hash = 0;
-      for (let i = 0; i < word.length; i++)
-        hash = (hash * 31 + word.charCodeAt(i)) >>> 0;
-      return PALETTE[hash % PALETTE.length];
+    const normalizeWordKey = (s: string) => (s ?? "").trim().toLowerCase();
+
+    const wordColorMapRef = useRef<Map<string, string>>(new Map());
+
+    const goldenAngle = 137.508;
+    const genColorByIndex = (i: number) => {
+      const hue = (i * goldenAngle) % 360;
+      return `hsl(${hue} 70% 80%)`;
+    };
+
+    const getColorForWord = (word: string) => {
+      const key = normalizeWordKey(word);
+      const map = wordColorMapRef.current;
+      if (map.has(key)) return map.get(key)!;
+
+      const used = new Set(map.values());
+      const nextFixed = BASE_PALETTE.find((c) => !used.has(c));
+      let color: string;
+      if (nextFixed) {
+        color = nextFixed;
+      } else {
+        const idx = map.size - BASE_PALETTE.length;
+        color = genColorByIndex(idx);
+      }
+      map.set(key, color);
+      return color;
     };
 
     const getCoveringWord = (r: number, c: number) => {
@@ -163,6 +190,12 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(
       return () => loop.stop();
     }, [hintCell, isHintedWordFound, pulseAnim]);
 
+    useEffect(() => {
+      foundWords?.forEach((w) => {
+        getColorForWord(w.word);
+      });
+    }, [foundWords]);
+
     return (
       <View
         ref={viewRef}
@@ -179,7 +212,7 @@ const GameBoard = forwardRef<GameBoardHandle, GameBoardProps>(
               const coveringWord = getCoveringWord(rowIndex, colIndex);
               const isCorrectCell = !!coveringWord;
               const wordColor = coveringWord
-                ? colorFromWord(coveringWord.word)
+                ? getColorForWord(coveringWord.word)
                 : undefined;
               const isHint =
                 hintCell?.[0] === rowIndex && hintCell?.[1] === colIndex;

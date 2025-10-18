@@ -1,7 +1,9 @@
 import React from "react";
 import { Card, Text } from "react-native-paper";
-import { View, Image, StyleProp, ViewStyle } from "react-native";
-import GameTypeSelection from "../assets/images/GameTypeSelection.png";
+import { View, Image } from "react-native";
+import Grid from "@/assets/icon/Grid";
+import { Color } from "@/theme/Color";
+import { Typography } from "@/theme/Font";
 
 type GameTypeCardProps = {
   question: string;
@@ -17,49 +19,40 @@ const GameTypeCard = ({
   gameType,
   selected,
   onPress,
-  style, // ✅ receive custom styles
 }: GameTypeCardProps) => {
   return (
     <Card
       onPress={onPress}
-      style={[
-        {
-          width: 180,
-          height: "100%",
-          padding: 15,
-          borderRadius: 15,
-          overflow: "hidden",
-          backgroundColor: selected ? "#4D9DFE" : "#FFFF",
-          borderWidth: 1,
-          borderColor: "transparent",
-          shadowOffset: { width: 0, height: 0 },
-          shadowOpacity: 0,
-          shadowRadius: 0,
-        },
-        style, // ✅ apply external override here
-      ]}
+      style={{
+        width: 180,
+        height: "100%",
+        padding: 15,
+        borderRadius: 15,
+        backgroundColor: selected ? "#4D9DFE" : Color.white,
+        borderWidth: 1,
+        borderColor: "transparent",
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0,
+        shadowRadius: 0,
+      }}
     >
       <View
         style={{
           justifyContent: "center",
           alignItems: "center",
           width: "100%",
-          minHeight: "70%",
-          gap: 8,
+          minHeight: 120,
+          gap: 10,
           backgroundColor: "#D9D9D9",
           borderRadius: 20,
         }}
       >
-        <Image
-          source={GameTypeSelection}
-          style={{ width: 48, height: 50, resizeMode: "contain" }}
-        />
+        <Grid />
         <Text
           style={{
+            ...Typography.header13,
             textAlign: "center",
-            fontSize: 14,
-            fontWeight: "600",
-            color: "#333",
+            color: Color.gray,
           }}
         >
           {question}
@@ -68,15 +61,14 @@ const GameTypeCard = ({
 
       <View
         style={{
-          paddingVertical: 8,
+          paddingVertical: 18,
           alignItems: "center",
           backgroundColor: selected ? "#4D9DFE" : "#FFFF",
         }}
       >
         <Text
           style={{
-            fontWeight: "700",
-            fontSize: 16,
+            ...Typography.header16,
             color: selected ? "white" : "#333",
           }}
         >

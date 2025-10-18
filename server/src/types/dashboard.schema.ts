@@ -55,3 +55,35 @@ export const AverageGamesByLevelPeerPeriodResponseSchemaOrErrorSchema = z.union(
 ]);
 
 
+
+
+export const GameStreakResponseSchema = z.object({
+    allTime: z.number().int().nonnegative(),
+    currentLevel: z.number().int().nonnegative(),
+    highestStreakInThisLevel: z.number().int().nonnegative(),
+});
+export const GameStreakOrErrorSchema = z.union([
+    GameStreakResponseSchema,
+    ErrorResponseSchema,
+]);
+
+// User Progress (for donut chart)
+export const UserProgressResponseSchema = z.object({
+    englishLevel: z.enum(["A1", "A2", "B1", "B2", "C1", "C2"]),
+    progress: z.number().min(0).max(100),
+    criteria: z.object({
+        hasImprovedPerformance: z.boolean(),
+        noHintsUsedRecently: z.boolean(),
+        hasEnoughPlaytime: z.boolean(),
+    }),
+    summary: z.array(z.string()),
+    donut: z.object({
+        filled: z.number().min(0).max(100),
+        remaining: z.number().min(0).max(100),
+    }),
+});
+
+export const UserProgressOrErrorSchema = z.union([
+    UserProgressResponseSchema,
+    ErrorResponseSchema,
+]);

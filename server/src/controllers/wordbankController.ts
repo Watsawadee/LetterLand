@@ -24,6 +24,8 @@ type WordBankCombinedResponse = {
   spreadSize: number;
   words: SpreadSection;
   extra: SpreadSection;
+  wordsSince: string | null;
+  extraSince: string | null;
 };
 
 function uniquePreserveOrder(words: string[]): string[] {
@@ -78,7 +80,7 @@ export const getUserWordBankUnique = async (
   const perSide = 5; // 5 per column
   const spreadSize = 10; // 10 per spread (5 left + 5 right)
 
-  const [learnedRows, extraRows] = await Promise.all([
+  const [learnedRows, extraRows, wordsMin, extraMin] = await Promise.all([
     prisma.wordFound.findMany({
       where: { userId },
       orderBy: { foundAt: "asc" },
@@ -88,6 +90,15 @@ export const getUserWordBankUnique = async (
       where: { userId },
       orderBy: { foundAt: "asc" },
       select: { word: true },
+    }),
+
+    prisma.wordFound.aggregate({
+      where: { userId },
+      _min: { foundAt: true },
+    }),
+    prisma.extraWordFound.aggregate({
+      where: { userId },
+      _min: { foundAt: true },
     }),
   ]);
 
@@ -99,11 +110,20 @@ export const getUserWordBankUnique = async (
   const words = buildSpread(learnedUnique, page, perSide, spreadSize);
   const extra = buildSpread(extraUnique, page, perSide, spreadSize);
 
+  const wordsSince = wordsMin._min.foundAt
+    ? wordsMin._min.foundAt.toISOString()
+    : null;
+  const extraSince = extraMin._min.foundAt
+    ? extraMin._min.foundAt.toISOString()
+    : null;
+
   res.status(200).json({
     page,
     perSide,
     spreadSize,
     words,
     extra,
+    wordsSince,
+    extraSince,
   });
 };
