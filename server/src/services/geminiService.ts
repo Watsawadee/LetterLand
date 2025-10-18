@@ -141,6 +141,7 @@ GENERAL RULES FOR ALL LEVELS:
    -C1: 10-12 letters
    -C2: 10–12 letters
 6.  **Image Prompt:** Include a creative 'imagePrompt' description for generating an image that represents the crossword’s main topic.
+7.  **Topic Length:** The "gameTopic" string MUST be a concise phrase or title, no more than 15 characters. If the topic is longer, shorten it to a clear, short phrase.
 ────────────────────────────
 OUTPUT FORMAT:
 Return ONLY a valid JSON object. Do not include markdown fences or any other text.

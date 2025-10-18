@@ -6,10 +6,10 @@ import { Button, Card, Checkbox, IconButton, List, Modal, PaperProvider, Portal 
 import { ActivityIndicator } from "react-native";
 import Clock from "@/assets/icon/Clock";
 import Pencil from "@/assets/icon/Pencil";
-import { VictoryAxis, VictoryBar, VictoryChart, VictoryLabel, VictoryLine, VictoryPie, VictoryScatter, VictoryTheme, VictoryVoronoiContainer } from "victory-native";
-import { Dimensions } from "react-native";
-import Carousel, { Pagination, ICarouselInstance } from "react-native-reanimated-carousel";
-import { useSharedValue } from "react-native-reanimated";
+import {
+    VictoryAxis, VictoryBar, VictoryChart, VictoryLabel, VictoryLine, VictoryPie, VictoryScatter, VictoryTheme, VictoryTooltip,
+    VictoryVoronoiContainer,
+} from "victory-native";
 import { Typography } from "@/theme/Font";
 import NoGamePlayed from "@/assets/backgroundTheme/NoGamePlayed";
 import { Pressable } from "react-native";
@@ -20,58 +20,91 @@ import WordBankModal from "./WordBank";
 import Book from "@/assets/icon/Book";
 import { ButtonStyles } from "@/theme/ButtonStyles";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import { format } from "date-fns";
+import { endOfMonth, endOfWeek, endOfYear, format, startOfMonth, startOfWeek, startOfYear } from "date-fns";
+import { useColorScheme } from "react-native";
+import { Defs, LinearGradient, Stop } from "react-native-svg";
+import { FloatingBubble } from "@/assets/images/bubblePopup";
 
 
-const MAX_WEEKS = 5;
 const UserOverviewPerformance = () => {
-    const [carouselIndex, setCarouselIndex] = useState(0);
     const [forceLoading, setForceLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
     const [showBook, setShowBook] = useState(false);
     const [showPicker, setShowPicker] = useState(false);
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [tempDate, setTempDate] = useState<Date>(new Date());
+    const [monthRange, setMonthRange] = useState<{ start: Date; end: Date } | null>(null);
+
+    const colorScheme = useColorScheme();
+    const isDarkMode = colorScheme === "dark";
 
     const [period, setPeriod] = useState<"week" | "month" | "year">("week");
-    const handleDateChange = (event: any, date?: Date) => {
-        if (Platform.OS !== "ios") setShowPicker(false);
+    const handleDateConfirm = (date: Date) => {
+        let start: Date;
+        let end: Date;
 
-        if (date) {
-            setSelectedDate(date);
-            setPeriod(period);
+        if (period === "week") {
+            start = startOfWeek(date, { weekStartsOn: 0 }); // 0 = Sunday
+            end = endOfWeek(date, { weekStartsOn: 0 });
+        } else if (period === "month") {
+            start = startOfMonth(date);
+            end = endOfMonth(date);
+        } else if (period === "year") {
+            start = startOfYear(date);
+            end = endOfYear(date);
+        } else {
+            start = date;
+            end = date;
         }
+
+        setSelectedDate(date);
+        setMonthRange({ start, end });
+        setShowPicker(false);
     };
 
-    const handleConfirm = (date: Date) => {
-        setSelectedDate(date);
-        setShowPicker(false);
-    }
-    const formatDate = (dateStr: string) => {
-        return new Date(dateStr).toLocaleDateString("en-GB", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-        });
-    };
+    const formattedEndDate = monthRange ? monthRange.end.toISOString().split("T")[0] : selectedDate.toISOString().split("T")[0];
 
 
     const CHART_W = 750;
     const CHART_H = 300;
 
 
-    const GAP = 20;
-    const [carouselProgress, setCarouselProgress] = useState(0);
-    const progress = useSharedValue<number>(0);
-    const ref = useRef<ICarouselInstance>(null);
     useEffect(() => {
         const timer = setTimeout(() => setForceLoading(false), 1000);
         return () => clearTimeout(timer);
     }, []);
-    const formattedDate = selectedDate.toISOString().split("T")[0];
+    const formatDateRange = (startStr: string, endStr: string, period: "week" | "month" | "year") => {
+        const start = new Date(startStr);
+        const end = new Date(endStr);
 
-    const { data: TotalgamesData, isLoading: loadingChart } = useTotalGamesPerPeriod(period, formattedDate);
-    const { data: peerAvgData, isLoading: loadingPeer } = usePeerAverageGamesPerPeriod(period, formattedDate);
+        const formatOptions: Intl.DateTimeFormatOptions = {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            timeZone: "UTC",
+        };
+
+        const startFormatted = start.toLocaleDateString("en-GB", formatOptions);
+        const endFormatted = end.toLocaleDateString("en-GB", formatOptions);
+
+        if (
+            period === "week" ||
+            (period === "month" && start.getUTCMonth() === end.getUTCMonth() && start.getUTCFullYear() === end.getUTCFullYear())
+        ) {
+            return `${start.getUTCDate()} ${start.toLocaleString("en-GB", {
+                month: "short",
+                timeZone: "UTC",
+            })} ${start.getUTCFullYear()} – ${end.getUTCDate()} ${end.toLocaleString("en-GB", {
+                month: "short",
+                timeZone: "UTC",
+            })} ${end.getUTCFullYear()}`;
+        }
+        return `${startFormatted} – ${endFormatted}`;
+    };
+
+
+    const { data: TotalgamesData, isLoading: loadingChart } = useTotalGamesPerPeriod(period, formattedEndDate);
+    const { data: peerAvgData, isLoading: loadingPeer } = usePeerAverageGamesPerPeriod(period, formattedEndDate);
     const { data: userProgress, isLoading: loadingProgress } = useUserProgress();
 
     const { data: totalPlaytime } = useUserTotalPlaytime();
@@ -88,7 +121,7 @@ const UserOverviewPerformance = () => {
         },
         {
             label: "Top Streak in Your Level",
-            value: streakData && "highestsStreakInThisLevel" in streakData ? streakData.highestsStreakInThisLevel : "-",
+            value: streakData && "highestStreakInThisLevel" in streakData ? streakData.highestStreakInThisLevel : "-",
         },
     ];
     function isSuccess<T>(data: T | undefined): data is Exclude<T, { error: string }> {
@@ -161,120 +194,144 @@ const UserOverviewPerformance = () => {
                             ) : isSuccess(TotalgamesData) && isSuccess(peerAvgData) ? (
                                 <Card
                                     style={{
-                                        backgroundColor: Color.white,
+                                        backgroundColor: "#F2F8F9",
                                         borderRadius: 16,
                                         padding: 20,
                                         width: CHART_W,
+                                        position: "relative",
+                                        overflow: "hidden",
                                     }}
                                 >
+                                    {/* <FloatingBubble cardWidth={CHART_W} cardHeight={CHART_H} /> */}
                                     <Card.Title
                                         title={
                                             isSuccess(TotalgamesData)
-                                                ? `Games Played (${formatDate(TotalgamesData.range.start)} - ${formatDate(TotalgamesData.range.end)})`
+                                                ? `Games Played (${formatDateRange(
+                                                    TotalgamesData.range.start,
+                                                    TotalgamesData.range.end,
+                                                    period
+                                                )})`
                                                 : "Games Played"
                                         }
+
                                         titleStyle={{ color: Color.gray, fontWeight: "bold", fontSize: 20 }}
                                     />
-                                    <View style={{ display: "flex", flexDirection: "row" }}>
-                                        {(["week", "month", "year"] as const).map((p) => (
-                                            <Button
-                                                key={p}
-                                                onPress={() => {
-                                                    setPeriod(p);
-                                                    setTempDate(selectedDate);
-                                                    setShowPicker(true);
-                                                }}
-                                                style={{
-                                                    backgroundColor: p === period ? Color.blue : Color.white,
-                                                    paddingHorizontal: 8,
-                                                    borderRadius: 999,
-                                                    marginHorizontal: 6,
-                                                }}
-                                            >
-                                                <Text style={{ color: p === period ? Color.white : Color.blue, fontWeight: "bold" }}>
-                                                    {p.charAt(0).toUpperCase() + p.slice(1)}
-                                                </Text>
-                                            </Button>
-                                        ))}
+                                    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                                        <View style={{ display: "flex", flexDirection: "row" }}>
+                                            {(["week", "month", "year"] as const).map((p) => (
+                                                <Button
+                                                    key={p}
+                                                    onPress={() => {
+                                                        setPeriod(p);
+                                                        setShowPicker(true);
+                                                        setTempDate(selectedDate);
+                                                    }}
+                                                    style={{
+                                                        backgroundColor: p === period ? Color.blue : Color.white,
+                                                        paddingHorizontal: 8,
+                                                        borderRadius: 999,
+                                                        marginHorizontal: 6,
+                                                    }}
+                                                    rippleColor={"transparent"}
+                                                >
+                                                    <Text style={{ color: p === period ? Color.white : Color.blue, fontWeight: "bold" }}>
+                                                        {p.charAt(0).toUpperCase() + p.slice(1)}
+                                                    </Text>
+                                                </Button>
+                                            ))}
+                                        </View>
+                                        <View style={{ display: "flex", flexDirection: "row", justifyContent: "flex-end", gap: 10 }}>
+                                            <View style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 5 }}>
+                                                <View style={{ backgroundColor: Color.blue, width: 25, height: 3, borderRadius: 20 }} />
+                                                <Text style={{ color: Color.blue, fontWeight: Typography.header20.fontWeight }}>Your game played</Text>
+                                            </View>
+                                            <View style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 5 }}>
+                                                <View style={{ backgroundColor: Color.green, width: 25, height: 3, borderRadius: 20 }} />
+                                                <Text style={{ color: Color.green, fontWeight: Typography.header20.fontWeight }}>Average of peers</Text>
+                                            </View>
+                                        </View>
                                     </View>
                                     {showPicker && (
                                         <DateTimePickerModal
                                             isVisible={showPicker}
                                             mode="date"
+                                            display="inline"
                                             date={selectedDate}
+                                            onConfirm={() => {
+
+                                            }}
+                                            maximumDate={new Date}
+                                            onCancel={() => setShowPicker(false)}
                                             onChange={(date) => {
                                                 if (date) setTempDate(date);
                                             }}
-                                            onConfirm={(date) => {
-                                                setSelectedDate(date);
-                                                setShowPicker(false);
-                                            }}
-                                            onCancel={() => setShowPicker(false)}
-                                            maximumDate={new Date()}
+                                            textColor={Color.gray}
+                                            themeVariant="light"
                                             pickerContainerStyleIOS={{
                                                 backgroundColor: Color.white,
-                                                borderRadius: 20,
+                                                borderRadius: 24,
+                                                width: 420,
                                                 alignSelf: "center",
+                                                justifyContent: "center",
                                                 alignItems: "center",
-                                                width: "40%"
+                                                shadowColor: "#000",
+                                                shadowOpacity: 0.1,
+                                                shadowRadius: 6,
+                                                shadowOffset: { width: 0, height: 3 },
                                             }}
                                             customHeaderIOS={() => (
                                                 <Text
                                                     style={{
                                                         textAlign: "center",
-                                                        color: "#007ff9",
-                                                        fontWeight: "bold",
-                                                        paddingVertical: 10,
-                                                        fontSize: 18,
+                                                        color: Color.gray,
+                                                        fontWeight: "700",
+                                                        paddingVertical: 12,
+                                                        fontSize: 20,
                                                     }}
                                                 >
                                                     Choose {period}
                                                 </Text>
                                             )}
-                                            customCancelButtonIOS={() => (
-                                                <Button
-                                                    style={{ width: "40%", alignSelf: "center", backgroundColor: Color.white, borderRadius: 13, marginBottom: 10 }}
-                                                    onPress={() => setShowPicker(false)}
-                                                    rippleColor={"transparent"}
-
-                                                >
-                                                    <Text style={{
-                                                        color: "#007ff9",
-                                                        paddingVertical: 10,
-                                                        fontSize: 21,
-                                                        width: "40%"
-                                                    }}>
-                                                        Cancel
-                                                    </Text>
-
-                                                </Button>
-                                            )}
                                             customConfirmButtonIOS={() => (
-                                                <Button
-                                                    style={{ width: "40%", alignSelf: "center", backgroundColor: Color.white, borderRadius: 10 }}
-                                                    onPress={() => {
-                                                        setSelectedDate(tempDate);
-                                                        setShowPicker(false);
-                                                    }}
-                                                    rippleColor={"transparent"}
 
+                                                <Button
+                                                    onPress={() => handleDateConfirm(tempDate)}
+                                                    style={{
+                                                        alignSelf: "center",
+                                                        width: "100%",
+                                                        borderTopColor: Color.gray,
+                                                        borderTopWidth: 0.5,
+                                                        backgroundColor: "transparent",
+                                                        paddingTop: 5,
+                                                    }}
+
+                                                    rippleColor="transparent"
                                                 >
-                                                    <Text style={{
-                                                        color: "#007ff9",
-                                                        paddingVertical: 10,
-                                                        fontSize: 19,
-                                                        width: "40%"
-                                                    }}>
+                                                    <Text style={{ color: Color.gray, fontSize: 18, fontWeight: "600" }}>
                                                         Confirm
                                                     </Text>
-
                                                 </Button>
                                             )}
-                                            confirmTextIOS="Confirm"
-                                            cancelTextIOS="Cancel"
-                                            textColor="#000"
-                                            isDarkModeEnabled={false}
+                                            customCancelButtonIOS={() => (
+                                                <Button
+                                                    onPress={() => setShowPicker(false)}
+                                                    style={{
+                                                        backgroundColor: Color.lightblue,
+                                                        borderRadius: 12,
+                                                        alignSelf: "center",
+                                                        width: "36%",
+                                                        marginBottom: 20
+                                                    }}
+                                                    rippleColor="transparent"
+                                                >
+                                                    <Text style={{ color: "red", fontSize: 18, fontWeight: "600" }}>
+                                                        Cancel
+                                                    </Text>
+                                                </Button>
+                                            )}
                                         />
+
+
                                     )}
 
                                     <VictoryChart
@@ -289,16 +346,47 @@ const UserOverviewPerformance = () => {
                                             style={{ tickLabels: { fontSize: 12, fill: Color.gray } }}
                                         />
                                         <VictoryAxis dependentAxis />
+                                        <Defs>
+                                            <LinearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                                                <Stop offset="0%" stopColor={Color.blue} />
+                                                <Stop offset="100%" stopColor="#4584ccff" />
+                                            </LinearGradient>
+                                        </Defs>
                                         <VictoryBar
                                             data={periodSeries}
-                                            barWidth={25}
-                                            cornerRadius={5}
+                                            barWidth={30}
+                                            cornerRadius={10}
                                             style={{
-                                                data: { fill: Color.blue },
-                                                labels: { fill: Color.gray, fontSize: 13, fontWeight: "bold" },
+                                                data: { fill: "url(#barGradient)" }
                                             }}
-                                            labels={({ datum }) => (datum.y !== 0 ? `${datum.y}` : "")}
-                                            labelComponent={<VictoryLabel dy={-8} textAnchor="middle" />}
+                                            labels={({ datum }) => `${datum.y} games`}
+                                            labelComponent={
+                                                <VictoryTooltip
+                                                    flyoutStyle={{
+                                                        fill: "#fff",
+                                                        stroke: Color.black,
+                                                        strokeWidth: 1,
+                                                    }}
+                                                    style={{
+                                                        fill: Color.gray,
+                                                        fontWeight: "600",
+                                                        fontSize: 13,
+                                                        textAlign: "center",
+                                                    }}
+                                                    flyoutPadding={{ top: 8, bottom: 8, left: 10, right: 10 }}
+                                                    activateData={true}
+                                                />
+                                            }
+                                            events={[
+                                                {
+                                                    target: "data",
+                                                    eventHandlers: {
+                                                        onPressIn: () => [{ target: "labels", mutation: () => ({ active: true }) }],
+                                                        onPressOut: () => [{ target: "labels", mutation: () => ({ active: false }) }],
+                                                    },
+                                                },
+                                            ]}
+                                            animate={{ duration: 1000, easing: "bounce" }}
                                         />
                                         {peerSeries.some((d) => d.y !== 0) && ([
                                             <VictoryLine
@@ -310,7 +398,7 @@ const UserOverviewPerformance = () => {
                                                 size={5}
                                                 style={{ data: { fill: Color.green } }}
                                                 labels={({ datum }) => datum.y.toFixed(1)}
-                                                labelComponent={<VictoryLabel dy={-10} style={{ fill: Color.green, fontSize: 12 }} />}
+                                                labelComponent={<VictoryLabel dy={-10} style={{ fill: Color.green, fontSize: 12, stroke: Color.green, strokeWidth: 1 }} />}
                                             />
                                         ])}
                                     </VictoryChart>
@@ -384,10 +472,10 @@ const UserOverviewPerformance = () => {
                         margin: 20,
                         borderRadius: 16,
                         alignSelf: "center",
-                        // justifyContent: "flex-start",
-                        padding: 30,
-                        height: "100%",
-                        width: "70%"
+                        paddingVertical: 20,
+                        paddingHorizontal: 30,
+                        maxHeight: "100%",
+                        width: "70%",
                     }}
                 >
                     {loading ? (
@@ -401,7 +489,10 @@ const UserOverviewPerformance = () => {
                                     </Text>
                                     <Text style={{ fontWeight: "bold", fontSize: 16, color: Color.gray }}>
                                         {period.charAt(0).toUpperCase() + period.slice(1)}:{" "}
-                                        {formatDate(TotalgamesData.range.start)} - {formatDate(TotalgamesData.range.end)}
+                                        {formatDateRange(
+                                            TotalgamesData.range.start,
+                                            TotalgamesData.range.end,
+                                            period)}
                                     </Text>
                                 </View>
                                 <IconButton
@@ -411,10 +502,13 @@ const UserOverviewPerformance = () => {
                                     accessibilityLabel="Close dialog"
                                 />
                             </View>
-                            <ScrollView horizontal={false} style={{ height: "100%", minWidth: "100%" }}>
+                            <ScrollView style={{ flexGrow: 0 }}
+                                contentContainerStyle={{ paddingBottom: 100 }}
+                                keyboardShouldPersistTaps="handled"
+                                nestedScrollEnabled={true}>
                                 <View style={{ flexDirection: "column", justifyContent: "space-between", height: "100%" }}>
 
-                                    <View style={{ width: "100%", height: "100%", }}>
+                                    <View style={{ width: "100%", height: "30%", }}>
                                         <Text style={{ fontWeight: "bold", fontSize: 20, color: Color.gray, marginBottom: 5, textAlign: "left" }}>
                                             Gameplayed Streak
                                         </Text>
@@ -429,7 +523,7 @@ const UserOverviewPerformance = () => {
                                                             {card.label}
                                                         </Text>
                                                         <Text style={{ color: Color.white, fontSize: 22, marginTop: 8, textAlign: "center" }}>
-                                                            {card.value as number}
+                                                            {card.value as any}
                                                         </Text>
                                                     </Card>
                                                 ))
@@ -437,11 +531,11 @@ const UserOverviewPerformance = () => {
                                             {/* </ScrollView> */}
                                         </View>
                                     </View>
-                                    <View style={{ width: "100%" }}>
+                                    {/* <View style={{ width: "100%" }}>
                                         <Text style={{ fontWeight: "bold", fontSize: 20, color: Color.gray, marginBottom: 5, textAlign: "left" }}>
                                             Average Gameplayed
                                         </Text>
-                                    </View>
+                                    </View> */}
                                     <View style={{ width: "100%" }}>
                                         <Text style={{ fontWeight: "bold", fontSize: 20, color: Color.gray, marginBottom: 5, textAlign: "left" }}>
                                             User Current Progress
@@ -467,6 +561,7 @@ const UserOverviewPerformance = () => {
                                                             height={250}
                                                             colorScale={[Color.green, "#EAEAEA"]}
                                                             innerRadius={70}
+                                                            cornerRadius={5}
                                                             labels={() => null}
                                                             padding={45}
                                                         />
@@ -475,7 +570,7 @@ const UserOverviewPerformance = () => {
                                                                 position: "absolute",
                                                                 top: "50%",
                                                                 left: "50%",
-                                                                transform: [{ translateX: -15 }, { translateY: -30 }],
+                                                                transform: [{ translateX: -240 }, { translateY: -20 }],
                                                                 alignItems: "center",
                                                                 justifyContent: "center",
                                                             }}
@@ -503,33 +598,75 @@ const UserOverviewPerformance = () => {
                                                         </View>
                                                     </View>
 
-                                                    <View style={{ minWidth: "60%", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+                                                    <View style={{ minWidth: "70%", flexDirection: "column", justifyContent: "center", gap: 20 }}>
                                                         {userProgress.summary.map((line, idx) => (
-                                                            <List.Item
+                                                            // <List.Item
+                                                            //     key={idx}
+                                                            //     title={line}
+                                                            //     titleNumberOfLines={3}
+                                                            //     titleStyle={{
+                                                            //         color: Color.blue,
+                                                            //         fontSize: Typography.body16.fontSize,
+                                                            //         lineHeight: 20,
+                                                            //         textAlign: "center"
+                                                            //     }}
+                                                            //     left={(props) => (
+                                                            //         <List.Icon
+                                                            //             {...props}
+                                                            //             icon="alert-box"
+                                                            //             color={Color.yellow}
+                                                            //             style={{ marginRight: 0 }}
+                                                            //         />
+                                                            //     )}
+                                                            //     style={{
+                                                            //         backgroundColor: Color.gray,
+                                                            //         borderRadius: 10,
+                                                            //         paddingHorizontal: 20,
+                                                            //         width: "90%"
+                                                            //     }}
+                                                            // />
+                                                            <Card
                                                                 key={idx}
-                                                                title={line}
-                                                                titleNumberOfLines={3}
-                                                                titleStyle={{
-                                                                    color: Color.blue,
-                                                                    fontSize: Typography.body16.fontSize,
-                                                                    lineHeight: 20,
-                                                                    textAlign: "center"
-                                                                }}
-                                                                left={(props) => (
-                                                                    <List.Icon
-                                                                        {...props}
-                                                                        icon="alert-box"
-                                                                        color={"red"}
-                                                                        style={{ marginRight: 0 }}
-                                                                    />
-                                                                )}
+                                                                mode="elevated"
                                                                 style={{
-                                                                    backgroundColor: "transparent",
-                                                                    borderRadius: 10,
-                                                                    paddingHorizontal: 20,
-                                                                    width: "100%"
+                                                                    backgroundColor: "#F8FBFF",
+                                                                    borderRadius: 14,
+                                                                    minWidth: "90%",
+                                                                    paddingVertical: 10,
+                                                                    paddingHorizontal: 15,
+                                                                    elevation: 2,
+                                                                    flexDirection: "row",
+                                                                    alignItems: "center",
                                                                 }}
-                                                            />
+                                                            >
+                                                                <View style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
+                                                                    <View
+                                                                        style={{
+                                                                            width: 32,
+                                                                            height: 32,
+                                                                            borderRadius: 8,
+                                                                            backgroundColor: "#FFE58B",
+                                                                            flexDirection: "row",
+                                                                            justifyContent: "center",
+                                                                            alignItems: "center",
+                                                                            marginRight: 12,
+                                                                        }}
+                                                                    >
+                                                                        <Text style={{ color: "#A67C00", fontWeight: "bold", fontSize: 18 }}>!</Text>
+                                                                    </View>
+                                                                    <Text
+                                                                        style={{
+                                                                            flexShrink: 1,
+                                                                            color: Color.blue,
+                                                                            fontSize: Typography.body16.fontSize,
+                                                                            fontWeight: "500",
+                                                                            lineHeight: 22,
+                                                                        }}
+                                                                    >
+                                                                        {line}
+                                                                    </Text>
+                                                                </View>
+                                                            </Card>
                                                         ))}
                                                     </View>
                                                 </View>
@@ -539,7 +676,6 @@ const UserOverviewPerformance = () => {
                                         )}
                                     </View>
                                 </View>
-
                             </ScrollView>
 
 
