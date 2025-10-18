@@ -1,6 +1,8 @@
 import { Card, Text } from "react-native-paper";
 import { View, Image } from "react-native";
-import GameTypeSelection from "../assets/images/GameTypeSelection.png";
+import Grid from "@/assets/icon/Grid";
+import { Color } from "@/theme/Color";
+import { Typography } from "@/theme/Font";
 
 type GameTypeCardProps = {
   question: string;
@@ -9,7 +11,12 @@ type GameTypeCardProps = {
   onPress?: () => void;
 };
 
-const GameTypeCard = ({ question, gameType, selected, onPress }: GameTypeCardProps) => {
+const GameTypeCard = ({
+  question,
+  gameType,
+  selected,
+  onPress,
+}: GameTypeCardProps) => {
   return (
     <Card
       onPress={onPress}
@@ -18,8 +25,7 @@ const GameTypeCard = ({ question, gameType, selected, onPress }: GameTypeCardPro
         height: "100%",
         padding: 15,
         borderRadius: 15,
-        overflow: "hidden",
-        backgroundColor: selected ? "#4D9DFE" : "#FFFF",
+        backgroundColor: selected ? "#4D9DFE" : Color.white,
         borderWidth: 1,
         borderColor: "transparent",
         shadowOffset: { width: 0, height: 0 },
@@ -32,29 +38,37 @@ const GameTypeCard = ({ question, gameType, selected, onPress }: GameTypeCardPro
           justifyContent: "center",
           alignItems: "center",
           width: "100%",
-          minHeight: "70%",
-          gap: 8,
+          minHeight: 120,
+          gap: 10,
           backgroundColor: "#D9D9D9",
           borderRadius: 20,
         }}
       >
-        <Image
-          source={GameTypeSelection}
-          style={{ width: 48, height: 50, resizeMode: "contain" }}
-        />
-        <Text style={{ textAlign: "center", fontSize: 14, fontWeight: "600", color: "#333" }}>
+        <Grid />
+        <Text
+          style={{
+            ...Typography.header13,
+            textAlign: "center",
+            color: Color.gray,
+          }}
+        >
           {question}
         </Text>
       </View>
 
       <View
         style={{
-          paddingVertical: 8,
+          paddingVertical: 18,
           alignItems: "center",
           backgroundColor: selected ? "#4D9DFE" : "#FFFF",
         }}
       >
-        <Text style={{ fontWeight: "700", fontSize: 16, color: selected ? "white" : "#333" }}>
+        <Text
+          style={{
+            ...Typography.header16,
+            color: selected ? "white" : "#333",
+          }}
+        >
           {gameType}
         </Text>
       </View>
