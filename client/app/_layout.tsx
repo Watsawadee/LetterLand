@@ -13,6 +13,7 @@ import { storeToken } from "@/utils/storeToken";
 import { clearToken } from "@/utils/clearToken";
 import { GlobalLoadingProvider } from "@/contexts/GlobalLoadingContext";
 import GlobalLoadingOverlay from "@/components/GlobalLoadingOverlay";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 const queryClient = new QueryClient();
 
@@ -77,13 +78,15 @@ export default function Layout() {
   return (
     <QueryClientProvider client={queryClient}>
       <PaperProvider>
-        <ThemeProvider>
-          <GlobalLoadingProvider>
-            <Stack screenOptions={{ headerShown: false }} />
-            {/* <ReactQueryDevtools initialIsOpen={true} /> */}
-            <GlobalLoadingOverlay />
-          </GlobalLoadingProvider>
-        </ThemeProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <ThemeProvider>
+            <GlobalLoadingProvider>
+              <Stack screenOptions={{ headerShown: false }} />
+              {/* <ReactQueryDevtools initialIsOpen={true} /> */}
+              <GlobalLoadingOverlay />
+            </GlobalLoadingProvider>
+          </ThemeProvider>
+        </GestureHandlerRootView>
       </PaperProvider>
     </QueryClientProvider>
   );

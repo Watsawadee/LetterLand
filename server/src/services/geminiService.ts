@@ -8,14 +8,45 @@ function cleanApiResponse(rawText: string): string {
   cleaned = cleaned.replace(/,\s*([\]}])/g, "$1");
   return cleaned;
 }
-async function isDictionaryWord(word: string): Promise<boolean> {
-  try {
-    await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${word.toLowerCase()}`);
-    return true;
-  } catch (error) {
-    return false;
-  }
-}
+
+
+
+// async function isDictionaryWord(word: string): Promise<boolean> {
+//   try {
+//     await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${word.toLowerCase()}`);
+//     return true;
+//   } catch (error) {
+//     return false;
+//   }
+// }
+
+const OXFORD_BASE_URL = "https://od-api-sandbox.oxforddictionaries.com/api/v2";
+
+// export async function isDictionaryWord(word: string): Promise<boolean> {
+//   if (!word) return false;
+//   try {
+//     const res = await axios.get(
+//       `${OXFORD_BASE_URL}/words/en-gb`,
+//       {
+//         params: { q: word.toLowerCase() },
+//         headers: {
+//           Accept: "application/json",
+//           app_id: process.env.OXFORD_APP_ID!,
+//           app_key: process.env.OXFORD_APP_KEY!,
+//         },
+//       }
+//     );
+//     // Check if results array contains the word
+//     return Array.isArray(res.data.results) &&
+//       res.data.results.some((item: any) => item.word?.toLowerCase() === word.toLowerCase());
+//   } catch (error: any) {
+//     if (error.response?.status === 404) return false;
+//     console.error(`Oxford lookup failed for ${word}:`, error.message);
+//     return false;
+//   }
+// }
+
+
 // async function isDictionaryWord(word: string): Promise<boolean> {
 //   try {
 //     const res = await axios.get(
@@ -28,25 +59,35 @@ async function isDictionaryWord(word: string): Promise<boolean> {
 //   }
 // }
 
-async function validateAnswer(
+const wordCache = new Map<string, boolean>();
+// ...existing code...
+export async function validateAnswer(
   rawAnswer: string | undefined | null,
   maxLen: number
 ): Promise<string | null> {
   if (!rawAnswer) return null;
-  if (/^[A-Z][a-z]+$/.test(rawAnswer)) {
-    const sanitized = rawAnswer.toUpperCase().replace(/[^A-Z]/g, "");
-    if (sanitized.length > 0 && sanitized.length <= maxLen) {
-      return sanitized;
-    }
+
+  const sanitized = rawAnswer.trim().toUpperCase().replace(/[^A-Z]/g, "");
+
+  if (sanitized.length === 0 || sanitized.length > maxLen) {
+    console.warn(`'${rawAnswer}' discarded (invalid length).`);
+    return null;
   }
-  const sanitized = rawAnswer.toUpperCase().replace(/[^A-Z]/g, "");
-  if (sanitized.length > 0 && sanitized.length <= maxLen) {
-    if (await isDictionaryWord(sanitized)) {
-      return sanitized;
-    }
+
+  if (wordCache.has(sanitized)) {
+    return wordCache.get(sanitized)! ? sanitized : null;
   }
-  console.warn(`'${rawAnswer}' was discarded (length, dictionary, or format error).`);
-  return null;
+  // const valid = await isDictionaryWord(sanitized);
+  const valid = true;
+
+  wordCache.set(sanitized, valid);
+
+  if (valid) {
+    return sanitized;
+  } else {
+    console.warn(`'${rawAnswer}' discarded (not in dictionary).`);
+    return null;
+  }
 }
 
 export const generateCrosswordHints = async (
