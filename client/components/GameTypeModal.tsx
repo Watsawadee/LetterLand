@@ -1,4 +1,3 @@
-import React from "react";
 import { Card, Text } from "react-native-paper";
 import { View, Image } from "react-native";
 import Grid from "@/assets/icon/Grid";
@@ -10,8 +9,6 @@ type GameTypeCardProps = {
   gameType: string;
   selected?: boolean;
   onPress?: () => void;
-  /** NEW: allow parent to adjust size (height, padding, etc.) */
-  style?: StyleProp<ViewStyle>;
 };
 
 const GameTypeCard = ({
