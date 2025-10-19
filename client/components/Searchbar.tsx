@@ -1,23 +1,28 @@
-// components/Searchbar.tsx  (aka FloatingSearch)
-import React, { useState } from "react";
+// components/Searchbar.tsx (FloatingSearch)
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
   TextInput,
   StyleSheet,
   TouchableOpacity,
+  Animated,
 } from "react-native";
 
 type Props = {
   value: string;
   onChangeText: (text: string) => void;
-  level: string;              // "A1".."C2" or ""
+  level: string; // "A1".."C2" or ""
   onChangeLevel: (lv: string) => void;
   onSubmit?: () => void;
   defaultExpanded?: boolean;
+  onExpandChange?: (expanded: boolean) => void; // NEW PROP
 };
 
+// CEFR levels
 const DIFFICULTIES = ["A1", "A2", "B1", "B2", "C1", "C2"] as const;
+
+// CEFR color mapping
 const cefrChipBg: Record<string, string> = {
   A1: "#F2B9DD",
   A2: "#FB7FC7",
@@ -33,134 +38,251 @@ export default function FloatingSearch({
   level,
   onChangeLevel,
   onSubmit,
-  defaultExpanded = true,           // expand by default on desktop
+  defaultExpanded = false,
+  onExpandChange, // NEW PROP
 }: Props) {
   const [expanded, setExpanded] = useState(defaultExpanded);
+  const widthAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  // Animation for expanding / collapsing search bar
+  useEffect(() => {
+    if (expanded) {
+      Animated.parallel([
+        Animated.spring(widthAnim, {
+          toValue: 1,
+          useNativeDriver: false,
+          tension: 50,
+          friction: 8,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.spring(widthAnim, {
+          toValue: 0,
+          useNativeDriver: false,
+          tension: 50,
+          friction: 8,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+    
+    // Notify parent about expansion state
+    onExpandChange?.(expanded);
+  }, [expanded, onExpandChange]);
+
+  const handleCirclePress = () => setExpanded(!expanded);
+
+  // Animate width from small circle → full bar
+  const containerWidth = widthAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["15%", "100%"], // expand to full width
+  });
 
   return (
     <View style={styles.wrapper}>
-      {/* top row: input (only if expanded) + round button */}
-      <View style={styles.row}>
-        {expanded ? (
-          <View style={styles.inputHolder}>
-            <TextInput
-              placeholder="Search by game name or code"
-              value={value}
-              onChangeText={onChangeText}
-              returnKeyType="search"
-              onSubmitEditing={() => onSubmit?.()}
-            />
-          </View>
-        ) : (
-          <View style={{ flex: 1 }} />
-        )}
+      <Animated.View style={[styles.container, { width: containerWidth }]}>
+        {/* --- Top section --- */}
+        <View style={styles.topRow}>
+          {expanded && (
+            <Animated.View style={[styles.inputHolder, { opacity: fadeAnim }]}>
+              <TextInput
+                placeholder="Search by game name or code"
+                value={value}
+                onChangeText={onChangeText}
+                returnKeyType="search"
+                onSubmitEditing={() => onSubmit?.()}
+                style={styles.input}
+                autoFocus={true}
+              />
+            </Animated.View>
+          )}
 
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={() => {
-            if (!expanded) setExpanded(true);
-            else onSubmit?.();
-          }}
-          style={styles.fab}
-        >
-          <Text style={styles.fabIcon}>🔍</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* chips appear only when expanded */}
-      {expanded && (
-        <View style={styles.chipsRow}>
-          {/* NEW: All tag to clear level filter only */}
+          {/* --- Search circle button --- */}
           <TouchableOpacity
-            style={styles.allChip}
-            onPress={() => onChangeLevel("")}
-            activeOpacity={0.9}
+            activeOpacity={0.85}
+            onPress={handleCirclePress}
+            style={styles.fab}
           >
-            <Text style={styles.allText}>All</Text>
+            <Text style={styles.fabIcon}>🔍</Text>
           </TouchableOpacity>
-
-          {DIFFICULTIES.map((lv) => {
-            const selected = level === lv;
-            return (
-              <TouchableOpacity
-                key={lv}
-                onPress={() => onChangeLevel(selected ? "" : lv)}
-                activeOpacity={0.85}
-                style={[
-                  styles.chip,
-                  { backgroundColor: cefrChipBg[lv] ?? "#eee" },
-                  selected && styles.chipSelected,
-                ]}
-              >
-                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                  {lv}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-
-          {(level || value) ? (
-            <TouchableOpacity
-              style={styles.clearChip}
-              onPress={() => {
-                onChangeText("");
-                onChangeLevel("");
-              }}
-            >
-              <Text style={styles.clearText}>Clear</Text>
-            </TouchableOpacity>
-          ) : null}
         </View>
-      )}
+
+        {/* --- CEFR filter chips --- */}
+        {expanded && (
+          <Animated.View style={[styles.chipsRow, { opacity: fadeAnim }]}>
+
+            {/* CEFR chips */}
+            {DIFFICULTIES.map((lv) => {
+              const selected = level === lv;
+              return (
+                <TouchableOpacity
+                  key={lv}
+                  onPress={() => onChangeLevel(selected ? "" : lv)}
+                  activeOpacity={0.85}
+                  style={[
+                    styles.chip,
+                    { backgroundColor: cefrChipBg[lv] ?? "#eee" },
+                    selected && styles.chipSelected,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.chipText,
+                      selected && styles.chipTextSelected,
+                    ]}
+                  >
+                    {lv}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+
+          </Animated.View>
+        )}
+      </Animated.View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: { width: "100%", flexShrink: 1 },
-  row: { flexDirection: "row", alignItems: "center", gap: 6 },
+  // Outer wrapper aligning the whole search to the right
+  wrapper: {
+    width: "100%",
+    alignItems: "flex-end",
+  },
+
+  // Container (animated width box)
+  container: {
+    // no fixed background; width animated
+  },
+
+  topRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 0,
+    backgroundColor: "white", 
+    borderRadius: 45,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    paddingLeft: 0,
+    paddingRight: 0,
+    shadowColor: "transparent",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
+  },
+
   inputHolder: {
     flex: 1,
     backgroundColor: "white",
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: "#E6ECF1",
-    height: 36,
+    borderRadius: 24,
+    height: 40,
     justifyContent: "center",
-    paddingHorizontal: 10,
-    
+    paddingHorizontal: 15,
   },
-  fab: {
-    width: 40, height: 40, borderRadius: 20, backgroundColor: "#fff",
-    alignItems: "center", justifyContent: "center",
-    borderWidth: 1, borderColor: "#E6ECF1",
+
+  // Text inside the input
+  input: {
+    fontSize: 14,
+    color: "#333",
   },
-  fabIcon: { fontSize: 18 },
 
-  chipsRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 4, alignItems: "center" },
+// Circle search button
+fab: {
+  width: 56,              // equal sides -> perfect circle
+  height: 56,
+  borderRadius: 28,       // half of width/height
+  alignItems: "center",
+  justifyContent: "center",
 
+
+},
+
+  // Magnifying glass icon
+  fabIcon: {
+    fontSize: 24,
+    textAlign: "center", // center horizontally
+    textAlignVertical: "center", // center vertically (Android)
+   
+  },
+
+  // Chips container (below search)
+  chipsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginTop: 8,
+    alignItems: "center",
+  },
+  // "All" chip
   allChip: {
-    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 14,
-    borderWidth: 1, borderColor: "#e3e3e3", backgroundColor: "#fff",
-  },
-  allText: { fontSize: 10, color: "#444", fontWeight: "600" },
-
-  chip: {
-    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 14,
-    borderWidth: 1, borderColor: "rgba(0,0,0,0.05)",
-  },
-
-  /* 🔧 add these back */
-  chipSelected: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1.5,
     borderColor: "#4a90e2",
-    borderWidth: 1,
+    backgroundColor: "#fff",
   },
-  chipText: { fontSize: 12, fontWeight: "600", color: "#4F4F4F" },
-  chipTextSelected: { color: "#1F2D3D", fontWeight: "700" },
+  allChipSelected: {
+    borderColor: "#4a90e2",
+    backgroundColor: "#4a90e2",
+  },
+  allText: {
+    fontSize: 11,
+    color: "#4a90e2",
+    fontWeight: "700",
+  },
+  allTextSelected: {
+    color: "#fff",
+    fontWeight: "700",
+  },
 
-  clearChip: {
-    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 14,
-    borderWidth: 1, borderColor: "#bbb", backgroundColor: "#fafafa",
+  // CEFR chips
+  chip: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "transparent",
   },
-  clearText: { fontSize: 12, color: "#333" },
+  chipSelected: {
+    borderColor: "rgba(0,0,0,0.15)",
+    borderWidth: 1.5,
+  },
+  chipText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#333",
+  },
+  chipTextSelected: {
+    color: "#333",
+    fontWeight: "700",
+  },
+
+  // "Clear" chip
+  clearChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#bbb",
+    backgroundColor: "#fafafa",
+  },
+  clearText: {
+    fontSize: 13,
+    color: "#333",
+    fontWeight: "700",
+  },
 });

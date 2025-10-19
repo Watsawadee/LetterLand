@@ -10,6 +10,9 @@ export const UserProfileResponseSchema = z.object({
     nextLevel: z.string().nullable().optional(),
     canLevelUp: z.boolean().optional(),
     progressPercent: z.number().optional(),
+    hint: z.number().optional(),
+    completedGames: z.number().optional(),
+
 });
 
 
