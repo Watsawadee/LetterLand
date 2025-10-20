@@ -7,6 +7,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   useWindowDimensions,
+  LayoutAnimation,
+  Platform,
+  UIManager,
 } from "react-native";
 
 import GardenBackgroundBlueSky from "@/assets/backgroundTheme/GardenBackgroundBlue";
@@ -22,7 +25,13 @@ import ArrowLeft from "@/assets/icon/ArrowLeft";
 import FloatingSearch from "@/components/Searchbar";
 import api from "@/services/api";
 
-// Updated FloatingSearch component with onExpandChange prop
+// Enable LayoutAnimation on Android
+if (
+  Platform.OS === "android" &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export default function Publicboard() {
   const router = useRouter();
@@ -84,14 +93,15 @@ export default function Publicboard() {
         >
           {/* Header Row */}
           <View style={styles.headerRow}>
-            <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-              <ArrowLeft width={24} height={24} />
-              <Text style={[Typography.header30, { marginLeft: 4 }]}>Public Board</Text>
-            </TouchableOpacity>
+            {/* Left side: Back button + Search */}
+            <View style={styles.leftControls}>
+              <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+                <ArrowLeft width={24} height={24} />
+                <Text style={[Typography.header30, { marginLeft:10  }]}>Public Board</Text>
+              </TouchableOpacity>
 
-            <View style={styles.controlsRight}>
-              {/* Fixed width container for search */}
-              <View style={{ width: isWide ? 360 : 240, position: 'relative' }}>
+              {/* Search bar */}
+              <View style={{ width: isWide ? 340 : 200, position: 'relative' }}>
                 <FloatingSearch
                   value={gameName}
                   onChangeText={(txt) => {
@@ -104,15 +114,27 @@ export default function Publicboard() {
                   level={difficulty}
                   onChangeLevel={(lv) => setDifficulty(lv)}
                   onSubmit={runSearch}
-                  onExpandChange={setSearchExpanded}
+                  onExpandChange={(expanded) => {
+                    setSearchExpanded(expanded);
+                    if (!expanded) {
+                      LayoutAnimation.configureNext(
+                        LayoutAnimation.create(
+                          200,
+                          LayoutAnimation.Types.easeInEaseOut,
+                          LayoutAnimation.Properties.opacity
+                        )
+                      );
+                    }
+                  }}
                 />
               </View>
+            </View>
 
-              {/* Word Bank button - gets smaller when search is expanded */}
+            {/* Right side: Word Bank button */}
+            <View style={styles.controlsRight}>
               <TouchableOpacity
                 style={[
                   ButtonStyles.wordBank.container,
-                  searchExpanded && styles.wordBankCompact,
                   { 
                     flexDirection: "row", 
                     alignItems: "center",
@@ -121,16 +143,11 @@ export default function Publicboard() {
                 ]}
                 onPress={() => setShowBook(true)}
               >
-                <Book 
-                  width={searchExpanded ? 50 : 50} 
-                  height={searchExpanded ? 50 : 50} 
-                />
-                {!searchExpanded && (
-                  <View style={{ flexDirection: "column", alignItems: "flex-start", paddingLeft: 8 }}>
-                    <Text style={ButtonStyles.wordBank.text}>Word</Text>
-                    <Text style={ButtonStyles.wordBank.text}>Bank</Text>
-                  </View>
-                )}
+                <Book width={50} height={50} />
+                <View style={{ flexDirection: "column", alignItems: "flex-start", paddingLeft: 8 }}>
+                  <Text style={ButtonStyles.wordBank.text}>Word</Text>
+                  <Text style={ButtonStyles.wordBank.text}>Bank</Text>
+                </View>
               </TouchableOpacity>
 
               <WordBankModal visible={showBook} onClose={() => setShowBook(false)} />
@@ -187,15 +204,16 @@ const styles = StyleSheet.create({
     minHeight: 0,
   },
   leftPanel: {
-    flex: 2.5,
+    flex: 3,
     borderRadius: 20,
     padding: 16,
-    minHeight: 0,
   },
   rightPanel: {
-    flex: 1,
+    flex: 1.55,
     borderRadius: 20,
-    padding: 16,
+    padding: 6,
+    paddingTop: 15,
+    paddingBottom: 15,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -206,6 +224,12 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 8,
     minHeight: 60,
+  },
+  leftControls: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: -9,
+    flex: 1,
   },
   backButton: {
     flexDirection: "row",
@@ -218,7 +242,7 @@ const styles = StyleSheet.create({
   controlsRight: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 12,
+    gap: 4,
   },
   publicGamesContainer: {
     flexDirection: "column",
@@ -226,10 +250,5 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 0,
     marginTop: 8,
-  },
-  wordBankCompact: {
-    width: 70,
-    height: 60,
-    paddingHorizontal: 8,
   },
 });

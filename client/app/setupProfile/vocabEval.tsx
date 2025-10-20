@@ -6,6 +6,9 @@ import { ActivityIndicator, Button, Card, Text } from "react-native-paper";
 import { getLoggedInUserId } from "@/utils/auth";
 import GardenBackground from "@/assets/backgroundTheme/GardenBackground";
 import { Color } from "@/theme/Color";
+import UserLevelModal from "@/components/UserLevelModal";
+import { CEFRLevel } from "@/theme/CEFR";
+
 const VocabEvalScreen = () => {
   const { age } = useLocalSearchParams<{
     age: string;
@@ -15,6 +18,8 @@ const VocabEvalScreen = () => {
   const [selectedHeadwords, setSelectedHeadwords] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const [cefrLevel, setCefrLevel] = useState<CEFRLevel | null>(null);
+  const [levelModalVisible, setLevelModalVisible] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -63,12 +68,20 @@ const VocabEvalScreen = () => {
       selectedHeadwords,
     });
     try {
-      await setupProfile({
+      const res = await setupProfile({
         userId: Number(userId),
         age: Number(age),
         selectedHeadwords,
       });
-      router.replace("/authentication/login");
+
+      if ("error" in res) {
+        return;
+      }
+      if (res.message === "Setup completed") {
+        setCefrLevel(res.cefrLevel);
+        setLevelModalVisible(true);
+        return;
+      }
     } catch (error) {
       console.error(error);
       alert("Failed to setup profile.");
@@ -133,7 +146,6 @@ const VocabEvalScreen = () => {
               What words are you familiar with?
             </Text>
 
-
             <View style={{
               flexDirection: "row",
               flexWrap: "wrap",
@@ -177,6 +189,14 @@ const VocabEvalScreen = () => {
           </View>
         </Card>
       </View>
+        {cefrLevel && (
+          <UserLevelModal
+            visible={levelModalVisible}
+            level={cefrLevel}
+            onConfirm={() => setLevelModalVisible(false)}
+            onRequestClose={() => setLevelModalVisible(false)}
+          />
+        )}
     </View>
   );
 };

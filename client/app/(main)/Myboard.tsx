@@ -36,7 +36,7 @@ export default function Public() {
         <View
           style={[
             styles.leftPanel,
-            { marginRight: isWide ? 24 : 0, marginBottom: isWide ? 0 : 24 },
+            { marginRight: isWide ? 24 : 0, marginBottom: isWide ? 25 : 24 },
           ]}
         >
           {/* Header with back button */}
@@ -64,7 +64,7 @@ export default function Public() {
                 style={{
                   flexDirection: "column",
                   alignItems: "flex-start",
-                  paddingLeft: 8,
+                  paddingLeft: 9,
                 }}
               >
                 <Text style={ButtonStyles.wordBank.text}>Word</Text>
@@ -116,18 +116,19 @@ const styles = StyleSheet.create({
     maxHeight: 850,
     paddingHorizontal: 0,
     paddingTop: 16,
-    paddingBottom: 24,
+    paddingBottom: 50,
     flexDirection: "row",
   },
   leftPanel: {
-    flex: 2.5,
+    flex: 3,
     borderRadius: 20,
     padding: 16,
+    
   },
   rightPanel: {
-    flex: 1,
+    flex: 1.55,
     borderRadius: 20,
-    padding: 16,
+    paddingTop: 15,
     justifyContent: "center",
     alignItems: "center",
   },
