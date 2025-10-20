@@ -1,7 +1,7 @@
 import express from "express";
 import {
   getAverageGamesByLevelPerPeriod,
-  getUserGamesPlayedPerPeriod,
+  getUserGamesPlayedMultiplePeriod,
   getUserGameStreak,
   getUserProgress,
   getUserTotalPlaytime,
@@ -12,9 +12,9 @@ const router = express.Router();
 router.get("/user/:userId/playtime", authenticatedUser, getUserTotalPlaytime);
 router.get("/user/:userId/wordlearned", authenticatedUser, getUserWordLearned);
 router.get(
-  "/user/:userId/gameplayedperperiod",
+  "/user/:userId/gameplayedmultipleperiod",
   authenticatedUser,
-  getUserGamesPlayedPerPeriod
+  getUserGamesPlayedMultiplePeriod
 );
 
 router.get("/user/gameplayedstreak", authenticatedUser, getUserGameStreak);

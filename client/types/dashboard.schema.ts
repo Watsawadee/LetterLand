@@ -11,7 +11,7 @@ export const WordsLearnedResponseSchema = z.object({
     wordsLearned: z.number(),
 });
 
-export const GamesPlayedPerPeriodResponseSchema = z.object({
+export const GamesPlayedSinglePeriodSchema = z.object({
     labels: z.array(z.string()),
     counts: z.array(z.number()),
     range: z.object({
@@ -19,12 +19,17 @@ export const GamesPlayedPerPeriodResponseSchema = z.object({
         end: z.string(),
     }),
     period: PeriodEnum,
+    date: z.string(),
 });
-export const GamesPlayedPerPeriodOrErrorSchema = z.union([
-    GamesPlayedPerPeriodResponseSchema,
+
+export const GamesPlayedMultiplePeriodResponseSchema = z.object({
+    results: z.array(GamesPlayedSinglePeriodSchema),
+    currentIndex: z.number().optional(),
+});
+export const GamesPlayedMultiplePeriodOrErrorSchema = z.union([
+    GamesPlayedMultiplePeriodResponseSchema,
     ErrorResponseSchema,
 ]);
-
 
 
 export const TotalPlaytimeOrErrorSchema = z.union([
@@ -38,7 +43,7 @@ export const WordsLearnedOrErrorSchema = z.union([
 ]);
 
 
-export const AverageGamesByLevelPeerPeriodResponseSchema = z.object({
+export const AverageGamesByLevelPeerSinglePeriodSchema = z.object({
     englishLevel: z.enum(["A1", "A2", "B1", "B2", "C1", "C2"]),
     userCount: z.number().int().nonnegative(),
     labels: z.array(z.string()),
@@ -48,11 +53,19 @@ export const AverageGamesByLevelPeerPeriodResponseSchema = z.object({
         start: z.string(),
         end: z.string(),
     }),
+    date: z.string(),
 });
-export const AverageGamesByLevelPeerPeriodResponseSchemaOrErrorSchema = z.union([
-    AverageGamesByLevelPeerPeriodResponseSchema,
+
+export const AverageGamesByLevelPeerMultiplePeriodResponseSchema = z.object({
+    results: z.array(AverageGamesByLevelPeerSinglePeriodSchema),
+    currentIndex: z.number().optional(),
+});
+
+export const AverageGamesByLevelPeerMultiplePeriodOrErrorSchema = z.union([
+    AverageGamesByLevelPeerMultiplePeriodResponseSchema,
     ErrorResponseSchema,
 ]);
+
 
 
 

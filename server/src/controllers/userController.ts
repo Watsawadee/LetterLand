@@ -102,6 +102,7 @@ export const createUserController = async (req: Request, res: Response) => {
         email: user.email,
         username: user.username,
         hasCompletedSetup: !!(user.age && user.englishLevel),
+
       },
       JWTtoken,
       {

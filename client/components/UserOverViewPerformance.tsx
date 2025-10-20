@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react"
 import { View, Text, ScrollView, Image, TouchableOpacity, Platform } from "react-native"
-import { useTotalGamesPerPeriod, usePeerAverageGamesPerPeriod, useUserTotalPlaytime, useUserWordLearned, useUserGameStreak, useUserProgress } from "@/hooks/useDashboard";
+import { usePeerAverageGamesPerPeriod, useUserTotalPlaytime, useUserWordLearned, useUserGameStreak, useUserProgress, useTotalGamesMultiplePeriod } from "@/hooks/useDashboard";
 import { Color } from "@/theme/Color";
 import { Button, Card, Checkbox, IconButton, List, Modal, PaperProvider, Portal } from "react-native-paper";
 import { ActivityIndicator } from "react-native";
@@ -29,6 +29,7 @@ import BoxingGlove from "@/assets/icon/BoxingGlove";
 import Fire from "@/assets/icon/Fire";
 import Trophy from "@/assets/icon/Trophy";
 import { ColorProperties } from "react-native-reanimated/lib/typescript/Colors";
+import Carousel from "react-native-reanimated-carousel";
 
 function getWeekDates(startDateStr: string, labels: string[]) {
     const startDate = new Date(startDateStr);
@@ -106,7 +107,6 @@ const UserOverviewPerformance = () => {
     const CHART_W = 750;
     const CHART_H = 300;
 
-
     useEffect(() => {
         const timer = setTimeout(() => setForceLoading(false), 1000);
         return () => clearTimeout(timer);
@@ -145,7 +145,10 @@ const UserOverviewPerformance = () => {
     };
 
 
-    const { data: TotalgamesData, isLoading: loadingChart } = useTotalGamesPerPeriod(period, formattedEndDate);
+    const { data: gamesData, isLoading: loadingChart } = useTotalGamesMultiplePeriod(period, formattedEndDate);
+    // ✅ pick the current period (latest week/month/year)
+    const currentPeriod = gamesData?.results?.[gamesData.results.length - 1];
+
     const { data: peerAvgData, isLoading: loadingPeer } = usePeerAverageGamesPerPeriod(period, formattedEndDate);
     const { data: userProgress, isLoading: loadingProgress } = useUserProgress();
 
@@ -153,12 +156,12 @@ const UserOverviewPerformance = () => {
     const { data: wordsLearned } = useUserWordLearned();
     const { data: streakData, isLoading: loadingStreak } = useUserGameStreak();
 
-    const weekTickLabels = isSuccess(TotalgamesData) && TotalgamesData.period === "week"
-        ? getWeekDates(TotalgamesData.range.start, TotalgamesData.labels)
+    const weekTickLabels = isSuccess(currentPeriod) && currentPeriod.period === "week"
+        ? getWeekDates(currentPeriod.range.start, currentPeriod.labels)
         : [];
 
-    const monthTickLabels = isSuccess(TotalgamesData) && TotalgamesData.period === "month"
-        ? getMonthWeekRanges(TotalgamesData.range.start, TotalgamesData.labels)
+    const monthTickLabels = isSuccess(currentPeriod) && currentPeriod.period === "month"
+        ? getMonthWeekRanges(currentPeriod.range.start, currentPeriod.labels)
         : [];
 
     const getPeriodLabel = (p: "week" | "month" | "year") => {
@@ -192,27 +195,138 @@ const UserOverviewPerformance = () => {
     function isSuccess<T>(data: T | undefined): data is Exclude<T, { error: string }> {
         return !!data && typeof data === "object" && !("error" in data);
     }
-    const periodSeries =
-        isSuccess(TotalgamesData)
-            ? TotalgamesData.labels.map((label, i) => ({
-                x: label,
-                y: TotalgamesData.counts[i],
-            }))
-            : [];
-
-    const peerSeries =
-        isSuccess(peerAvgData)
-            ? peerAvgData.labels.map((label, i) => ({
-                x: label,
-                y: peerAvgData.counts[i],
-            }))
-            : [];
-    const maxY = isSuccess(TotalgamesData)
-        ? Math.max(1, ...TotalgamesData.counts)
+    const maxY = isSuccess(currentPeriod)
+        ? Math.max(1, ...currentPeriod.counts)
         : 1;
 
     const router = useRouter();
     const loading = loadingChart || loadingPeer || loadingProgress;
+    const renderPeriodChart = (item: any, peerItem?: any) => {
+        const periodSeries = item.labels.map((label: string, i: number) => ({
+            x: label,
+            y: item.counts[i],
+        }));
+        const peerSeries = peerItem
+            ? peerItem.labels.map((label: string, i: number) => ({
+                x: label,
+                y: peerItem.counts[i],
+            }))
+            : [];
+        const maxY = Math.max(1, ...item.counts);
+
+        // Generate tick labels for this period
+        const weekTickLabels = item.period === "week"
+            ? getWeekDates(item.range.start, item.labels)
+            : [];
+        const monthTickLabels = item.period === "month"
+            ? getMonthWeekRanges(item.range.start, item.labels)
+            : [];
+
+        return (
+            <VictoryChart
+                theme={VictoryTheme.material}
+                width={CHART_W}
+                height={CHART_H}
+                domainPadding={{ x: [30, 40] }}
+                domain={{ y: [0, maxY + 2] }}
+            >
+                <VictoryAxis
+                    tickValues={currentPeriod?.labels}
+                    tickLabelComponent={
+                        <VictoryLabel
+                            text={({ index }) => {
+                                const safeIndex = typeof index === "number" ? index : 0;
+                                if (item.period === "week") {
+                                    if (!weekTickLabels[safeIndex]) {
+                                        return item.labels[safeIndex];
+                                    }
+                                    return `${weekTickLabels[safeIndex].label}\n${weekTickLabels[safeIndex].date}`;
+                                } else if (item.period === "month") {
+                                    if (!monthTickLabels[safeIndex]) {
+                                        return item.labels[safeIndex];
+                                    }
+                                    return `${monthTickLabels[safeIndex].label}\n${monthTickLabels[safeIndex].range}`;
+                                }
+                                return item.labels[safeIndex];
+                            }}
+                            style={[
+                                { fontSize: 12, fill: Color.gray, fontWeight: "bold" },
+                                { fontSize: 10, fill: Color.gray }
+                            ]}
+                            lineHeight={[1, 1]}
+                        />
+                    }
+                    style={{
+                        tickLabels: { fontSize: 12, fill: Color.blue }, grid: {
+                            stroke: "transparent",
+                            strokeWidth: 1.5,
+                            strokeDasharray: 0.5,
+                        },
+                    }}
+                />
+                <VictoryAxis dependentAxis style={{
+                    axis: { stroke: "transparent", strokeWidth: 1.5 }, ticks: { stroke: "transparent" }, tickLabels: {
+                        fill: Color.gray,
+                        fontSize: 12,
+                        fontWeight: "500",
+                    }, grid: {
+                        stroke: "#B5B5B5",
+                        strokeWidth: 1.5,
+                        strokeDasharray: 0.5,
+                    },
+                }}
+                />
+                {/* <Defs>
+                                            <LinearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                                                <Stop offset="0%" stopColor={Color.blue} />
+                                                <Stop offset="100%" stopColor="#4584ccff" />
+                                            </LinearGradient>
+                                        </Defs> */}
+                <VictoryBar
+                    data={periodSeries}
+                    barWidth={40}
+                    cornerRadius={10}
+                    style={{
+                        // data: { fill: "url(#barGradient)" }
+                        data: { fill: Color.blue }
+
+                    }}
+                    labels={({ datum }) => `${datum.y}\n games`}
+                    labelComponent={
+                        <VictoryTooltip flyoutStyle={{ fill: "#fff", stroke: Color.blue, strokeWidth: 1, }}
+                            style={{ fill: Color.blue, fontWeight: "600", fontSize: 13, textAlign: "center" }}
+                            flyoutPadding={{ top: 8, bottom: 8, left: 10, right: 10 }}
+                            dy={-10}
+                            pointerLength={0}
+                            activateData={true} />
+                    }
+                    events={[
+                        {
+                            target: "data",
+                            eventHandlers: {
+                                onPressIn: () => [{ target: "labels", mutation: () => ({ active: true }) }],
+                                onPressOut: () => [{ target: "labels", mutation: () => ({ active: false }) }],
+                            },
+                        },
+                    ]}
+                />
+                {peerSeries.length > 0 && peerSeries.some((d: any) => d.y !== 0) && ([
+                    <VictoryLine
+                        data={peerSeries}
+                        style={{ data: { stroke: Color.green, strokeWidth: 3 } }}
+                    />,
+                    <VictoryScatter
+                        data={peerSeries}
+                        size={5}
+                        style={{ data: { fill: Color.green } }}
+                        labels={({ datum }) => datum.y.toFixed(1)}
+                        labelComponent={<VictoryLabel dy={-10} style={{ fill: Color.green, fontSize: 12, stroke: Color.green, strokeWidth: 1 }} />}
+                    />
+                ])}
+            </VictoryChart>
+        );
+    };
+
     return (
         <>
             <View style={{ width: "69%", height: "100%", gap: 15 }}>
@@ -254,7 +368,7 @@ const UserOverviewPerformance = () => {
                         <View style={{ alignItems: "center" }}>
                             {loading ? (
                                 <ActivityIndicator size="large" />
-                            ) : isSuccess(TotalgamesData) && isSuccess(peerAvgData) ? (
+                            ) : isSuccess(currentPeriod) && isSuccess(peerAvgData) ? (
                                 <Card
                                     style={{
                                         backgroundColor: Color.white,
@@ -325,10 +439,10 @@ const UserOverviewPerformance = () => {
                                             marginBottom: 10,
                                         }}
                                     >
-                                        {isSuccess(TotalgamesData)
+                                        {isSuccess(currentPeriod)
                                             ? `${formatDateRange(
-                                                TotalgamesData.range.start,
-                                                TotalgamesData.range.end,
+                                                currentPeriod.range.start,
+                                                currentPeriod.range.end,
                                                 period
                                             )}`
                                             : "Games Played"}
@@ -451,107 +565,7 @@ const UserOverviewPerformance = () => {
 
                                     )}
 
-                                    <VictoryChart
-                                        theme={VictoryTheme.material}
-                                        width={CHART_W}
-                                        height={CHART_H}
-                                        domainPadding={{ x: [30, 40] }}
-                                        domain={{ y: [0, maxY + 2] }}
-                                    >
-                                        <VictoryAxis
-                                            tickValues={TotalgamesData.labels}
-                                            tickLabelComponent={
-                                                <VictoryLabel
-                                                    text={({ index }) => {
-                                                        const safeIndex = typeof index === "number" ? index : 0;
-                                                        if (period === "week") {
-                                                            if (!weekTickLabels[safeIndex]) {
-                                                                return TotalgamesData.labels[safeIndex];
-                                                            }
-                                                            return `${weekTickLabels[safeIndex].label}\n${weekTickLabels[safeIndex].date}`;
-                                                        } else if (period === "month") {
-                                                            if (!monthTickLabels[safeIndex]) {
-                                                                return TotalgamesData.labels[safeIndex];
-                                                            }
-                                                            return `${monthTickLabels[safeIndex].label}\n${monthTickLabels[safeIndex].range}`;
-                                                        }
-                                                        return TotalgamesData.labels[safeIndex];
-                                                    }}
-                                                    style={[
-                                                        { fontSize: 12, fill: Color.gray, fontWeight: "bold" },
-                                                        { fontSize: 10, fill: Color.gray }
-                                                    ]}
-                                                    lineHeight={[1, 1]}
-                                                />
-                                            }
-                                            style={{
-                                                tickLabels: { fontSize: 12, fill: Color.blue }, grid: {
-                                                    stroke: "transparent",
-                                                    strokeWidth: 1.5,
-                                                    strokeDasharray: 0.5,
-                                                },
-                                            }}
-                                        />
-                                        <VictoryAxis dependentAxis style={{
-                                            axis: { stroke: "transparent", strokeWidth: 1.5 }, ticks: { stroke: "transparent" }, tickLabels: {
-                                                fill: Color.gray,
-                                                fontSize: 12,
-                                                fontWeight: "500",
-                                            }, grid: {
-                                                stroke: "#B5B5B5",
-                                                strokeWidth: 1.5,
-                                                strokeDasharray: 0.5,
-                                            },
-                                        }}
-                                        />
-                                        {/* <Defs>
-                                            <LinearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                                                <Stop offset="0%" stopColor={Color.blue} />
-                                                <Stop offset="100%" stopColor="#4584ccff" />
-                                            </LinearGradient>
-                                        </Defs> */}
-                                        <VictoryBar
-                                            data={periodSeries}
-                                            barWidth={40}
-                                            cornerRadius={10}
-                                            style={{
-                                                // data: { fill: "url(#barGradient)" }
-                                                data: { fill: Color.blue }
 
-                                            }}
-                                            labels={({ datum }) => `${datum.y}\n games`}
-                                            labelComponent={
-                                                <VictoryTooltip flyoutStyle={{ fill: "#fff", stroke: Color.blue, strokeWidth: 1, }}
-                                                    style={{ fill: Color.blue, fontWeight: "600", fontSize: 13, textAlign: "center" }}
-                                                    flyoutPadding={{ top: 8, bottom: 8, left: 10, right: 10 }}
-                                                    dy={-10}
-                                                    pointerLength={0}
-                                                    activateData={true} />
-                                            }
-                                            events={[
-                                                {
-                                                    target: "data",
-                                                    eventHandlers: {
-                                                        onPressIn: () => [{ target: "labels", mutation: () => ({ active: true }) }],
-                                                        onPressOut: () => [{ target: "labels", mutation: () => ({ active: false }) }],
-                                                    },
-                                                },
-                                            ]}
-                                        />
-                                        {peerSeries.some((d) => d.y !== 0) && ([
-                                            <VictoryLine
-                                                data={peerSeries}
-                                                style={{ data: { stroke: Color.green, strokeWidth: 3 } }}
-                                            />,
-                                            <VictoryScatter
-                                                data={peerSeries}
-                                                size={5}
-                                                style={{ data: { fill: Color.green } }}
-                                                labels={({ datum }) => datum.y.toFixed(1)}
-                                                labelComponent={<VictoryLabel dy={-10} style={{ fill: Color.green, fontSize: 12, stroke: Color.green, strokeWidth: 1 }} />}
-                                            />
-                                        ])}
-                                    </VictoryChart>
                                     <View style={{ display: "flex", flexDirection: "row", justifyContent: "center", gap: 20 }}>
                                         <View style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 5 }}>
                                             <View style={{ backgroundColor: Color.blue, width: 5, height: 5, borderRadius: 9999 }} />
@@ -562,9 +576,24 @@ const UserOverviewPerformance = () => {
                                             <Text style={{ color: Color.green, fontWeight: Typography.body16.fontWeight }}>Average games by peers</Text>
                                         </View>
                                     </View>
-                                    {/* Carousel */}
-                                    {/* )} */}
-                                    {/* /> */}
+                                    {isSuccess(gamesData) && gamesData.results && gamesData.results.length > 0 ? (
+                                        <Carousel
+                                            width={CHART_W}
+                                            height={CHART_H + 100}
+                                            data={gamesData.results}
+                                            renderItem={({ item }) => {
+                                                let peerItem = undefined;
+                                                if (isSuccess(peerAvgData) && peerAvgData.results) {
+                                                    peerItem = peerAvgData.results.find(p => p.date === item.date);
+                                                }
+                                                return renderPeriodChart(item, peerItem);
+                                            }}
+                                            style={{ alignSelf: "center" }}
+                                            loop={false}
+                                        />
+                                    ) : (
+                                        <Text style={{ color: Color.gray }}>No chart data available</Text>
+                                    )}
                                 </Card>
                             ) : (
                                 <Text style={{ color: Color.gray }}>No chart data available</Text>

@@ -1,19 +1,18 @@
 import prisma from "../configs/db";
 import { Request, Response } from "express";
 import { AuthenticatedRequest } from "../types/authenticatedRequest";
-import { startOfWeek, endOfWeek, eachDayOfInterval, format, addWeeks, startOfDay, isSameDay, addDays } from "date-fns";
+import { startOfWeek, endOfWeek, eachDayOfInterval, format, addWeeks, startOfDay, isSameDay, addDays, subWeeks, startOfMonth, subMonths, startOfYear, subYears } from "date-fns";
 import {
   TotalPlaytimeResponseSchema,
   WordsLearnedResponseSchema,
-  GamesPlayedPerPeriodResponseSchema,
-  AverageGamesByLevelPeerPeriodResponseSchemaOrErrorSchema,
-  AverageGamesByLevelPeerPeriodResponseSchema,
+  GamesPlayedMultiplePeriodResponseSchema,
   UserProgressResponseSchema,
+  AverageGamesByLevelPeerMultiplePeriodResponseSchema,
 } from "../types/dashboard.schema";
 import {
   TotalPlaytimeOrError, WordsLearnedOrError,
-  GamesPlayedPerPeriodOrError,
-  AverageGamesByLevelPeerOrError,
+  GamesPlayedMultiplePeriodOrError,
+  AverageGamesByLevelPeerMultipleOrError,
 } from "../types/type"
 import { EnglishLevel } from "@prisma/client";
 import { getPeriodRange } from "../services/getPeriodRange";
@@ -92,9 +91,9 @@ export const getUserWordLearned = async (
   }
 };
 
-export const getUserGamesPlayedPerPeriod = async (
+export const getUserGamesPlayedMultiplePeriod = async (
   req: AuthenticatedRequest,
-  res: Response<GamesPlayedPerPeriodOrError>
+  res: Response<GamesPlayedMultiplePeriodOrError>
 ): Promise<void> => {
   const userId = Number(req.params.userId);
   const loggedInUserId = req.user?.id;
@@ -102,79 +101,96 @@ export const getUserGamesPlayedPerPeriod = async (
     res.status(403).json({ error: "Forbidden: Data cant be accessed" });
     return;
   }
-  if (isNaN(userId)) {
-    res.status(400).json({ error: "Invalid user ID" });
+  const period = (req.query.period as string) || "week";
+  const dateStr = req.query.date as string | undefined;
+  const date = dateStr ? new Date(dateStr) : new Date();
+  if (!["week", "month", "year"].includes(period)) {
+    res.status(400).json({ error: "Invalid period" });
     return;
   }
+  if (isNaN(date.getTime())) {
+    res.status(400).json({ error: "Invalid date" });
+    return;
+  }
+  let dates: Date[] = [];
+  const now = date; // Use selected date, not always new Date()
+  if (period === "week") {
+    for (let i = 0; i < 5; i++) {
+      dates.push(startOfWeek(subWeeks(now, i), { weekStartsOn: 0 }));
+    }
+  } else if (period === "month") {
+    for (let i = 0; i < 5; i++) {
+      dates.push(startOfMonth(subMonths(now, i)));
+    }
+  } else if (period === "year") {
+    for (let i = 0; i < 5; i++) {
+      dates.push(startOfYear(subYears(now, i)));
+    }
+  }
   try {
-    const period = (req.query.period as string) || "week";
-    const date = req.query.date ? new Date(req.query.date as string) : new Date();
-    if (!["week", "month", "year"].includes(period)) {
-      res.status(400).json({ error: "Invalid period" });
-      return;
-    }
-    if (isNaN(date.getTime())) {
-      res.status(400).json({ error: "Invalid date" });
-      return;
-    }
-    let start: Date, end: Date;
-    try {
-      ({ start, end } = getPeriodRange(period, date));
-    } catch {
-      res.status(400).json({ error: "Invalid period" });
-      return;
-    }
+    const results = await Promise.all(
+      dates.map(async (dateStr) => {
+        const date = new Date(dateStr);
+        let start: Date, end: Date;
+        try {
+          ({ start, end } = getPeriodRange(period, date));
+        } catch {
+          return null;
+        }
+        const games = await prisma.game.findMany({
+          where: {
+            userId,
+            startedAt: { gte: start, lte: end },
+            isFinished: true
+          },
+          select: { startedAt: true },
+        });
 
-    const games = await prisma.game.findMany({
-      where: {
-        userId,
-        startedAt: { gte: start, lte: end },
-        isFinished: true
-      },
-      select: { startedAt: true },
-    });
+        let labels: string[] = [];
+        let counts: number[] = [];
+        if (period === "week") {
+          const days = eachDayOfInterval({ start, end });
+          labels = days.map(day => format(day, "EEE").slice(0, 2));
+          const bucket: Record<string, number> = Object.fromEntries(labels.map(l => [l, 0]));
+          games.forEach(g => {
+            const key = format(g.startedAt, "EEE").slice(0, 2);
+            if (key in bucket) bucket[key]++;
+          });
+          counts = labels.map(l => bucket[l] ?? 0);
+        } else if (period === "month") {
+          let current = startOfWeek(start, { weekStartsOn: 0 });
+          let weekIdx = 1;
+          const buckets: { start: Date, end: Date }[] = [];
+          while (current <= end) {
+            const weekStart = current < start ? start : current;
+            const weekEnd = endOfWeek(current, { weekStartsOn: 0 }) > end ? end : endOfWeek(current, { weekStartsOn: 0 });
+            buckets.push({ start: weekStart, end: weekEnd });
+            labels.push(`W${weekIdx++}`);
+            current = addWeeks(current, 1);
+          }
+          counts = buckets.map(({ start: bStart, end: bEnd }) =>
+            games.filter(g => g.startedAt >= bStart && g.startedAt <= bEnd).length
+          );
+        } else if (period === "year") {
+          labels = Array.from({ length: 12 }, (_, i) => format(new Date(date.getFullYear(), i, 1), "MMM"));
+          const bucket: Record<string, number> = Object.fromEntries(labels.map(l => [l, 0]));
+          games.forEach(g => {
+            const key = format(g.startedAt, "MMM");
+            if (key in bucket) bucket[key]++;
+          });
+          counts = labels.map(l => bucket[l] ?? 0);
+        }
+        return {
+          labels,
+          counts,
+          range: { start: start.toISOString(), end: end.toISOString() },
+          period,
+          date: date.toISOString(),
+        };
+      })
+    );
 
-    let labels: string[] = [];
-    let counts: number[] = [];
-    if (period === "week") {
-      const days = eachDayOfInterval({ start, end });
-      labels = days.map(day => format(day, "EEE").slice(0, 2));
-      const bucket: Record<string, number> = Object.fromEntries(labels.map(l => [l, 0]));
-      games.forEach(g => {
-        const key = format(g.startedAt, "EEE").slice(0, 2);
-        if (key in bucket) bucket[key]++;
-      });
-      counts = labels.map(l => bucket[l] ?? 0);
-    } else if (period === "month") {
-      let current = startOfWeek(start, { weekStartsOn: 0 });
-      let weekIdx = 1;
-      const buckets: { start: Date, end: Date }[] = [];
-      while (current <= end) {
-        const weekStart = current < start ? start : current;
-        const weekEnd = endOfWeek(current, { weekStartsOn: 0 }) > end ? end : endOfWeek(current, { weekStartsOn: 0 });
-        buckets.push({ start: weekStart, end: weekEnd });
-        labels.push(`W${weekIdx++}`);
-        current = addWeeks(current, 1);
-      }
-      counts = buckets.map(({ start: bStart, end: bEnd }) =>
-        games.filter(g => g.startedAt >= bStart && g.startedAt <= bEnd).length
-      );
-    } else if (period === "year") {
-      labels = Array.from({ length: 12 }, (_, i) => format(new Date(date.getFullYear(), i, 1), "MMM"));
-      const bucket: Record<string, number> = Object.fromEntries(labels.map(l => [l, 0]));
-      games.forEach(g => {
-        const key = format(g.startedAt, "MMM");
-        if (key in bucket) bucket[key]++;
-      });
-      counts = labels.map(l => bucket[l] ?? 0);
-    }
-
-    const response = GamesPlayedPerPeriodResponseSchema.parse({
-      labels,
-      counts,
-      range: { start: start.toISOString(), end: end.toISOString() },
-      period,
-    });
+    const response = GamesPlayedMultiplePeriodResponseSchema.parse({ results: results.filter(Boolean) });
     res.status(200).json(response);
   } catch (error) {
     console.log(error);
@@ -275,7 +291,7 @@ export const getUserGamesPlayedPerPeriod = async (
 
 export const getAverageGamesByLevelPerPeriod = async (
   req: AuthenticatedRequest,
-  res: Response<AverageGamesByLevelPeerOrError>
+  res: Response<AverageGamesByLevelPeerMultipleOrError>
 ): Promise<void> => {
   const userId = req.user?.id;
   if (!userId) {
@@ -293,8 +309,6 @@ export const getAverageGamesByLevelPerPeriod = async (
       res.status(400).json({ error: "Invalid date" });
       return;
     }
-    let start: Date, end: Date;
-    ({ start, end } = getPeriodRange(period, date));
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -315,88 +329,96 @@ export const getAverageGamesByLevelPerPeriod = async (
     const sameLevelUserIds = sameLevelUsers.map((u) => u.id);
     const peerCount = sameLevelUserIds.length;
 
-    let labels: string[] = [];
-    let buckets: { start: Date, end: Date }[] = [];
-
+    // Build last 5 periods (current + 4 previous)
+    let dates: Date[] = [];
     if (period === "week") {
-      // Each day of the week
-      const days = eachDayOfInterval({ start, end });
-      labels = days.map(day => format(day, "EEE").slice(0, 2));
-      buckets = days.map(day => ({
-        start: day,
-        end: day,
-      }));
+      for (let i = 0; i < 5; i++) {
+        dates.push(startOfWeek(subWeeks(date, i), { weekStartsOn: 0 }));
+      }
     } else if (period === "month") {
-      // Each week of the month
-      let current = startOfWeek(start, { weekStartsOn: 0 });
-      let weekIdx = 1;
-      while (current <= end) {
-        const weekStart = current;
-        const weekEnd = endOfWeek(current, { weekStartsOn: 0 });
-        buckets.push({
-          start: weekStart < start ? start : weekStart,
-          end: weekEnd > end ? end : weekEnd,
-        });
-        labels.push(`W${weekIdx++}`);
-        current = addWeeks(current, 1);
+      for (let i = 0; i < 5; i++) {
+        dates.push(startOfMonth(subMonths(date, i)));
       }
     } else if (period === "year") {
-      // Each month of the year
-      for (let i = 0; i < 12; i++) {
-        const monthStart = new Date(date.getFullYear(), i, 1);
-        const monthEnd = new Date(date.getFullYear(), i + 1, 0, 23, 59, 59, 999);
-        buckets.push({
-          start: monthStart < start ? start : monthStart,
-          end: monthEnd > end ? end : monthEnd,
-        });
-        labels.push(format(monthStart, "MMM"));
+      for (let i = 0; i < 5; i++) {
+        dates.push(startOfYear(subYears(date, i)));
       }
     }
 
-    if (peerCount === 0) {
-      const zeroCounts = labels.map(() => 0);
-      const payload = {
-        englishLevel: userLevel,
-        userCount: 0,
-        labels,
-        counts: zeroCounts,
-        period,
-        range: { start: start.toISOString(), end: end.toISOString() },
-      };
-      const response = AverageGamesByLevelPeerPeriodResponseSchema.parse(payload);
-      res.status(200).json(response as any);
-      return;
-    }
+    const results = await Promise.all(
+      dates.map(async (periodDate) => {
+        let start: Date, end: Date;
+        ({ start, end } = getPeriodRange(period, periodDate));
 
-    // Get all peer games in the period
-    const peerGames = await prisma.game.findMany({
-      where: {
-        userId: { in: sameLevelUserIds },
-        isFinished: true,
-        startedAt: { gte: start, lte: end },
-      },
-      select: { startedAt: true },
-    });
+        let labels: string[] = [];
+        let buckets: { start: Date, end: Date }[] = [];
 
-    // Count games in each bucket
-    const counts = buckets.map(({ start: bStart, end: bEnd }) => {
-      const count = peerGames.filter(g =>
-        g.startedAt >= bStart && g.startedAt <= bEnd
-      ).length;
-      return Number((count / peerCount).toFixed(2));
-    });
+        if (period === "week") {
+          const days = eachDayOfInterval({ start, end });
+          labels = days.map(day => format(day, "EEE").slice(0, 2));
+          buckets = days.map(day => ({
+            start: day,
+            end: day,
+          }));
+        } else if (period === "month") {
+          let current = startOfWeek(start, { weekStartsOn: 0 });
+          let weekIdx = 1;
+          while (current <= end) {
+            const weekStart = current;
+            const weekEnd = endOfWeek(current, { weekStartsOn: 0 });
+            buckets.push({
+              start: weekStart < start ? start : weekStart,
+              end: weekEnd > end ? end : weekEnd,
+            });
+            labels.push(`W${weekIdx++}`);
+            current = addWeeks(current, 1);
+          }
+        } else if (period === "year") {
+          for (let i = 0; i < 12; i++) {
+            const monthStart = new Date(periodDate.getFullYear(), i, 1);
+            const monthEnd = new Date(periodDate.getFullYear(), i + 1, 0, 23, 59, 59, 999);
+            buckets.push({
+              start: monthStart < start ? start : monthStart,
+              end: monthEnd > end ? end : monthEnd,
+            });
+            labels.push(format(monthStart, "MMM"));
+          }
+        }
 
-    const payload = {
-      englishLevel: userLevel,
-      userCount: peerCount,
-      labels,
-      counts,
-      period,
-      range: { start: start.toISOString(), end: end.toISOString() },
-    };
+        let counts: number[] = [];
+        if (peerCount === 0) {
+          counts = labels.map(() => 0);
+        } else {
+          const peerGames = await prisma.game.findMany({
+            where: {
+              userId: { in: sameLevelUserIds },
+              isFinished: true,
+              startedAt: { gte: start, lte: end },
+            },
+            select: { startedAt: true },
+          });
+          counts = buckets.map(({ start: bStart, end: bEnd }) => {
+            const count = peerGames.filter(g =>
+              g.startedAt >= bStart && g.startedAt <= bEnd
+            ).length;
+            return Number((count / peerCount).toFixed(2));
+          });
+        }
 
-    const response = AverageGamesByLevelPeerPeriodResponseSchema.parse(payload);
-    res.status(200).json(response as any);
+        return {
+          englishLevel: userLevel,
+          userCount: peerCount,
+          labels,
+          counts,
+          period,
+          range: { start: start.toISOString(), end: end.toISOString() },
+          date: periodDate.toISOString(),
+        };
+      })
+    );
+
+    const response = AverageGamesByLevelPeerMultiplePeriodResponseSchema.parse({ results });
+    res.status(200).json(response);
   }
   catch (error: any) {
     console.error("❌ Error computing average peer games:", error);
