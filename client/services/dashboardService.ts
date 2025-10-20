@@ -27,7 +27,7 @@ export async function getTotalGameMultiplePeriod(
     if (date) params.date = date;
 
     const res = await api.get<GamesPlayedMultiplePeriodResponse>(
-        `/dashboard/games/${userId}`,
+        `/dashboard/user/${userId}/gameplayedmultipleperiod`,
         { ...config, params }
     );
 
