@@ -162,7 +162,7 @@ export default function Home() {
               />
               <View style={{ flex: 1 }}>
                 <Text style={[Typography.header25, { marginBottom: 4 }]}>
-                  Hello {username}
+                Hello {username ? username.charAt(0).toUpperCase() + username.slice(1) : ""}
                 </Text>
                 <Text
                   style={[
@@ -236,14 +236,21 @@ export default function Home() {
         </View>
 
         {/* RIGHT PANEL */}
-        {showSettings ? (
-          <UserSettingCard onBack={() => setShowSettings(false)} />
-        ) : (
-          <UserOverviewCard
-            coins={coins}
-            onOpenSettings={() => setShowSettings(true)}
-          />
-        )}
+        <View style={{ flex: 1.55, borderRadius: 20,
+    padding: 6,
+    paddingTop: 15,
+    paddingBottom: 15,
+    justifyContent: "center",
+    alignItems: "center", }}>
+  {showSettings ? (
+    <UserSettingCard onBack={() => setShowSettings(false)} />
+  ) : (
+    <UserOverviewCard
+      coins={coins}
+      onOpenSettings={() => setShowSettings(true)}
+    />
+  )}
+</View>
       </View>
     </View>
   );
@@ -274,26 +281,26 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   leftPanel: {
-    flex: 2.5,
+    flex: 3,
     borderRadius: 20,
     padding: 16,
   },
-
+  
   /* ✅ single definition */
   headerRow: {
     flexDirection: "row",
     alignItems: "flex-start", // top-aligned so the button sits nicely
-    marginBottom: 40,
+    marginBottom: 35,
   },
 
   section: {
-    marginBottom: 6,
+    marginBottom: 1,
   },
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 30,
+    marginBottom: 2,
   },
   sectionContent: {},
   link: {

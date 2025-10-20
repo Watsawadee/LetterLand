@@ -5,6 +5,7 @@ import { UserProfileOrError } from "../types/type";
 import { UserProfileResponseSchema } from "../types/userProfile.schema";
 import { getNextLevel } from "../services/levelupService";
 import { EnglishLevel } from "../types/setup.schema";
+
 export const getUserProfile = async (
   req: AuthenticatedRequest,
   res: Response<UserProfileOrError>
@@ -26,12 +27,30 @@ export const getUserProfile = async (
     return;
   }
   try {
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, username: true, coin: true, englishLevel: true, email: true, total_playtime: true, } })
+    const user = await prisma.user.findUnique({ 
+      where: { id: userId }, 
+      select: { 
+        id: true, 
+        username: true, 
+        coin: true, 
+        englishLevel: true, 
+        email: true, 
+        total_playtime: true,
+        hint: true,  
+      } 
+    })
+    
     if (!user) {
       res.status(404).json({ error: "User not found" })
       return;
     }
-    const currentLevel = user.englishLevel;
+
+    // Count how many games the user has completed
+    const completedGames = await prisma.game.count({
+      where: { userId, isFinished: true },
+    });
+
+    const currentLevel = user.englishLevel; 
     const currentIdx = levels.indexOf(currentLevel);
     const nextLevel = levels[Math.min(currentIdx + 1, levels.length - 1)];
     const requiredPlaytimeHours = LEVEL_THRESHOLDS[nextLevel];
@@ -66,7 +85,7 @@ export const getUserProfile = async (
       requiredPlaytime !== Number.POSITIVE_INFINITY &&
       user.total_playtime >= requiredPlaytime;
 
-    // let canLevelUp = false;
+       // let canLevelUp = false;
     // if (nextLevel) {
     //   const lastFive = await prisma.game.findMany({
     //     where: { userId, isFinished: true },
@@ -84,7 +103,6 @@ export const getUserProfile = async (
     const noHintsUsed = fiveFinished && lastFive.every((g) => !g.isHintUsed);
     const canLevelUp = hasEnoughPlaytime && noHintsUsed;
 
-
     const response = {
       id: user.id,
       username: user.username,
@@ -93,7 +111,9 @@ export const getUserProfile = async (
       englishLevel: user.englishLevel,
       nextLevel,
       canLevelUp,
-      progressPercent
+      progressPercent,
+      hint: user.hint,
+      completedGames,
     };
 
     res.status(200).json(UserProfileResponseSchema.parse(response));
@@ -102,3 +122,12 @@ export const getUserProfile = async (
     res.status(500).json({ error: "Internal server error" });
   }
 }
+
+
+
+
+
+
+
+
+ 

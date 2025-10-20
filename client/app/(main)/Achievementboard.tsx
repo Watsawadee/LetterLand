@@ -6,7 +6,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   useWindowDimensions,
-  ScrollView,
 } from "react-native";
 
 import GardenBackgroundBlueSky from "@/assets/backgroundTheme/GardenBackgroundBlue";
@@ -34,7 +33,7 @@ export default function Achievementboard() {
       <GardenBackgroundBlueSky style={styles.bg} />
 
       <View style={[styles.page, { flexDirection: isWide ? "row" : "column" }]}>
-        {/* LEFT PANEL (scrollable area) */}
+        {/* LEFT PANEL (FlatList is the only vertical scroller) */}
         <View
           style={[
             styles.leftPanel,
@@ -73,18 +72,10 @@ export default function Achievementboard() {
             <WordBankModal visible={showBook} onClose={() => setShowBook(false)} />
           </View>
 
-          {/* ✅ Scrollable content (like in Publicboard) */}
-          <ScrollView
-            contentContainerStyle={{
-              flexGrow: 1,
-              paddingBottom: 24,
-            }}
-            showsVerticalScrollIndicator
-          >
-            <View style={styles.achievementContainer}>
-              <AchievementsRow title="All Achievements" showAll />
-            </View>
-          </ScrollView>
+          {/* Achievements list fills remaining space and scrolls */}
+          <View style={{ flex: 1 }}>
+            <AchievementsRow title="All Achievements" showAll />
+          </View>
         </View>
 
         {/* RIGHT PANEL */}
@@ -123,15 +114,16 @@ const styles = StyleSheet.create({
     minHeight: 0,
   },
   leftPanel: {
-    flex: 2.5,
+    flex: 3,
     borderRadius: 20,
     padding: 16,
-    minHeight: 0,
   },
   rightPanel: {
-    flex: 1,
+    flex: 1.55,
     borderRadius: 20,
-    padding: 16,
+    padding: 6,
+    paddingTop: 15,
+    paddingBottom: 15,
     justifyContent: "center",
     alignItems: "center",
   },

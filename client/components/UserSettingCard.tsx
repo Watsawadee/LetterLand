@@ -128,12 +128,11 @@ const UserSettingCard = ({ onBack }: Props) => {
   return (
     <Card
       style={{
-        padding: 16,
+        padding: 25,
         backgroundColor: "#fff",
-        borderRadius: 16,
-        marginBottom: 16,
+        borderRadius: 30,
         gap: 20,
-        minWidth: "30%",
+        minWidth: "100%",
         height: "100%",
       }}
     >
@@ -147,18 +146,18 @@ const UserSettingCard = ({ onBack }: Props) => {
           }}
           hitSlop={10}
         >
-          <ArrowLeft color={Color.gray} />
+          <ArrowLeft color={Color.black} width={30} height={30} />
         </Pressable>
-        <Text style={{ color: Color.gray, fontSize: 25, fontWeight: "bold", marginLeft: 4 }}>
+        <Text style={{ color: Color.black, fontSize: 25, fontWeight: "bold", marginLeft: 4 }}>
           Account
         </Text>
       </View>
 
-      <View style={{ flexDirection: "column", justifyContent: "space-between", height: "80%", marginTop: 20 }}>
+      <View style={{ flexDirection: "column", justifyContent: "space-between", height: "80%", marginTop: 30 }}>
         <View style={{ flexDirection: "column", gap: 20 }} >
           <View>
-            <View style={{ flexDirection: "column", width: "100%" }} >
-              <Text style={{ color: Color.gray, fontWeight: Typography.header20.fontWeight, fontSize: Typography.header16.fontSize }}>Username</Text>
+            <View style={{ flexDirection: "column", width: "100%",  gap: 6 }} >
+              <Text style={{ color: Color.black, fontWeight: Typography.header20.fontWeight, fontSize: Typography.header16.fontSize }}>Username</Text>
               <TextInput
                 mode="outlined"
                 value={username}
@@ -176,7 +175,7 @@ const UserSettingCard = ({ onBack }: Props) => {
               />
             </View>
             <View style={{ flexDirection: "column", gap: 5 }} >
-              <Text style={{ color: Color.gray, fontWeight: Typography.header20.fontWeight, fontSize: Typography.header16.fontSize }}>Email</Text>
+              <Text style={{ color: Color.black, fontWeight: Typography.header20.fontWeight, fontSize: Typography.header16.fontSize }}>Email</Text>
               <TextInput
                 // label="Email"
                 value={email}
@@ -210,8 +209,8 @@ const UserSettingCard = ({ onBack }: Props) => {
               </Button>)}
           </View>
 
-          <View style={{ display: "flex", flexDirection: "row", gap: 3, alignItems: "center" }}>
-            <Text style={{ fontSize: Typography.header25.fontSize, fontWeight: Typography.header25.fontWeight, color: Color.gray }}>
+          <View style={{ display: "flex", flexDirection: "row",  alignItems: "center" }}>
+            <Text style={{ fontSize: Typography.header25.fontSize, fontWeight: Typography.header25.fontWeight, color: Color.black }}>
               Upgrade Level
             </Text>
             <Button icon={({ size, color }) => <InfoIcon size={15} color={Color.gray} />} onPress={() => {

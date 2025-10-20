@@ -319,8 +319,9 @@ export default function MyGamesRow({
           numColumns={3}
           showsVerticalScrollIndicator={false}
           columnWrapperStyle={{
-            justifyContent: "space-between",
-            marginBottom: 14,
+            justifyContent: "flex-start",
+            gap: 25,
+            marginBottom: 40,
           }}
         />
       )}
@@ -332,7 +333,7 @@ export default function MyGamesRow({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: "#ffffff",
-    marginRight: 20,
+    marginRight: 22,
     ...Platform.select({
       ios: {
         shadowColor: "#000",
@@ -400,10 +401,10 @@ const styles = StyleSheet.create({
   levelText: {
     fontSize: 11,
     fontWeight: "800",
-    color: "#5A5270",
+    color: "#ffffff",
   },
   subtitle: {
-    marginTop: 4,
+    marginTop: 3,
     fontSize: 12.5,
     color: "#8D8D8D",
     fontWeight: "600",

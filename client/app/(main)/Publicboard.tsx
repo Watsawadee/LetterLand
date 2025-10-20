@@ -7,44 +7,53 @@ import {
   StyleSheet,
   TouchableOpacity,
   useWindowDimensions,
+  LayoutAnimation,
+  Platform,
+  UIManager,
 } from "react-native";
 
 import GardenBackgroundBlueSky from "@/assets/backgroundTheme/GardenBackgroundBlue";
 import WordBankModal from "@/components/WordBank";
 import { ButtonStyles } from "@/theme/ButtonStyles";
 import { Typography } from "@/theme/Font";
-import PublicGames from "@/components/publicgame"; // keep your existing path
+import PublicGames from "@/components/publicgame";
 import UserOverviewCard from "@/components/UserOverViewCard";
 import UserSettingCard from "@/components/UserSettingCard";
 import Book from "@/assets/icon/Book";
 import ArrowLeft from "@/assets/icon/ArrowLeft";
 
-// 🔎 search UI + API
 import FloatingSearch from "@/components/Searchbar";
 import api from "@/services/api";
+
+// Enable LayoutAnimation on Android
+if (
+  Platform.OS === "android" &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export default function Publicboard() {
   const router = useRouter();
   const [showBook, setShowBook] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [searchExpanded, setSearchExpanded] = useState(false);
 
   const { width } = useWindowDimensions();
   const isWide = width >= 1024;
 
-  // --- search state ---
   const [gameName, setGameName] = useState("");
-  const [difficulty, setDifficulty] = useState(""); // A1..C2 or ""
+  const [difficulty, setDifficulty] = useState("");
   const [hasSearched, setHasSearched] = useState(false);
   const [whitelistIds, setWhitelistIds] = useState<number[] | null>(null);
 
   const handleBackPress = () => router.push("/Home");
 
-  // --- run backend search, collect template IDs ---
   const runSearch = useCallback(async () => {
     try {
       const params: Record<string, string> = {};
-      if (gameName.trim()) params.q = gameName.trim();  // supports q or gameName
-      if (difficulty) params.levels = difficulty;       // supports levels or difficulty
+      if (gameName.trim()) params.q = gameName.trim();
+      if (difficulty) params.levels = difficulty;
 
       const { data } = await api.get("/search/search-games", { params });
       const list: { id: number }[] = data?.games ?? [];
@@ -53,24 +62,20 @@ export default function Publicboard() {
       setHasSearched(true);
     } catch (err) {
       console.error("search failed:", err);
-      setWhitelistIds([]); // show empty state
+      setWhitelistIds([]);
       setHasSearched(true);
     }
   }, [gameName, difficulty]);
 
-  // 👉 auto-search when CEFR tag changes (and reset when cleared)
   useEffect(() => {
     if (difficulty) {
       runSearch();
       return;
     }
-    // if level is cleared…
     if (!gameName.trim()) {
-      // …and no text, reset to default feed
       setWhitelistIds(null);
       setHasSearched(false);
     } else {
-      // …but still has text -> search by text only
       runSearch();
     }
   }, [difficulty, gameName, runSearch]);
@@ -80,7 +85,6 @@ export default function Publicboard() {
       <GardenBackgroundBlueSky style={styles.bg} />
 
       <View style={[styles.page, { flexDirection: isWide ? "row" : "column" }]}>
-        {/* LEFT PANEL */}
         <View
           style={[
             styles.leftPanel,
@@ -89,50 +93,68 @@ export default function Publicboard() {
         >
           {/* Header Row */}
           <View style={styles.headerRow}>
-            <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-              <ArrowLeft width={24} height={24} />
-              <Text style={[Typography.header30, { marginLeft: 4 }]}>Public Board</Text>
-            </TouchableOpacity>
+            {/* Left side: Back button + Search */}
+            <View style={styles.leftControls}>
+              <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+                <ArrowLeft width={24} height={24} />
+                <Text style={[Typography.header30, { marginLeft:10  }]}>Public Board</Text>
+              </TouchableOpacity>
 
+              {/* Search bar */}
+              <View style={{ width: isWide ? 340 : 200, position: 'relative' }}>
+                <FloatingSearch
+                  value={gameName}
+                  onChangeText={(txt) => {
+                    setGameName(txt);
+                    if (!txt.trim() && !difficulty) {
+                      setWhitelistIds(null);
+                      setHasSearched(false);
+                    }
+                  }}
+                  level={difficulty}
+                  onChangeLevel={(lv) => setDifficulty(lv)}
+                  onSubmit={runSearch}
+                  onExpandChange={(expanded) => {
+                    setSearchExpanded(expanded);
+                    if (!expanded) {
+                      LayoutAnimation.configureNext(
+                        LayoutAnimation.create(
+                          200,
+                          LayoutAnimation.Types.easeInEaseOut,
+                          LayoutAnimation.Properties.opacity
+                        )
+                      );
+                    }
+                  }}
+                />
+              </View>
+            </View>
+
+            {/* Right side: Word Bank button */}
             <View style={styles.controlsRight}>
-  {/* only search bar gets marginTop */}
-  <View style={{ width: isWide ? 360 : 240, marginTop: 0 }}>
-    <FloatingSearch
-      value={gameName}
-      onChangeText={(txt) => {
-        setGameName(txt);
-        if (!txt.trim() && !difficulty) {
-          setWhitelistIds(null);
-          setHasSearched(false);
-        }
-      }}
-      level={difficulty}
-      onChangeLevel={(lv) => setDifficulty(lv)}
-      onSubmit={runSearch}
-    />
-  </View>
+              <TouchableOpacity
+                style={[
+                  ButtonStyles.wordBank.container,
+                  { 
+                    flexDirection: "row", 
+                    alignItems: "center",
+                    justifyContent: "center",
+                  },
+                ]}
+                onPress={() => setShowBook(true)}
+              >
+                <Book width={50} height={50} />
+                <View style={{ flexDirection: "column", alignItems: "flex-start", paddingLeft: 8 }}>
+                  <Text style={ButtonStyles.wordBank.text}>Word</Text>
+                  <Text style={ButtonStyles.wordBank.text}>Bank</Text>
+                </View>
+              </TouchableOpacity>
 
-  {/* Word Bank button stays unchanged */}
-  <TouchableOpacity
-    style={[
-      ButtonStyles.wordBank.container,
-      { flexDirection: "row", alignItems: "center" },
-    ]}
-    onPress={() => setShowBook(true)}
-  >
-    <Book width={50} height={50} style={{ marginRight: 4 }} />
-    <View style={{ flexDirection: "column", alignItems: "flex-start", paddingLeft: 8 }}>
-      <Text style={ButtonStyles.wordBank.text}>Word</Text>
-      <Text style={ButtonStyles.wordBank.text}>Bank</Text>
-    </View>
-  </TouchableOpacity>
-
-  <WordBankModal visible={showBook} onClose={() => setShowBook(false)} />
-</View>
-
+              <WordBankModal visible={showBook} onClose={() => setShowBook(false)} />
+            </View>
           </View>
 
-          {/* Main Area — reuse PublicGames with optional whitelist */}
+          {/* Main Area */}
           <View style={styles.publicGamesContainer}>
             {hasSearched ? (
               <PublicGames title=" " whitelistIds={whitelistIds} />
@@ -182,24 +204,32 @@ const styles = StyleSheet.create({
     minHeight: 0,
   },
   leftPanel: {
-    flex: 2.5,
+    flex: 3,
     borderRadius: 20,
     padding: 16,
-    minHeight: 0,
   },
   rightPanel: {
-    flex: 1,
+    flex: 1.55,
     borderRadius: 20,
-    padding: 16,
+    padding: 6,
+    paddingTop: 15,
+    paddingBottom: 15,
     justifyContent: "center",
     alignItems: "center",
   },
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",  // vertical centering with title
+    alignItems: "flex-start",
     gap: 12,
     marginBottom: 8,
+    minHeight: 60,
+  },
+  leftControls: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: -9,
+    flex: 1,
   },
   backButton: {
     flexDirection: "row",
@@ -211,8 +241,8 @@ const styles = StyleSheet.create({
   },
   controlsRight: {
     flexDirection: "row",
-    alignItems: "center",  // same baseline as the title
-    gap: 12,
+    alignItems: "flex-start",
+    gap: 4,
   },
   publicGamesContainer: {
     flexDirection: "column",
