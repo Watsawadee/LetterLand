@@ -361,17 +361,17 @@ export const getAverageGamesByLevelPerPeriod = async (
             end: day,
           }));
         } else if (period === "month") {
-          let current = startOfWeek(start, { weekStartsOn: 0 });
+          let current = start;
           let weekIdx = 1;
           while (current <= end) {
             const weekStart = current;
-            const weekEnd = endOfWeek(current, { weekStartsOn: 0 });
+            const weekEnd = addDays(weekStart, 6);
             buckets.push({
-              start: weekStart < start ? start : weekStart,
+              start: weekStart,
               end: weekEnd > end ? end : weekEnd,
             });
             labels.push(`W${weekIdx++}`);
-            current = addWeeks(current, 1);
+            current = addDays(weekEnd, 1);
           }
         } else if (period === "year") {
           for (let i = 0; i < 12; i++) {

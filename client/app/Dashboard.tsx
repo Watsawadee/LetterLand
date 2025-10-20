@@ -3,12 +3,18 @@ import UserOverviewCard from "../components/UserOverViewCard";
 import { useEffect, useState } from "react";
 import { getLoggedInUserId } from "@/utils/auth";
 import { useUserProfile } from "@/hooks/useGetUserProfile";
-import { View, Dimensions } from "react-native";
+import { View, Dimensions, TouchableOpacity, Pressable } from "react-native";
 import TotalGameThisWeek from "@/components/UserOverViewPerformance";
 import { Text } from "react-native-paper";
 import UserOverviewPerformance from "@/components/UserOverViewPerformance";
 import UserSettingCard from "@/components/UserSettingCard";
 import { fetchUserCoins } from "@/services/achievementService";
+import { ButtonStyles } from "@/theme/ButtonStyles";
+import { Color } from "@/theme/Color";
+import ArrowLeft from "@/assets/icon/ArrowLeft";
+import { router } from "expo-router";
+import Book from "@/assets/icon/Book";
+import WordBankModal from "@/components/WordBank";
 
 type Props = {
     coins?: number;
@@ -18,6 +24,8 @@ const Dashboard = () => {
     const screenWidth = Dimensions.get("window").width;
     const [coins, setCoins] = useState(0);
     const [showSettings, setShowSettings] = useState(false);
+    const [showBook, setShowBook] = useState(false);
+
     useEffect(() => {
         const loadCoins = async () => {
             try {
@@ -56,20 +64,28 @@ const Dashboard = () => {
                     zIndex: 0,
                 }} />
             <View style={{
-                flexDirection: 'row', width: "100%", justifyContent: "space-between", flex: 1,
+                flexDirection: 'row', justifyContent: "space-between", flex: 1,
                 height: "100%",
+                width: "100%",
                 alignItems: "center",
                 padding: 16,
             }}>
-                <UserOverviewPerformance />
+                <View style={{ width: "65%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                    <UserOverviewPerformance />
+                </View>
+
                 {showSettings ? (
-                    <UserSettingCard onBack={() => setShowSettings(false)} />
+                    <View style={{ width: "33%" }}>
+                        <UserSettingCard onBack={() => setShowSettings(false)} />
+                    </View>
                 ) : (
-                    <UserOverviewCard coins={coins} onOpenSettings={() => setShowSettings(true)} />
+                    <View style={{ width: "33%" }}>
+                        <UserOverviewCard coins={coins} onOpenSettings={() => setShowSettings(true)} />
+                    </View>
                 )}
             </View>
 
-        </View>
+        </View >
     )
 }
 export default Dashboard

@@ -10,12 +10,6 @@ export default function SettingsScreen() {
 
   return (
     <View style={{ padding: 20, display: "flex", height: "100%", flexDirection: "row", justifyContent: "space-between" }}>
-      <View style={{ display: "flex", flexDirection: "column", width: "50%" }}>
-        <Text style={{ fontSize }}>Font Size: {fontSize}</Text>
-        <Slider minimumValue={12} maximumValue={40} step={1} value={fontSize} onValueChange={setFontSize} />
-        <Button title="Set Primary Color: Blue" onPress={() => setPrimaryColor('blue')} />
-        <Button title="← Back to Home" onPress={() => router.replace("/Home")} />
-      </View>
       <UserSettingCard />
     </View>
   );

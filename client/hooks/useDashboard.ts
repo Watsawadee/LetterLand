@@ -16,6 +16,8 @@ export const useTotalGamesMultiplePeriod = (
         retry: false,
         refetchOnWindowFocus: false,
     });
+
+
 export const usePeerAverageGamesPerPeriod = (
     period: "week" | "month" | "year" = "week",
     date?: string
