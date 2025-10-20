@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react"
+import Carousel from "react-native-reanimated-carousel";
 import { View, Text, ScrollView, Image, TouchableOpacity, Platform } from "react-native"
 import { useTotalGamesPerPeriod, usePeerAverageGamesPerPeriod, useUserTotalPlaytime, useUserWordLearned, useUserGameStreak, useUserProgress } from "@/hooks/useDashboard";
 import { Color } from "@/theme/Color";
@@ -21,7 +22,7 @@ import WordBankModal from "./WordBank";
 import Book from "@/assets/icon/Book";
 import { ButtonStyles } from "@/theme/ButtonStyles";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import { addDays, endOfMonth, endOfWeek, endOfYear, format, startOfMonth, startOfWeek, startOfYear } from "date-fns";
+import { addDays, addMonths, addWeeks, addYears, endOfMonth, endOfWeek, endOfYear, format, startOfMonth, startOfWeek, startOfYear, subMonths, subWeeks, subYears } from "date-fns";
 import { useColorScheme } from "react-native";
 import { Defs, LinearGradient, Stop } from "react-native-svg";
 import { FloatingBubble } from "@/assets/images/bubblePopup";
@@ -72,10 +73,23 @@ const UserOverviewPerformance = () => {
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [tempDate, setTempDate] = useState<Date>(new Date());
     const [monthRange, setMonthRange] = useState<{ start: Date; end: Date } | null>(null);
-
-
-
+    const lastSwipe = useRef<number>(0);
     const [period, setPeriod] = useState<"week" | "month" | "year">("week");
+    function getPeriodDates(period: "week" | "month" | "year", centerDate: Date, range: number = 2) {
+        // range=2 gives you 5 items: prev2, prev1, center, next1, next2
+        const dates: Date[] = [];
+        for (let i = -range; i <= range; i++) {
+            let d = new Date(centerDate);
+            if (period === "week") d = addWeeks(d, i);
+            else if (period === "month") d = addMonths(d, i);
+            else if (period === "year") d = addYears(d, i);
+            dates.push(d);
+        }
+        return dates;
+    }
+
+    const [carouselIndex, setCarouselIndex] = useState(2);
+    const periodDates = useMemo(() => getPeriodDates(period, selectedDate), [period, selectedDate]);
     const handleDateConfirm = (date: Date) => {
         let start: Date;
         let end: Date;
@@ -97,6 +111,18 @@ const UserOverviewPerformance = () => {
         setSelectedDate(date);
         setMonthRange({ start, end });
         setShowPicker(false);
+        setCarouselIndex(2);
+    };
+    const handleSwipeChange = (direction: "left" | "right") => {
+        let newDate = selectedDate;
+        if (period === "week") {
+            newDate = direction === "left" ? addWeeks(selectedDate, 1) : subWeeks(selectedDate, 1);
+        } else if (period === "month") {
+            newDate = direction === "left" ? addMonths(selectedDate, 1) : subMonths(selectedDate, 1);
+        } else if (period === "year") {
+            newDate = direction === "left" ? addYears(selectedDate, 1) : subYears(selectedDate, 1);
+        }
+        handleDateConfirm(newDate);
     };
 
     const formattedEndDate = monthRange ? monthRange.end.toISOString().split("T")[0] : selectedDate.toISOString().split("T")[0];
@@ -450,6 +476,40 @@ const UserOverviewPerformance = () => {
 
                                     )}
 
+                                    {/* Uncomment to use Carousel */}
+                                    {/* <Carousel
+                                        width={CHART_W}
+                                        height={CHART_H + 20}
+                                        data={periodDates}
+                                        mode="parallax"
+                                        modeConfig={{
+                                            parallaxScrollingScale: 0.92,
+                                            parallaxScrollingOffset: 40,
+                                        }}
+                                        scrollAnimationDuration={500}
+                                        loop={false}
+                                        defaultIndex={carouselIndex}
+                                        onSnapToItem={(index) => {
+                                            setCarouselIndex(index);
+                                            const newDate = periodDates[index];
+                                            setSelectedDate(newDate);
+                                            setMonthRange({
+                                                start:
+                                                    period === "week"
+                                                        ? startOfWeek(newDate, { weekStartsOn: 0 })
+                                                        : period === "month"
+                                                            ? startOfMonth(newDate)
+                                                            : startOfYear(newDate),
+                                                end:
+                                                    period === "week"
+                                                        ? endOfWeek(newDate, { weekStartsOn: 0 })
+                                                        : period === "month"
+                                                            ? endOfMonth(newDate)
+                                                            : endOfYear(newDate),
+                                            });
+                                        }}
+                                        renderItem={({ item }) => ( */}
+
                                     <VictoryChart
                                         theme={VictoryTheme.material}
                                         width={CHART_W}
@@ -551,6 +611,9 @@ const UserOverviewPerformance = () => {
                                             />
                                         ])}
                                     </VictoryChart>
+                                    {/* Carousel */}
+                                    {/* )} */}
+                                    {/* /> */}
                                     <View style={{ display: "flex", flexDirection: "row", justifyContent: "center", gap: 20 }}>
                                         <View style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 5 }}>
                                             <View style={{ backgroundColor: Color.blue, width: 5, height: 5, borderRadius: 9999 }} />
