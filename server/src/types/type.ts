@@ -7,7 +7,7 @@ import {
 } from "./auth.schema";
 import { ErrorResponseSchema, GetWordsOrErrorSchema, GetWordsResponseSchema, SetupProfileRequestSchema, SetupProfileResponseSchema, SetupProfileSuccessSchema, vocabEntrySchema } from "./setup.schema";
 import { UserProfileOrErrorSchema, UserProfileResponseSchema } from "./userProfile.schema";
-import { GamesPlayedPerPeriodOrErrorSchema, PeriodEnum, TotalPlaytimeOrErrorSchema, WordsLearnedOrErrorSchema, AverageGamesByLevelPeerPeriodResponseSchemaOrErrorSchema, GameStreakOrErrorSchema, UserProgressResponseSchema } from "./dashboard.schema";
+import { PeriodEnum, TotalPlaytimeOrErrorSchema, WordsLearnedOrErrorSchema, GameStreakOrErrorSchema, UserProgressResponseSchema, GamesPlayedMultiplePeriodOrErrorSchema, AverageGamesByLevelPeerMultiplePeriodOrErrorSchema } from "./dashboard.schema";
 import { CreateGameFromGeminiRequestSchema, CreateGameFromGeminiResponseSchema, EnglishLevelSchema, GameTypeSchema, MaterialTypeSchema } from "./createGame.schema";
 import { UpdateUserProfileResponse, UpdateUserSettingSchema } from "./setting.schema";
 import { ProgressLevelupParamsSchema, ProgressLevelupResponseSchema } from "./progressLevelup.schema";
@@ -33,8 +33,8 @@ export type UserProfileOrError = z.infer<typeof UserProfileOrErrorSchema>;
 //User Dashboard
 export type TotalPlaytimeOrError = z.infer<typeof TotalPlaytimeOrErrorSchema>;
 export type WordsLearnedOrError = z.infer<typeof WordsLearnedOrErrorSchema>;
-export type GamesPlayedPerPeriodOrError = z.infer<typeof GamesPlayedPerPeriodOrErrorSchema>;
-export type AverageGamesByLevelPeerOrError = z.infer<typeof AverageGamesByLevelPeerPeriodResponseSchemaOrErrorSchema>;
+export type GamesPlayedMultiplePeriodOrError = z.infer<typeof GamesPlayedMultiplePeriodOrErrorSchema>;
+export type AverageGamesByLevelPeerMultipleOrError = z.infer<typeof AverageGamesByLevelPeerMultiplePeriodOrErrorSchema>;
 export type Period = z.infer<typeof PeriodEnum>;
 export type GameStreakOrError = z.infer<typeof GameStreakOrErrorSchema>;
 export type UserProgressResponse = z.infer<typeof UserProgressResponseSchema>;

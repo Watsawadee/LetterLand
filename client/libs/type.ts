@@ -8,7 +8,7 @@ import {
 import { UserSchema } from "../types/user.schema";
 import { ErrorResponseSchema, GetWordsOrErrorSchema, GetWordsResponseSchema, SetupProfileRequestSchema, SetupProfileResponseSchema, SetupProfileSuccessSchema, vocabEntrySchema } from "../types/setup.schema"
 import { UserProfileOrErrorSchema, UserProfileResponseSchema } from "../types/userProfile.schema"
-import { AverageGamesByLevelPeerPeriodResponseSchemaOrErrorSchema, GamesPlayedPerPeriodOrErrorSchema, GameStreakOrErrorSchema, PeriodEnum, TotalPlaytimeOrErrorSchema, TotalPlaytimeResponseSchema, UserProgressResponseSchema, WordsLearnedOrErrorSchema, WordsLearnedResponseSchema } from "../types/dashboard.schema"
+import { AverageGamesByLevelPeerMultiplePeriodOrErrorSchema, GamesPlayedMultiplePeriodOrErrorSchema, GameStreakOrErrorSchema, PeriodEnum, TotalPlaytimeOrErrorSchema, TotalPlaytimeResponseSchema, UserProgressResponseSchema, WordsLearnedOrErrorSchema, WordsLearnedResponseSchema } from "../types/dashboard.schema"
 import { CreateGameFromGeminiRequestSchema, CreateGameFromGeminiResponseSchema, EnglishLevelSchema, GameTypeSchema, MaterialTypeSchema } from "@/types/createGame.schema";
 import { UpdateUserProfileResponse, UpdateUserSettingSchema } from "@/types/setting.schema";
 import { ProgressLevelupParamsSchema, ProgressLevelupResponseSchema } from "@/types/progressLevelup.schema";
@@ -39,8 +39,8 @@ export type UserProfileOrError = z.infer<typeof UserProfileOrErrorSchema>;
 //User Dashboard
 export type TotalPlaytimeOrError = z.infer<typeof TotalPlaytimeOrErrorSchema>;
 export type WordsLearnedOrError = z.infer<typeof WordsLearnedOrErrorSchema>;
-export type GamesPlayedPerPeriodOrError = z.infer<typeof GamesPlayedPerPeriodOrErrorSchema>;
-export type AverageGamesByLevelPeerOrError = z.infer<typeof AverageGamesByLevelPeerPeriodResponseSchemaOrErrorSchema>;
+export type GamesPlayedMultiplePeriodOrError = z.infer<typeof GamesPlayedMultiplePeriodOrErrorSchema>;
+export type AverageGamesByLevelPeerMultipleOrError = z.infer<typeof AverageGamesByLevelPeerMultiplePeriodOrErrorSchema>;
 export type Period = z.infer<typeof PeriodEnum>;
 export type GameStreakOrError = z.infer<typeof GameStreakOrErrorSchema>;
 export type UserProgressResponse = z.infer<typeof UserProgressResponseSchema>;

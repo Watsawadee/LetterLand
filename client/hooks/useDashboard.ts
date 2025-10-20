@@ -1,34 +1,32 @@
 import { useQuery } from "@tanstack/react-query";
-import { getPeerAverageGamesPerPeriod, getTotalGamePerPeriod, getUserGameStreak, getUserProgress, getUserTotalPlaytime, getUserWordLearned } from "@/services/dashboardService";
-import { GamesPlayedPerPeriod } from "@/types/gamesPlayedPerPeriod";
+import { getPeerAverageGamesPerPeriod, getTotalGameMultiplePeriod, getUserGameStreak, getUserProgress, getUserTotalPlaytime, getUserWordLearned } from "@/services/dashboardService";
+import { GamesPlayedMultiplePeriodResponse } from "@/types/gamesPlayedPerPeriod";
+import { AverageGamesByLevelPeerMultipleOrError } from "@/libs/type";
 
 
 const DEFAULT_STALE = 1000 * 60 * 5;
-export const useTotalGamesPerPeriod = (
-    period: "week" | "month" | "year",
-    date: string,
+export const useTotalGamesMultiplePeriod = (
+    period: "week" | "month" | "year" = "week",
+    date?: string
 ) =>
-    useQuery<GamesPlayedPerPeriod>({
-        queryKey: ["dashboard", "gamesPerPeriod", period, date],
-        queryFn: () => getTotalGamePerPeriod(period, date),
+    useQuery<GamesPlayedMultiplePeriodResponse>({
+        queryKey: ["dashboard", "gamesMultiplePeriod", period, date],
+        queryFn: () => getTotalGameMultiplePeriod(period, date),
         staleTime: DEFAULT_STALE,
         retry: false,
         refetchOnWindowFocus: false,
     });
-
-
 export const usePeerAverageGamesPerPeriod = (
     period: "week" | "month" | "year" = "week",
     date?: string
 ) =>
-    useQuery({
+    useQuery<AverageGamesByLevelPeerMultipleOrError>({
         queryKey: ["dashboard", "peerAverageGamesPerPeriod", period, date],
         queryFn: () => getPeerAverageGamesPerPeriod(period, date),
         staleTime: DEFAULT_STALE,
         retry: false,
         refetchOnWindowFocus: false,
-    });
-
+    })
 // export function useAverageGamesByLevel(offset: number) {
 //     return useQuery({
 //         queryKey: ["dashboard", "averageGamesByLevel", offset],

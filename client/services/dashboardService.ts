@@ -1,10 +1,10 @@
 import { Platform } from "react-native";
-import { GamesPlayedPerPeriod } from "../types/gamesPlayedPerPeriod"
+import { GamesPlayedMultiplePeriodResponse, GamesPlayedSinglePeriod } from "../types/gamesPlayedPerPeriod"
 import { getLoggedInUserId, getToken } from "@/utils/auth";
 import axios from "axios";
 import api from "./api";
-import { AverageGamesByLevelPeerOrError, GameStreakOrError, TotalPlaytimeOrError, WordsLearnedOrError } from "@/libs/type";
-import { AverageGamesByLevelPeerPeriodResponseSchema, GamesPlayedPerPeriodResponseSchema, GameStreakOrErrorSchema, TotalPlaytimeOrErrorSchema, UserProgressResponseSchema, WordsLearnedOrErrorSchema } from "../types/dashboard.schema";
+import { AverageGamesByLevelPeerMultipleOrError, GameStreakOrError, TotalPlaytimeOrError, WordsLearnedOrError } from "@/libs/type";
+import { AverageGamesByLevelPeerMultiplePeriodResponseSchema, GamesPlayedMultiplePeriodResponseSchema, GameStreakOrErrorSchema, TotalPlaytimeOrErrorSchema, UserProgressResponseSchema, WordsLearnedOrErrorSchema } from "../types/dashboard.schema";
 import { ErrorResponseSchema } from "../types/setup.schema";
 
 export async function getAuthHeader() {
@@ -15,18 +15,23 @@ export async function getAuthHeader() {
         },
     };
 }
-export async function getTotalGamePerPeriod(period: "week" | "month" | "year" = "week",
+export async function getTotalGameMultiplePeriod(
+    period: "week" | "month" | "year" = "week",
     date?: string,
-    offSet = 0): Promise<GamesPlayedPerPeriod> {
+    offSet = 0
+): Promise<GamesPlayedMultiplePeriodResponse> {
     const userId = await getLoggedInUserId();
     const config = await getAuthHeader();
+
     const params: Record<string, string | number> = { period, offset: offSet };
     if (date) params.date = date;
 
-    const res = await api.get<GamesPlayedPerPeriod>(
-        `/dashboard/user/${userId}/gameplayedperperiod`, { ...config, params }
+    const res = await api.get<GamesPlayedMultiplePeriodResponse>(
+        `/dashboard/games/${userId}`,
+        { ...config, params }
     );
-    const ok = GamesPlayedPerPeriodResponseSchema.safeParse(res.data);
+
+    const ok = GamesPlayedMultiplePeriodResponseSchema.safeParse(res.data);
     if (ok.success) return ok.data;
 
     const err = ErrorResponseSchema.safeParse(res.data);
@@ -79,7 +84,7 @@ export async function getUserWordLearned(): Promise<WordsLearnedOrError> {
 export const getPeerAverageGamesPerPeriod = async (
     period: "week" | "month" | "year" = "week",
     date?: string
-): Promise<AverageGamesByLevelPeerOrError> => {
+): Promise<AverageGamesByLevelPeerMultipleOrError> => {
     const token = await getToken();
     if (!token) throw new Error("No token");
 
@@ -91,7 +96,7 @@ export const getPeerAverageGamesPerPeriod = async (
         params,
     });
 
-    const parsed = AverageGamesByLevelPeerPeriodResponseSchema.safeParse(res.data);
+    const parsed = AverageGamesByLevelPeerMultiplePeriodResponseSchema.safeParse(res.data);
     if (parsed.success) return parsed.data;
 
     const err = ErrorResponseSchema.safeParse(res.data);
