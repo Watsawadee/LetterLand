@@ -1,7 +1,7 @@
 // components/UserOverviewCard.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { View, Image, Platform, useWindowDimensions, StyleSheet, Pressable } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { Button, Card, Dialog, IconButton, Portal, ProgressBar, Text, ActivityIndicator } from "react-native-paper";
 import { useQueryClient } from "@tanstack/react-query";
 import { VictoryPie } from "victory-native";
@@ -47,8 +47,15 @@ const UserOverviewCard = ({ coins, hint, onOpenSettings }: Props) => {
   const [showCreateGame, setShowCreateGame] = useState(false);
   const [showProgressDialog, setShowProgressDialog] = useState(false);
 
-  const { data: userProgress, isLoading: loadingProgress } = useUserProgress(); // ✅ hook in place
-  const { data: user, isLoading } = useUserProfile();
+  const { data: userProgress, isLoading: loadingProgress, refetch: refetchProgress } = useUserProgress();
+  const { data: user, isLoading, refetch: refetchUser } = useUserProfile();
+
+  useFocusEffect(
+  useCallback(() => {
+    refetchUser();
+    refetchProgress();
+  }, [refetchUser, refetchProgress])
+);
 
   useEffect(() => {
     const fetchId = async () => setUserId(await getLoggedInUserId());

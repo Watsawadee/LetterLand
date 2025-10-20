@@ -19,7 +19,7 @@ export const AchievementCardStyles = StyleSheet.create({
 
   // top icon
   iconWrap: { alignSelf: "center", marginBottom: 12 },
-  iconImage: { width: 165, height: 72, borderRadius: 16 },
+  iconImage: { width: 160, height: 70, borderRadius: 16 },
   iconFallback: {
     width: 72,
     height: 72,
@@ -32,7 +32,7 @@ export const AchievementCardStyles = StyleSheet.create({
 
   // title + description
   title: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "700",
     textAlign: "center",
     color: "#333",
@@ -47,8 +47,8 @@ export const AchievementCardStyles = StyleSheet.create({
 
   // coin row (centered)
   coinRow: {
-    marginTop: 20,
-    marginBottom: 10,
+    marginTop: 18,
+    marginBottom: 8.5,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -66,7 +66,7 @@ export const AchievementCardStyles = StyleSheet.create({
 
   // progress bar
   progressRow: {
-    marginTop: 13,
+    marginTop: 10,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
