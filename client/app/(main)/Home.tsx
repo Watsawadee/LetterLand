@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "expo-router";
 import {
   View,
@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   useWindowDimensions,
   Image,
+  AppState,
+  AppStateStatus,
 } from "react-native";
 import GardenBackgroundBlueSky from "@/assets/backgroundTheme/GardenBackgroundBlue";
 import WordBankModal from "@/components/WordBank";
@@ -35,10 +37,22 @@ export default function Home() {
 
   const { width } = useWindowDimensions();
   const isWide = width >= 1024;
-  const { data: profile, isLoading, error } = useUserProfile();
+
+  const {
+    data: profile,
+    isLoading,
+    error,
+    refetch: refetchProfile,
+  } = useUserProfile();
+
   const { data: lastFinishedGame } = useUserLastFinishedGame();
 
-  // Load coins
+  const capitalizeWords = (s: string) =>
+    s.replace(/\b\w/g, (c) => c.toUpperCase());
+
+  const displayName =
+    (profile && !("error" in profile) && profile.username) || username || "";
+
   useEffect(() => {
     const loadCoins = async () => {
       try {
@@ -51,7 +65,6 @@ export default function Home() {
     loadCoins();
   }, []);
 
-  // Fetch username
   useEffect(() => {
     const fetchUsername = async () => {
       const decoded = await getDecodedToken();
@@ -60,13 +73,12 @@ export default function Home() {
     fetchUsername();
   }, []);
 
-  // Greeting logic
   useEffect(() => {
     const checkLastVisit = async () => {
       try {
         const decoded = await getDecodedToken();
         const userId = decoded?.userId;
-        const userName = decoded?.username;
+        const userName = displayName || decoded?.username;
         if (!userId || !userName) return;
 
         const now = new Date();
@@ -78,8 +90,8 @@ export default function Home() {
           hour < 12
             ? `Good morning 🌞 ${userName}!`
             : hour < 18
-              ? `Good afternoon 🌤️ ${userName}!`
-              : `Good evening 🌙 ${userName}!`;
+            ? `Good afternoon 🌤️ ${userName}!`
+            : `Good evening 🌙 ${userName}!`;
 
         let visitMsg = "";
         if (lastVisitStr) {
@@ -99,13 +111,16 @@ export default function Home() {
           visitMsg = `Hi ${userName}! Nice to meet you for the first time`;
         }
 
-        let gameMsg = "You haven’t finished any games yet — let’s start one today!";
+        let gameMsg =
+          "You haven’t finished any games yet — let’s start one today!";
         if (
           lastFinishedGame &&
           lastFinishedGame.finishedAt &&
           !isNaN(new Date(lastFinishedGame.finishedAt).getTime())
         ) {
-          gameMsg = `Your last puzzle was "${lastFinishedGame.topic}" — finished ${formatDistanceToNow(
+          gameMsg = `Your last puzzle was "${
+            lastFinishedGame.topic
+          }" — finished ${formatDistanceToNow(
             new Date(lastFinishedGame.finishedAt),
             { addSuffix: true }
           )}`;
@@ -128,7 +143,25 @@ export default function Home() {
     };
 
     checkLastVisit();
-  }, [lastFinishedGame, profile]);
+  }, [lastFinishedGame, profile, displayName]);
+
+  useEffect(() => {
+    if (profile && !("error" in profile)) {
+      const nameFromProfile = profile.username || profile.username;
+      if (nameFromProfile && nameFromProfile !== username) {
+        setUsername(nameFromProfile);
+      }
+    }
+  }, [profile]);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (state: AppStateStatus) => {
+      if (state === "active") {
+        refetchProfile?.();
+      }
+    });
+    return () => sub.remove();
+  }, [refetchProfile]);
 
   if (isLoading) return <Text>Loading...</Text>;
   if (error || !profile) return <Text>Error loading user profile</Text>;
@@ -139,16 +172,13 @@ export default function Home() {
       <GardenBackgroundBlueSky style={styles.bg} />
 
       <View style={[styles.page, { flexDirection: isWide ? "row" : "column" }]}>
-        {/* LEFT PANEL */}
         <View
           style={[
             styles.leftPanel,
             { marginRight: isWide ? 24 : 0, marginBottom: isWide ? 0 : 24 },
           ]}
         >
-          {/* HEADER ROW */}
           <View style={styles.headerRow}>
-            {/* LEFT SIDE: Mascot + Greeting */}
             <View style={styles.greetingContainer}>
               <Image
                 source={mascot}
@@ -162,7 +192,7 @@ export default function Home() {
               />
               <View style={{ flex: 1 }}>
                 <Text style={[Typography.header25, { marginBottom: 4 }]}>
-                Hello {username ? username.charAt(0).toUpperCase() + username.slice(1) : ""}
+                  Hello {displayName ? capitalizeWords(displayName) : ""}
                 </Text>
                 <Text
                   style={[
@@ -175,14 +205,13 @@ export default function Home() {
               </View>
             </View>
 
-            {/* RIGHT SIDE: Word Bank Button */}
             <TouchableOpacity
               style={[
                 ButtonStyles.wordBank.container,
                 {
                   flexDirection: "row",
                   alignItems: "center",
-                  alignSelf: "flex-start", // stay top-aligned
+                  alignSelf: "flex-start",
                   marginLeft: 16,
                 },
               ]}
@@ -201,10 +230,12 @@ export default function Home() {
               </View>
             </TouchableOpacity>
 
-            <WordBankModal visible={showBook} onClose={() => setShowBook(false)} />
+            <WordBankModal
+              visible={showBook}
+              onClose={() => setShowBook(false)}
+            />
           </View>
 
-          {/* ACHIEVEMENT SECTION */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={Typography.header25}>Achievements</Text>
@@ -221,7 +252,6 @@ export default function Home() {
             </View>
           </View>
 
-          {/* RECENT GAME SECTION */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={Typography.header25}>Recent game</Text>
@@ -235,22 +265,31 @@ export default function Home() {
           </View>
         </View>
 
-        {/* RIGHT PANEL */}
-        <View style={{ flex: 1.55, borderRadius: 20,
-    padding: 6,
-    paddingTop: 15,
-    paddingBottom: 15,
-    justifyContent: "center",
-    alignItems: "center", }}>
-  {showSettings ? (
-    <UserSettingCard onBack={() => setShowSettings(false)} />
-  ) : (
-    <UserOverviewCard
-      coins={coins}
-      onOpenSettings={() => setShowSettings(true)}
-    />
-  )}
-</View>
+        <View
+          style={{
+            flex: 1.55,
+            borderRadius: 20,
+            padding: 6,
+            paddingTop: 15,
+            paddingBottom: 15,
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          {showSettings ? (
+            <UserSettingCard
+              onBack={() => {
+                setShowSettings(false);
+                refetchProfile?.();
+              }}
+            />
+          ) : (
+            <UserOverviewCard
+              coins={coins}
+              onOpenSettings={() => setShowSettings(true)}
+            />
+          )}
+        </View>
       </View>
     </View>
   );
@@ -285,14 +324,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 16,
   },
-  
-  /* ✅ single definition */
   headerRow: {
     flexDirection: "row",
-    alignItems: "flex-start", // top-aligned so the button sits nicely
+    alignItems: "flex-start",
     marginBottom: 35,
   },
-
   section: {
     marginBottom: 1,
   },
@@ -306,10 +342,8 @@ const styles = StyleSheet.create({
   link: {
     color: "#2F80ED",
   },
-
-  /* new container for the left side of the header */
   greetingContainer: {
-    flex: 1,               // lets the text take the space
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,

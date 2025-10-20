@@ -7,13 +7,16 @@ import { storeToken } from "@/utils/storeToken";
 import GardenBackground from "@/assets/backgroundTheme/GardenBackground";
 import { jwtDecode } from "jwt-decode";
 import { Color } from "@/theme/Color";
+
 const LoginScreen = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const bgHeight = useRef(new Animated.Value(100)).current;
+
   useEffect(() => {
     const showSub = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
     const hideSub = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false));
@@ -22,6 +25,7 @@ const LoginScreen = () => {
       hideSub.remove();
     };
   }, []);
+
   useEffect(() => {
     Animated.timing(bgHeight, {
       toValue: keyboardVisible ? 200 : 100,
@@ -54,20 +58,27 @@ const LoginScreen = () => {
 
   const handleLogin = () => {
     if (!email || !password) {
-      Alert.alert("Please fill in all fields");
+      setErrorMessage("Please fill in all fields");
       return;
     }
-    loginMutate({ email, password }, {
-      onSettled: () => {
-      },
-    });
 
+    setErrorMessage("");
+
+    loginMutate({ email, password }, {
+      onError: (error: any) => {
+        if (error?.response?.status === 401) {
+          setErrorMessage("Email or password is incorrect");
+        } else {
+          setErrorMessage("Email or password is incorrectใ");
+        }
+      },
+      onSettled: () => {},
+    });
   };
 
-
-
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: "#F2F8F9" }}
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: "#F2F8F9" }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <View
@@ -97,8 +108,14 @@ const LoginScreen = () => {
           <GardenBackground pointerEvents="none" style={{ width: "100%", height: "100%" }} />
         </Animated.View>
 
-
-        <View style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "40%" }}>
+        <View
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            width: "40%",
+          }}
+        >
           <Card
             mode="contained"
             style={{
@@ -119,10 +136,14 @@ const LoginScreen = () => {
             >
               Log in to your Account
             </Text>
+
             <TextInput
-              placeholder={isFocused ? '' : "Email"}
+              placeholder={isFocused ? "" : "Email"}
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => {
+                setEmail(text);
+                setErrorMessage("");
+              }}
               mode="outlined"
               autoCapitalize="none"
               textColor="black"
@@ -131,27 +152,39 @@ const LoginScreen = () => {
             />
 
             <TextInput
-              placeholder={isFocused ? '' : 'Password'}
+              placeholder={isFocused ? "" : "Password"}
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(text) => {
+                setPassword(text);
+                setErrorMessage("");
+              }}
               mode="outlined"
               secureTextEntry
               textColor="black"
               activeOutlineColor="#5B6073"
-              style={{ backgroundColor: "transparent", color: "black" }}
+              style={{ backgroundColor: "transparent", color: "black",marginBottom: 8 }}
             />
-            <View style={{ display: "flex", alignItems: "flex-start", marginBottom: 12 }}>
-              <Button onPress={() => {
-                router.push("/authentication/register")
-              }}
-                rippleColor={"transparent"}
 
+            {/* 🔽 Error message moved here (under password field) */}
+            {errorMessage ? (
+              <View
+                style={{
+                  backgroundColor: "#FFEBEE",
+                  padding: 12,
+                  borderRadius: 8,
+                  marginTop: 10,
+                  marginBottom: 12,
+                  borderLeftWidth: 4,
+                  borderLeftColor: "#D32F2F",
+                  width: "100%",
+                }}
               >
-                <Text style={{ color: Color.blue }}>
-                  No account yet? Create your account for free
+                <Text style={{ color: "#D32F2F", fontSize: 14 }}>
+                  {errorMessage}
                 </Text>
-              </Button>
-            </View>
+              </View>
+            ) : null}
+
             <Button
               mode="contained"
               onPress={handleLogin}
@@ -159,12 +192,30 @@ const LoginScreen = () => {
               contentStyle={{ paddingVertical: 6 }}
               loading={isPending}
               disabled={isPending}
-
             >
               <Text style={{ color: "white", fontWeight: "800", fontSize: 16 }}>
                 Login
               </Text>
             </Button>
+
+            <View
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                marginBottom: 12,
+              }}
+            >
+              <Button
+                onPress={() => {
+                  router.push("/authentication/register");
+                }}
+                rippleColor={"transparent"}
+              >
+                <Text style={{ color: Color.black }}>
+                  No account yet? Create your account for free
+                </Text>
+              </Button>
+            </View>
           </Card>
         </View>
       </View>

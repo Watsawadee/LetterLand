@@ -1,5 +1,4 @@
-// src/screens/PublicGames.tsx
-import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -38,9 +37,6 @@ import GameTypeDetails from "./GameTypeDetails";
 /* ------------------ Timer pills (UiTimer = seconds-as-strings) ------------------ */
 export type UiTimer = "none" | "60" | "180" | "300";
 const TIMER_OPTIONS: UiTimer[] = ["none", "60", "180", "300"];
-
-const minutesFromUiTimer = (t: UiTimer): number | null =>
-  t === "none" ? null : Math.floor(Number(t) / 60);
 
 function TimerChips({
   value,
@@ -259,7 +255,7 @@ const pg = StyleSheet.create({
   levelText: {
     fontSize: 11,
     fontWeight: "800",
-    color: "#fffff",
+    color: "#ffffff",
   },
   lockOverlay: {
     position: "absolute",
@@ -314,9 +310,8 @@ export default function PublicGames({
   const [alreadyPlayed, setAlreadyPlayed] = useState(false);
   const [checkingReplay, setCheckingReplay] = useState(false);
 
-  // >>> single-submit state/lock <<<
-  const [submitting, setSubmitting] = useState(false);
-  const submitLockRef = useRef(false);
+  // Double-click prevention
+  const [isStarting, setIsStarting] = useState(false);
 
   const gameOptions = useMemo(
     () => [
@@ -361,7 +356,7 @@ export default function PublicGames({
         err?.response?.data || err?.message || err
       );
       Alert.alert(
-        "Couldn’t load your profile",
+        "Couldn't load your profile",
         "Some games may not be correctly locked."
       );
       setUserLevel(null);
@@ -395,7 +390,7 @@ export default function PublicGames({
         err?.response?.data || err?.message || err
       );
       Alert.alert(
-        "Couldn’t load public games",
+        "Couldn't load public games",
         err?.response?.data?.error ?? "Please try again."
       );
     } finally {
@@ -475,6 +470,7 @@ export default function PublicGames({
     setTimer("none"); // reset to no timer
     setAlreadyPlayed(false);
     setRemarkVisible(false);
+    setIsStarting(false); // Reset starting state
     setComboDialogVisible(true);
   };
 
@@ -515,18 +511,15 @@ export default function PublicGames({
     if (comboDialogVisible && alreadyPlayed) setRemarkVisible(true);
   }, [comboDialogVisible, alreadyPlayed]);
 
-  /* ---------- start game (send SECONDS) — SINGLE SUBMIT ---------- */
+  /* ---------- start game (send SECONDS) ---------- */
   const reallyStart = useCallback(async () => {
-    if (!selectedTemplateId) return;
-    if (submitting || submitLockRef.current) return; // ignore extra taps
-
-    submitLockRef.current = true;
-    setSubmitting(true);
+    if (!selectedTemplateId || isStarting) return;
 
     const timerSecondsForApi: number | null =
       timer === "none" ? null : Number(timer);
 
     try {
+      setIsStarting(true);
       const payload = {
         ...(selectedType ? { newType: selectedType } : {}),
         timerSeconds: timerSecondsForApi,
@@ -544,25 +537,24 @@ export default function PublicGames({
         pathname: "/GameScreen",
         params: { gameId: String(started.id) },
       });
-      // keep lock; we navigated away
     } catch (err: any) {
       console.error(
         "[PublicGames] start failed:",
         err?.response?.data || err?.message || err
       );
       Alert.alert(
-        "Couldn’t start game",
+        "Couldn't start game",
         err?.response?.data?.error ?? "Please try again."
       );
-      // allow retry after error
-      setSubmitting(false);
-      submitLockRef.current = false;
+    } finally {
+      setIsStarting(false);
     }
-  }, [router, selectedTemplateId, selectedType, timer, submitting]);
+  }, [router, selectedTemplateId, selectedType, timer, isStarting]);
 
   const confirmAndStart = () => {
-    if (alreadyPlayed) setRemarkVisible(true);
-    else reallyStart();
+    if (isStarting) return;
+    // Always start the game, even if already played
+    reallyStart();
   };
 
   const showSpinner = loading || loadingUser;
@@ -590,7 +582,7 @@ export default function PublicGames({
           columnWrapperStyle={{
             justifyContent: "flex-start",
             gap: 40,
-            marginBottom: 40,
+            marginBottom: 16,
           }}
         />
       ) : (
@@ -604,9 +596,10 @@ export default function PublicGames({
         {/* -------- Combined Type + Timer Dialog -------- */}
         <Dialog
           visible={comboDialogVisible && !infoDialogVisible}
-          dismissable={!infoDialogVisible && !submitting}
+          dismissable={!infoDialogVisible}
           onDismiss={() => {
-            if (!submitting) setComboDialogVisible(false);
+            setComboDialogVisible(false);
+            setIsStarting(false);
           }}
           style={{
             backgroundColor: Color.white,
@@ -631,11 +624,9 @@ export default function PublicGames({
                 containerColor="transparent"
                 style={{ margin: 0 }}
                 accessibilityLabel="Game Types info"
-                disabled={submitting}
               />
             </View>
             <IconButton
-              disabled={submitting}
               icon={(p) => (
                 <CloseIcon
                   width={18}
@@ -645,7 +636,8 @@ export default function PublicGames({
                 />
               )}
               onPress={() => {
-                if (!submitting) setComboDialogVisible(false);
+                setComboDialogVisible(false);
+                setIsStarting(false);
               }}
               style={{ margin: 0 }}
               accessibilityLabel="Close dialog"
@@ -661,18 +653,18 @@ export default function PublicGames({
                   question={question}
                   gameType={label}
                   selected={selectedType === type}
-                  onPress={() => !submitting && setSelectedType(type)}
+                  onPress={() => setSelectedType(type)}
                 />
               ))}
             </View>
 
             {/* Timer Pills (UiTimer seconds, displayed as minutes) */}
-            <TimerChips value={timer} onChange={(v) => !submitting && setTimer(v)} />
+            <TimerChips value={timer} onChange={setTimer} />
 
             {alreadyPlayed ? (
               <View style={s.inlineBadge}>
                 <Text style={s.inlineBadgeText}>
-                  You’ve played this setup before. Replays don’t earn coins
+                  You've played this setup before. Replays don't earn coins
                   (extra word still gives 1).
                 </Text>
               </View>
@@ -681,23 +673,25 @@ export default function PublicGames({
             {/* Actions */}
             <View style={s.actions}>
               <Pressable
-                disabled={submitting}
-                style={[m.btn, m.outline, submitting && { opacity: 0.5 }]}
-                onPress={() => setComboDialogVisible(false)}
+                style={[m.btn, m.outline]}
+                onPress={() => {
+                  setComboDialogVisible(false);
+                  setIsStarting(false);
+                }}
               >
                 <Text style={[m.btnText, { color: Color.gray }]}>Cancel</Text>
               </Pressable>
               <Pressable
-                disabled={!selectedType || submitting}
                 style={[
                   m.btn,
                   m.primary,
-                  { opacity: !selectedType || submitting ? 0.5 : 1 },
+                  { opacity: selectedType && !isStarting ? 1 : 0.5 },
                 ]}
+                disabled={!selectedType || isStarting}
                 onPress={confirmAndStart}
               >
                 <Text style={[m.btnText, { color: "white" }]}>
-                  {submitting ? "Starting…" : "Start"}
+                  {isStarting ? "Starting..." : "Start"}
                 </Text>
               </Pressable>
             </View>
