@@ -372,7 +372,7 @@ const UserOverviewPerformance = () => {
                 }}
                 />
 
-                {peerSeries.length > 0 && ([
+                {peerSeries.length > 0 && peerSeries.some((d: any) => d.y !== 0) && ([
                     <VictoryLine
                         data={peerSeries}
                         style={{ data: { stroke: Color.green, strokeWidth: 3, zIndex: 0 } }}
@@ -385,6 +385,7 @@ const UserOverviewPerformance = () => {
                         labelComponent={<VictoryLabel dy={-10} style={{ fill: Color.green, fontSize: 12, stroke: Color.green, strokeWidth: 1 }} />}
                     />
                 ])}
+
                 {/* <Defs>
                                             <LinearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
                                                 <Stop offset="0%" stopColor={Color.blue} />
@@ -397,7 +398,7 @@ const UserOverviewPerformance = () => {
                     cornerRadius={10}
                     style={{
                         // data: { fill: "url(#barGradient)" }
-                        data: { fill: Color.blue }
+                        data: { fill: Color.blue, zIndex: 20 },
 
                     }}
                     labels={({ datum }) => `${datum.y}\n games`}
@@ -419,6 +420,7 @@ const UserOverviewPerformance = () => {
                         },
                     ]}
                 />
+
                 {/* {peerSeries.length > 0 && peerSeries.some((d: any) => d.y !== 0) && ([
                     <VictoryLine
                         data={peerSeries}
