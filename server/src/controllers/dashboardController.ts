@@ -1,7 +1,7 @@
 import prisma from "../configs/db";
 import { Request, Response } from "express";
 import { AuthenticatedRequest } from "../types/authenticatedRequest";
-import { startOfWeek, endOfWeek, eachDayOfInterval, format, addWeeks, startOfDay, isSameDay, addDays, subWeeks, startOfMonth, subMonths, startOfYear, subYears } from "date-fns";
+import { startOfWeek, endOfWeek, eachDayOfInterval, format, addWeeks, startOfDay, isSameDay, addDays, subWeeks, startOfMonth, subMonths, startOfYear, subYears, subSeconds } from "date-fns";
 import {
   TotalPlaytimeResponseSchema,
   WordsLearnedResponseSchema,
@@ -149,11 +149,14 @@ export const getUserGamesPlayedMultiplePeriod = async (
         let labels: string[] = [];
         let counts: number[] = [];
         if (period === "week") {
+          start = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0, 0);
+          end = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59, 999);
           const days = eachDayOfInterval({ start, end });
           labels = days.map(day => format(day, "EEE").slice(0, 2));
           const bucket: Record<string, number> = Object.fromEntries(labels.map(l => [l, 0]));
           games.forEach(g => {
-            const key = format(g.startedAt, "EEE").slice(0, 2);
+            const localDay = new Date(g.startedAt.getFullYear(), g.startedAt.getMonth(), g.startedAt.getDate(), 0, 0, 0, 0);
+            const key = format(localDay, "EEE").slice(0, 2);
             if (key in bucket) bucket[key]++;
           });
           counts = labels.map(l => bucket[l] ?? 0);
@@ -349,29 +352,29 @@ export const getAverageGamesByLevelPerPeriod = async (
       dates.map(async (periodDate) => {
         let start: Date, end: Date;
         ({ start, end } = getPeriodRange(period, periodDate));
-
+        start = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0, 0); // Local midnight
+        end = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59, 999);   // Local end of day
         let labels: string[] = [];
         let buckets: { start: Date, end: Date }[] = [];
-
         if (period === "week") {
           const days = eachDayOfInterval({ start, end });
           labels = days.map(day => format(day, "EEE").slice(0, 2));
           buckets = days.map(day => ({
-            start: day,
-            end: day,
+            start: new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, 0, 0, 0), // local midnight
+            end: new Date(day.getFullYear(), day.getMonth(), day.getDate(), 23, 59, 59, 999), // local end of day
           }));
         } else if (period === "month") {
-          let current = startOfWeek(start, { weekStartsOn: 0 });
+          let current = start;
           let weekIdx = 1;
           while (current <= end) {
             const weekStart = current;
-            const weekEnd = endOfWeek(current, { weekStartsOn: 0 });
+            const weekEnd = addDays(weekStart, 6);
             buckets.push({
-              start: weekStart < start ? start : weekStart,
+              start: weekStart,
               end: weekEnd > end ? end : weekEnd,
             });
             labels.push(`W${weekIdx++}`);
-            current = addWeeks(current, 1);
+            current = addDays(weekEnd, 1);
           }
         } else if (period === "year") {
           for (let i = 0; i < 12; i++) {
@@ -404,6 +407,13 @@ export const getAverageGamesByLevelPerPeriod = async (
             return Number((count / peerCount).toFixed(2));
           });
         }
+        console.log({
+          period,
+          localStart: start,
+          utcStart: start.toISOString(),
+          localEnd: end,
+          utcEnd: end.toISOString(),
+        });
 
         return {
           englishLevel: userLevel,

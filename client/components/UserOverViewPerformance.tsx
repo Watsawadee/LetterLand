@@ -53,18 +53,29 @@ function getMonthWeekRanges(startDateStr: string, labels: string[]) {
 
     while (current <= endDate) {
         const weekStart = new Date(current);
-        const weekEnd = addDays(weekStart, 6);
-        weekEnd.setDate(Math.min(weekEnd.getDate(), endDate.getDate()));
+        let weekEnd = addDays(weekStart, 6);
+
+        // ⛔ Clamp weekEnd so it never goes beyond this month
+        if (weekEnd > endDate) {
+            weekEnd = new Date(endDate);
+        }
+
         weeks.push({
             label: `Week ${weekNum}`,
-            range: `${weekStart.getDate()} ${weekStart.toLocaleString("en-GB", { month: "short" })}–${Math.min(weekEnd.getDate(), endDate.getDate())} ${weekEnd.toLocaleString("en-GB", { month: "short" })}`,
+            range: `${weekStart.getDate()} ${weekStart.toLocaleString("en-GB", {
+                month: "short",
+            })}–${weekEnd.getDate()} ${weekEnd.toLocaleString("en-GB", {
+                month: "short",
+            })}`,
         });
-        current = addDays(current, 7);
+
+        // Move to next week (weekEnd + 1 day)
+        current = addDays(weekEnd, 1);
         weekNum++;
     }
+
     return weeks.slice(0, labels.length);
 }
-
 const UserOverviewPerformance = () => {
     const [forceLoading, setForceLoading] = useState(true);
     const [modalVisible, setModalVisible] = useState(false);
@@ -73,11 +84,51 @@ const UserOverviewPerformance = () => {
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [tempDate, setTempDate] = useState<Date>(new Date());
     const [monthRange, setMonthRange] = useState<{ start: Date; end: Date } | null>(null);
-
-
-
-    const lastSwipe = useRef<number>(0);
     const [period, setPeriod] = useState<"week" | "month" | "year">("week");
+
+    useEffect(() => {
+        const today = new Date();
+        const s = startOfWeek(today, { weekStartsOn: 0 });
+        const e = endOfWeek(today, { weekStartsOn: 0 });
+        setSelectedDate(today);
+        setMonthRange({ start: s, end: e });
+    }, []);
+    const formattedEndDate = monthRange
+        ? monthRange.end.toISOString().split("T")[0]
+        : selectedDate.toISOString().split("T")[0];
+
+    const formatDateRange = (
+        startStr: string,
+        endStr: string,
+        p: "week" | "month" | "year"
+    ) => {
+        const start = new Date(startStr);
+        const end = new Date(endStr);
+        const startFormatted = start.toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            timeZone: "UTC",
+        });
+        const endFormatted = end.toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            timeZone: "UTC",
+        });
+
+        if (p === "week" || (p === "month" && start.getUTCMonth() === end.getUTCMonth() && start.getUTCFullYear() === end.getUTCFullYear())) {
+            return `${start.getUTCDate()} ${start.toLocaleString("en-GB", {
+                month: "short",
+                timeZone: "UTC",
+            })} ${start.getUTCFullYear()} – ${end.getUTCDate()} ${end.toLocaleString("en-GB", {
+                month: "short",
+                timeZone: "UTC",
+            })} ${end.getUTCFullYear()}`;
+        }
+        return `${startFormatted} – ${endFormatted}`;
+    };
+
     const handleDateConfirm = (date: Date) => {
         let start: Date;
         let end: Date;
@@ -101,11 +152,11 @@ const UserOverviewPerformance = () => {
         setShowPicker(false);
     };
 
-    const formattedEndDate = monthRange ? monthRange.end.toISOString().split("T")[0] : selectedDate.toISOString().split("T")[0];
 
 
     const CHART_W = 750;
     const CHART_H = 300;
+
 
     useEffect(() => {
         const timer = setTimeout(() => setForceLoading(false), 1000);
@@ -115,54 +166,60 @@ const UserOverviewPerformance = () => {
 
 
 
-    const formatDateRange = (startStr: string, endStr: string, period: "week" | "month" | "year") => {
-        const start = new Date(startStr);
-        const end = new Date(endStr);
 
-        const formatOptions: Intl.DateTimeFormatOptions = {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-            timeZone: "UTC",
-        };
 
-        const startFormatted = start.toLocaleDateString("en-GB", formatOptions);
-        const endFormatted = end.toLocaleDateString("en-GB", formatOptions);
 
-        if (
-            period === "week" ||
-            (period === "month" && start.getUTCMonth() === end.getUTCMonth() && start.getUTCFullYear() === end.getUTCFullYear())
-        ) {
-            return `${start.getUTCDate()} ${start.toLocaleString("en-GB", {
-                month: "short",
-                timeZone: "UTC",
-            })} ${start.getUTCFullYear()} – ${end.getUTCDate()} ${end.toLocaleString("en-GB", {
-                month: "short",
-                timeZone: "UTC",
-            })} ${end.getUTCFullYear()}`;
+
+    const { data: gamesData, isLoading: loadingChart } = useTotalGamesMultiplePeriod(
+        period,
+        formattedEndDate
+    );
+    const today = new Date();
+    const sortedResults = isSuccess(gamesData)
+        ? [...gamesData.results]
+            .filter((r) => new Date(r.range.start) <= today)
+            .sort((a, b) => new Date(a.range.start).getTime() - new Date(b.range.start).getTime())
+        : [];
+    useEffect(() => {
+        if (period === "week") {
+            const t = new Date();
+            const s = startOfWeek(t, { weekStartsOn: 0 });
+            const e = endOfWeek(t, { weekStartsOn: 0 });
+
+            const currentStartISO = monthRange?.start.toISOString().split("T")[0];
+            const targetStartISO = s.toISOString().split("T")[0];
+
+            if (currentStartISO !== targetStartISO) {
+                setSelectedDate(t);
+                setMonthRange({ start: s, end: e });
+            }
         }
-        return `${startFormatted} – ${endFormatted}`;
-    };
+    }, [period]);
+    useEffect(() => {
+        if (sortedResults.length === 0) return;
+        const latest = sortedResults[sortedResults.length - 1];
+        const latestEndISO = new Date(latest.range.end).toISOString().split("T")[0];
+        const currentEndISO = monthRange?.end.toISOString().split("T")[0];
 
+        if (latestEndISO && currentEndISO && latestEndISO !== currentEndISO && period === "week") {
+            setSelectedDate(new Date(latest.range.end));
+            setMonthRange({ start: new Date(latest.range.start), end: new Date(latest.range.end) });
+        }
+    }, [JSON.stringify(sortedResults.map((r) => r.range)), period]);
 
-    const { data: gamesData, isLoading: loadingChart } = useTotalGamesMultiplePeriod(period, formattedEndDate);
-    // ✅ pick the current period (latest week/month/year)
-    const currentPeriod = gamesData?.results?.[gamesData.results.length - 1];
+    const initialIndex = sortedResults.length > 0 ? sortedResults.length - 1 : 0;
+    const [activeIndex, setActiveIndex] = useState(initialIndex);
+    useEffect(() => {
+        setActiveIndex(sortedResults.length > 0 ? sortedResults.length - 1 : 0);
+    }, [sortedResults.length]);
 
-    const { data: peerAvgData, isLoading: loadingPeer } = usePeerAverageGamesPerPeriod(period, formattedEndDate);
-    const { data: userProgress, isLoading: loadingProgress } = useUserProgress();
-
+    const { data: peerAvgData, isLoading: loadingPeer } = usePeerAverageGamesPerPeriod(
+        period,
+        formattedEndDate
+    )
     const { data: totalPlaytime } = useUserTotalPlaytime();
     const { data: wordsLearned } = useUserWordLearned();
-    const { data: streakData, isLoading: loadingStreak } = useUserGameStreak();
-
-    const weekTickLabels = isSuccess(currentPeriod) && currentPeriod.period === "week"
-        ? getWeekDates(currentPeriod.range.start, currentPeriod.labels)
-        : [];
-
-    const monthTickLabels = isSuccess(currentPeriod) && currentPeriod.period === "month"
-        ? getMonthWeekRanges(currentPeriod.range.start, currentPeriod.labels)
-        : [];
+    const { data: streakData } = useUserGameStreak();
 
     const getPeriodLabel = (p: "week" | "month" | "year") => {
         switch (p) {
@@ -174,6 +231,43 @@ const UserOverviewPerformance = () => {
                 return "Yearly Activity";
         }
     };
+
+    const currentPeriod = isSuccess(gamesData)
+        ? gamesData.results[gamesData.results.length - 1]
+        : undefined;
+
+
+    useEffect(() => {
+        if (isSuccess(gamesData) && sortedResults.length > 0) {
+            const latestPeriod = sortedResults[sortedResults.length - 1];
+            const currentEnd = monthRange?.end.toISOString().split("T")[0];
+            const latestEnd = new Date(latestPeriod.range.end).toISOString().split("T")[0];
+
+            if (currentEnd !== latestEnd) {
+                console.log("📅 Setting latest period to:", latestPeriod.range.start, latestPeriod.range.end);
+                setSelectedDate(new Date(latestPeriod.range.end));
+                setMonthRange({
+                    start: new Date(latestPeriod.range.start),
+                    end: new Date(latestPeriod.range.end),
+                });
+            }
+        }
+    }, [gamesData]);
+
+
+    useEffect(() => {
+        console.log("gamesData", gamesData);
+        console.log("peerAvgData", peerAvgData);
+    }, [gamesData, peerAvgData]);
+
+    const weekTickLabels = gamesData && gamesData.results && currentPeriod && currentPeriod.period === "week"
+        ? getWeekDates(currentPeriod.range.start, currentPeriod.labels)
+        : [];
+
+    const monthTickLabels = gamesData && gamesData.results && currentPeriod && currentPeriod.period === "month"
+        ? getMonthWeekRanges(currentPeriod.range.start, currentPeriod.labels)
+        : [];
+
 
     const streakCards = [
         {
@@ -192,15 +286,16 @@ const UserOverviewPerformance = () => {
             icon: BoxingGlove
         },
     ];
-    function isSuccess<T>(data: T | undefined): data is Exclude<T, { error: string }> {
-        return !!data && typeof data === "object" && !("error" in data);
+    function isSuccess<T extends { results?: unknown }>(
+        data: T | { error: string } | undefined
+    ): data is T & { results: unknown[] } {
+        return !!data && Array.isArray((data as any).results);
     }
-    const maxY = isSuccess(currentPeriod)
-        ? Math.max(1, ...currentPeriod.counts)
-        : 1;
+    const activePeriodData = sortedResults[activeIndex];
+
 
     const router = useRouter();
-    const loading = loadingChart || loadingPeer || loadingProgress;
+    const loading = loadingChart || loadingPeer;
     const renderPeriodChart = (item: any, peerItem?: any) => {
         const periodSeries = item.labels.map((label: string, i: number) => ({
             x: label,
@@ -276,6 +371,21 @@ const UserOverviewPerformance = () => {
                     },
                 }}
                 />
+
+                {peerSeries.length > 0 && peerSeries.some((d: any) => d.y !== 0) && ([
+                    <VictoryLine
+                        data={peerSeries}
+                        style={{ data: { stroke: Color.green, strokeWidth: 3, zIndex: 0 } }}
+                    />,
+                    <VictoryScatter
+                        data={peerSeries}
+                        size={5}
+                        style={{ data: { fill: Color.green } }}
+                        labels={({ datum }) => datum.y.toFixed(1)}
+                        labelComponent={<VictoryLabel dy={-10} style={{ fill: Color.green, fontSize: 12, stroke: Color.green, strokeWidth: 1 }} />}
+                    />
+                ])}
+
                 {/* <Defs>
                                             <LinearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
                                                 <Stop offset="0%" stopColor={Color.blue} />
@@ -288,13 +398,13 @@ const UserOverviewPerformance = () => {
                     cornerRadius={10}
                     style={{
                         // data: { fill: "url(#barGradient)" }
-                        data: { fill: Color.blue }
+                        data: { fill: Color.blue, zIndex: 20 },
 
                     }}
                     labels={({ datum }) => `${datum.y}\n games`}
                     labelComponent={
                         <VictoryTooltip flyoutStyle={{ fill: "#fff", stroke: Color.blue, strokeWidth: 1, }}
-                            style={{ fill: Color.blue, fontWeight: "600", fontSize: 13, textAlign: "center" }}
+                            style={{ fill: Color.blue, fontWeight: "600", fontSize: 13, textAlign: "center", zIndex: 3 }}
                             flyoutPadding={{ top: 8, bottom: 8, left: 10, right: 10 }}
                             dy={-10}
                             pointerLength={0}
@@ -310,7 +420,8 @@ const UserOverviewPerformance = () => {
                         },
                     ]}
                 />
-                {peerSeries.length > 0 && peerSeries.some((d: any) => d.y !== 0) && ([
+
+                {/* {peerSeries.length > 0 && peerSeries.some((d: any) => d.y !== 0) && ([
                     <VictoryLine
                         data={peerSeries}
                         style={{ data: { stroke: Color.green, strokeWidth: 3 } }}
@@ -322,14 +433,15 @@ const UserOverviewPerformance = () => {
                         labels={({ datum }) => datum.y.toFixed(1)}
                         labelComponent={<VictoryLabel dy={-10} style={{ fill: Color.green, fontSize: 12, stroke: Color.green, strokeWidth: 1 }} />}
                     />
-                ])}
+                ])} */}
+
             </VictoryChart>
         );
     };
 
     return (
         <>
-            <View style={{ width: "69%", height: "100%", gap: 15 }}>
+            <View style={{ width: "100%", height: "100%", gap: 15 }}>
                 <View style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", width: "100%" }}>
                     <View style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
                         <Pressable
@@ -359,22 +471,21 @@ const UserOverviewPerformance = () => {
 
                     {/* modal */}
                     <WordBankModal visible={showBook} onClose={() => setShowBook(false)} />
-
-
-
                 </View>
+
+
                 <View style={{ height: "84%", flexDirection: "column", justifyContent: "space-between" }}>
                     <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 10 }}>
                         <View style={{ alignItems: "center" }}>
                             {loading ? (
                                 <ActivityIndicator size="large" />
-                            ) : isSuccess(currentPeriod) && isSuccess(peerAvgData) ? (
+                            ) : isSuccess(gamesData) && isSuccess(peerAvgData) ? (
                                 <Card
                                     style={{
                                         backgroundColor: Color.white,
                                         borderRadius: 16,
                                         padding: 20,
-                                        width: CHART_W,
+                                        width: "93%",
                                         position: "relative",
                                         overflow: "hidden",
                                     }}
@@ -439,13 +550,14 @@ const UserOverviewPerformance = () => {
                                             marginBottom: 10,
                                         }}
                                     >
-                                        {isSuccess(currentPeriod)
-                                            ? `${formatDateRange(
-                                                currentPeriod.range.start,
-                                                currentPeriod.range.end,
+                                        {sortedResults.length > 0 && sortedResults[activeIndex]
+                                            ? formatDateRange(
+                                                sortedResults[activeIndex].range.start,
+                                                sortedResults[activeIndex].range.end,
                                                 period
-                                            )}`
+                                            )
                                             : "Games Played"}
+
                                     </Text>
                                     {/* <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                                         <View style={{ display: "flex", flexDirection: "row" }}>
@@ -482,91 +594,51 @@ const UserOverviewPerformance = () => {
                                             </View>
                                         </View>
                                     </View> */}
-                                    {showPicker && (
-                                        <DateTimePickerModal
-                                            isVisible={showPicker}
-                                            mode="date"
-                                            display="inline"
-                                            date={selectedDate}
-                                            onConfirm={() => {
 
-                                            }}
-                                            maximumDate={new Date}
-                                            onCancel={() => setShowPicker(false)}
-                                            onChange={(date) => {
-                                                if (date) setTempDate(date);
-                                            }}
-                                            textColor={Color.gray}
-                                            themeVariant="light"
-                                            pickerContainerStyleIOS={{
-                                                backgroundColor: Color.white,
-                                                borderRadius: 24,
-                                                width: 420,
-                                                alignSelf: "center",
-                                                justifyContent: "center",
-                                                alignItems: "center",
-                                                shadowColor: "#000",
-                                                shadowOpacity: 0.1,
-                                                shadowRadius: 6,
-                                                shadowOffset: { width: 0, height: 3 },
-                                            }}
-                                            customHeaderIOS={() => (
-                                                <Text
-                                                    style={{
-                                                        textAlign: "center",
-                                                        color: Color.gray,
-                                                        fontWeight: "700",
-                                                        paddingVertical: 12,
-                                                        fontSize: 20,
-                                                    }}
-                                                >
-                                                    Choose {period}
-                                                </Text>
-                                            )}
-                                            customConfirmButtonIOS={() => (
 
-                                                <Button
-                                                    onPress={() => handleDateConfirm(tempDate)}
-                                                    style={{
-                                                        alignSelf: "center",
-                                                        width: "100%",
-                                                        borderTopColor: Color.gray,
-                                                        borderTopWidth: 0.5,
-                                                        backgroundColor: "transparent",
-                                                        paddingTop: 5,
-                                                    }}
+                                    {loadingChart || loadingPeer ? (
+                                        <View style={{ height: CHART_H, justifyContent: "center", alignItems: "center" }}>
+                                            <ActivityIndicator size="large" color={Color.blue} />
+                                            <Text style={{ color: Color.gray, marginTop: 8, fontWeight: "600" }}>
+                                                Loading chart data...
+                                            </Text>
+                                        </View>
+                                    ) : isSuccess(gamesData) && gamesData.results.length > 0 ? (
+                                        <Carousel
+                                            width={CHART_W}
+                                            height={CHART_H}
+                                            data={sortedResults}
+                                            defaultIndex={initialIndex}
+                                            onSnapToItem={setActiveIndex}
+                                            renderItem={({ item }) => {
+                                                let peerItem = undefined;
 
-                                                    rippleColor="transparent"
-                                                >
-                                                    <Text style={{ color: Color.gray, fontSize: 18, fontWeight: "600" }}>
-                                                        Confirm
-                                                    </Text>
-                                                </Button>
-                                            )}
-                                            customCancelButtonIOS={() => (
-                                                <Button
-                                                    onPress={() => setShowPicker(false)}
-                                                    style={{
-                                                        backgroundColor: Color.lightblue,
-                                                        borderRadius: 12,
-                                                        alignSelf: "center",
-                                                        width: "36%",
-                                                        marginBottom: 20
-                                                    }}
-                                                    rippleColor="transparent"
-                                                >
-                                                    <Text style={{ color: "red", fontSize: 18, fontWeight: "600" }}>
-                                                        Cancel
-                                                    </Text>
-                                                </Button>
-                                            )}
+                                                if (isSuccess(peerAvgData)) {
+                                                    peerItem = peerAvgData.results.find((p) => {
+                                                        const startA = new Date(p.range.start);
+                                                        const endA = new Date(p.range.end);
+                                                        const startB = new Date(item.range.start);
+                                                        const endB = new Date(item.range.end);
+
+                                                        return (
+                                                            p.period === item.period &&
+                                                            startA.getTime() <= endB.getTime() &&
+                                                            endA.getTime() >= startB.getTime()
+                                                        );
+                                                    });
+                                                }
+
+                                                return renderPeriodChart(item, peerItem);
+                                            }}
+                                            style={{ alignSelf: "center" }}
+                                            loop={false}
                                         />
-
-
+                                    ) : loadingChart ? (
+                                        <ActivityIndicator size="large" />
+                                    ) : (
+                                        <Text style={{ color: Color.gray }}>No chart data available</Text>
                                     )}
-
-
-                                    <View style={{ display: "flex", flexDirection: "row", justifyContent: "center", gap: 20 }}>
+                                    <View style={{ display: "flex", flexDirection: "row", justifyContent: "center", alignItems: "flex-start", gap: 20 }}>
                                         <View style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 5 }}>
                                             <View style={{ backgroundColor: Color.blue, width: 5, height: 5, borderRadius: 9999 }} />
                                             <Text style={{ color: Color.blue, fontWeight: Typography.body16.fontWeight }}>Your game played</Text>
@@ -576,28 +648,11 @@ const UserOverviewPerformance = () => {
                                             <Text style={{ color: Color.green, fontWeight: Typography.body16.fontWeight }}>Average games by peers</Text>
                                         </View>
                                     </View>
-                                    {isSuccess(gamesData) && gamesData.results && gamesData.results.length > 0 ? (
-                                        <Carousel
-                                            width={CHART_W}
-                                            height={CHART_H + 100}
-                                            data={gamesData.results}
-                                            renderItem={({ item }) => {
-                                                let peerItem = undefined;
-                                                if (isSuccess(peerAvgData) && peerAvgData.results) {
-                                                    peerItem = peerAvgData.results.find(p => p.date === item.date);
-                                                }
-                                                return renderPeriodChart(item, peerItem);
-                                            }}
-                                            style={{ alignSelf: "center" }}
-                                            loop={false}
-                                        />
-                                    ) : (
-                                        <Text style={{ color: Color.gray }}>No chart data available</Text>
-                                    )}
                                 </Card>
                             ) : (
                                 <Text style={{ color: Color.gray }}>No chart data available</Text>
                             )}
+
                         </View>
                     </View>
 
@@ -706,6 +761,89 @@ const UserOverviewPerformance = () => {
                         </ScrollView>
                     </View>
                 </View >
+                {showPicker && (
+                    <DateTimePickerModal
+                        isVisible={showPicker}
+                        mode="date"
+                        display="inline"
+                        date={selectedDate}
+                        onConfirm={() => {
+
+                        }}
+                        maximumDate={new Date}
+                        onCancel={() => setShowPicker(false)}
+                        onChange={(date) => {
+                            if (date) setTempDate(date);
+                        }}
+                        textColor={Color.gray}
+                        themeVariant="light"
+                        pickerContainerStyleIOS={{
+                            backgroundColor: Color.white,
+                            borderRadius: 24,
+                            width: 420,
+                            alignSelf: "center",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            shadowColor: "#000",
+                            shadowOpacity: 0.1,
+                            shadowRadius: 6,
+                            shadowOffset: { width: 0, height: 3 },
+                        }}
+                        customHeaderIOS={() => (
+                            <Text
+                                style={{
+                                    textAlign: "center",
+                                    color: Color.gray,
+                                    fontWeight: "700",
+                                    paddingVertical: 12,
+                                    fontSize: 20,
+                                }}
+                            >
+                                Choose {period}
+                            </Text>
+                        )}
+                        customConfirmButtonIOS={() => (
+
+                            <Button
+                                onPress={() => handleDateConfirm(tempDate)}
+                                style={{
+                                    alignSelf: "center",
+                                    width: "100%",
+                                    borderTopColor: Color.gray,
+                                    borderTopWidth: 0.5,
+                                    backgroundColor: "transparent",
+                                    paddingTop: 5,
+                                }}
+
+                                rippleColor="transparent"
+                            >
+                                <Text style={{ color: Color.gray, fontSize: 18, fontWeight: "600" }}>
+                                    Confirm
+                                </Text>
+                            </Button>
+                        )}
+                        customCancelButtonIOS={() => (
+                            <Button
+                                onPress={() => setShowPicker(false)}
+                                style={{
+                                    backgroundColor: Color.lightblue,
+                                    borderRadius: 12,
+                                    alignSelf: "center",
+                                    width: "36%",
+                                    marginBottom: 20
+                                }}
+                                rippleColor="transparent"
+                            >
+                                <Text style={{ color: "red", fontSize: 18, fontWeight: "600" }}>
+                                    Cancel
+                                </Text>
+                            </Button>
+                        )}
+                    />
+
+
+                )}
+
             </View >
             {/* <Portal >
                 <Modal
