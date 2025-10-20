@@ -22,6 +22,7 @@ import Book from "@/assets/icon/Book";
 import { ButtonStyles } from "@/theme/ButtonStyles";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { addDays, endOfMonth, endOfWeek, endOfYear, format, startOfMonth, startOfWeek, startOfYear } from "date-fns";
+import { addDays, addMonths, addWeeks, addYears, endOfMonth, endOfWeek, endOfYear, format, startOfMonth, startOfWeek, startOfYear, subMonths, subWeeks, subYears } from "date-fns";
 import { useColorScheme } from "react-native";
 import { Defs, LinearGradient, Stop } from "react-native-svg";
 import { FloatingBubble } from "@/assets/images/bubblePopup";
@@ -75,6 +76,7 @@ const UserOverviewPerformance = () => {
 
 
 
+    const lastSwipe = useRef<number>(0);
     const [period, setPeriod] = useState<"week" | "month" | "year">("week");
     const handleDateConfirm = (date: Date) => {
         let start: Date;
@@ -551,6 +553,19 @@ const UserOverviewPerformance = () => {
                                             />
                                         ])}
                                     </VictoryChart>
+                                    <View style={{ display: "flex", flexDirection: "row", justifyContent: "center", gap: 20 }}>
+                                        <View style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 5 }}>
+                                            <View style={{ backgroundColor: Color.blue, width: 5, height: 5, borderRadius: 9999 }} />
+                                            <Text style={{ color: Color.blue, fontWeight: Typography.body16.fontWeight }}>Your game played</Text>
+                                        </View>
+                                        <View style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 5 }}>
+                                            <View style={{ backgroundColor: Color.green, width: 5, height: 5, borderRadius: 999 }} />
+                                            <Text style={{ color: Color.green, fontWeight: Typography.body16.fontWeight }}>Average games by peers</Text>
+                                        </View>
+                                    </View>
+                                    {/* Carousel */}
+                                    {/* )} */}
+                                    {/* /> */}
                                     <View style={{ display: "flex", flexDirection: "row", justifyContent: "center", gap: 20 }}>
                                         <View style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 5 }}>
                                             <View style={{ backgroundColor: Color.blue, width: 5, height: 5, borderRadius: 9999 }} />
