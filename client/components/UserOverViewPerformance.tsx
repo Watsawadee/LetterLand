@@ -7,6 +7,7 @@ import { ActivityIndicator } from "react-native";
 import Clock from "@/assets/icon/Clock";
 import Pencil from "@/assets/icon/Pencil";
 import {
+    Axis,
     VictoryAxis, VictoryBar, VictoryChart, VictoryLabel, VictoryLine, VictoryPie, VictoryScatter, VictoryTheme, VictoryTooltip,
     VictoryVoronoiContainer,
 } from "victory-native";
@@ -20,11 +21,48 @@ import WordBankModal from "./WordBank";
 import Book from "@/assets/icon/Book";
 import { ButtonStyles } from "@/theme/ButtonStyles";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import { endOfMonth, endOfWeek, endOfYear, format, startOfMonth, startOfWeek, startOfYear } from "date-fns";
+import { addDays, endOfMonth, endOfWeek, endOfYear, format, startOfMonth, startOfWeek, startOfYear } from "date-fns";
 import { useColorScheme } from "react-native";
 import { Defs, LinearGradient, Stop } from "react-native-svg";
 import { FloatingBubble } from "@/assets/images/bubblePopup";
+import BoxingGlove from "@/assets/icon/BoxingGlove";
+import Fire from "@/assets/icon/Fire";
+import Trophy from "@/assets/icon/Trophy";
+import { ColorProperties } from "react-native-reanimated/lib/typescript/Colors";
 
+function getWeekDates(startDateStr: string, labels: string[]) {
+    const startDate = new Date(startDateStr);
+    const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    return labels.map((label, i) => {
+        const d = new Date(startDate);
+        d.setDate(startDate.getDate() + i);
+        return {
+            label: weekDays[d.getDay()], // always 3-letter format
+            date: `${d.getDate()} ${d.toLocaleString("en-GB", { month: "short" })}`,
+        };
+    });
+}
+
+function getMonthWeekRanges(startDateStr: string, labels: string[]) {
+    const startDate = startOfMonth(new Date(startDateStr));
+    const endDate = endOfMonth(startDate);
+    const weeks = [];
+    let current = new Date(startDate);
+    let weekNum = 1;
+
+    while (current <= endDate) {
+        const weekStart = new Date(current);
+        const weekEnd = addDays(weekStart, 6);
+        weekEnd.setDate(Math.min(weekEnd.getDate(), endDate.getDate()));
+        weeks.push({
+            label: `Week ${weekNum}`,
+            range: `${weekStart.getDate()} ${weekStart.toLocaleString("en-GB", { month: "short" })}–${Math.min(weekEnd.getDate(), endDate.getDate())} ${weekEnd.toLocaleString("en-GB", { month: "short" })}`,
+        });
+        current = addDays(current, 7);
+        weekNum++;
+    }
+    return weeks.slice(0, labels.length);
+}
 
 const UserOverviewPerformance = () => {
     const [forceLoading, setForceLoading] = useState(true);
@@ -35,8 +73,7 @@ const UserOverviewPerformance = () => {
     const [tempDate, setTempDate] = useState<Date>(new Date());
     const [monthRange, setMonthRange] = useState<{ start: Date; end: Date } | null>(null);
 
-    const colorScheme = useColorScheme();
-    const isDarkMode = colorScheme === "dark";
+
 
     const [period, setPeriod] = useState<"week" | "month" | "year">("week");
     const handleDateConfirm = (date: Date) => {
@@ -73,6 +110,10 @@ const UserOverviewPerformance = () => {
         const timer = setTimeout(() => setForceLoading(false), 1000);
         return () => clearTimeout(timer);
     }, []);
+
+
+
+
     const formatDateRange = (startStr: string, endStr: string, period: "week" | "month" | "year") => {
         const start = new Date(startStr);
         const end = new Date(endStr);
@@ -110,18 +151,41 @@ const UserOverviewPerformance = () => {
     const { data: totalPlaytime } = useUserTotalPlaytime();
     const { data: wordsLearned } = useUserWordLearned();
     const { data: streakData, isLoading: loadingStreak } = useUserGameStreak();
+
+    const weekTickLabels = isSuccess(TotalgamesData) && TotalgamesData.period === "week"
+        ? getWeekDates(TotalgamesData.range.start, TotalgamesData.labels)
+        : [];
+
+    const monthTickLabels = isSuccess(TotalgamesData) && TotalgamesData.period === "month"
+        ? getMonthWeekRanges(TotalgamesData.range.start, TotalgamesData.labels)
+        : [];
+
+    const getPeriodLabel = (p: "week" | "month" | "year") => {
+        switch (p) {
+            case "week":
+                return "Weekly Activity";
+            case "month":
+                return "Monthly Activity";
+            case "year":
+                return "Yearly Activity";
+        }
+    };
+
     const streakCards = [
         {
-            label: "Your Longest Streak Ever",
+            label: "Longest Streak Ever",
             value: streakData && "allTime" in streakData ? streakData.allTime : "-",
+            icon: Trophy,
         },
         {
-            label: "Your Ongoing Streak in This Level",
+            label: "Ongoing Streak in This Level",
             value: streakData && "currentLevel" in streakData ? streakData.currentLevel : "-",
+            icon: Fire,
         },
         {
             label: "Top Streak in Your Level",
             value: streakData && "highestStreakInThisLevel" in streakData ? streakData.highestStreakInThisLevel : "-",
+            icon: BoxingGlove
         },
     ];
     function isSuccess<T>(data: T | undefined): data is Exclude<T, { error: string }> {
@@ -145,7 +209,6 @@ const UserOverviewPerformance = () => {
     const maxY = isSuccess(TotalgamesData)
         ? Math.max(1, ...TotalgamesData.counts)
         : 1;
-
 
     const router = useRouter();
     const loading = loadingChart || loadingPeer || loadingProgress;
@@ -186,7 +249,6 @@ const UserOverviewPerformance = () => {
 
                 </View>
                 <View style={{ height: "84%", flexDirection: "column", justifyContent: "space-between" }}>
-
                     <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 10 }}>
                         <View style={{ alignItems: "center" }}>
                             {loading ? (
@@ -194,7 +256,7 @@ const UserOverviewPerformance = () => {
                             ) : isSuccess(TotalgamesData) && isSuccess(peerAvgData) ? (
                                 <Card
                                     style={{
-                                        backgroundColor: "#F2F8F9",
+                                        backgroundColor: Color.white,
                                         borderRadius: 16,
                                         padding: 20,
                                         width: CHART_W,
@@ -202,21 +264,75 @@ const UserOverviewPerformance = () => {
                                         overflow: "hidden",
                                     }}
                                 >
-                                    {/* <FloatingBubble cardWidth={CHART_W} cardHeight={CHART_H} /> */}
-                                    <Card.Title
-                                        title={
-                                            isSuccess(TotalgamesData)
-                                                ? `Games Played (${formatDateRange(
-                                                    TotalgamesData.range.start,
-                                                    TotalgamesData.range.end,
-                                                    period
-                                                )})`
-                                                : "Games Played"
-                                        }
+                                    <View style={{ flex: 1, zIndex: 1 }}>
+                                        <FloatingBubble cardWidth={CHART_W} cardHeight={CHART_H} />
+                                    </View>
+                                    <View style={{ display: "flex", flexDirection: "row", width: "100%", justifyContent: "space-between", alignItems: "center" }}>
+                                        <Text
+                                            style={{
+                                                color: Color.gray,
+                                                fontWeight: "bold",
+                                                fontSize: 20,
+                                            }}
+                                        >
+                                            {getPeriodLabel(period)}
+                                        </Text>
 
-                                        titleStyle={{ color: Color.gray, fontWeight: "bold", fontSize: 20 }}
-                                    />
-                                    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                                        <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center" }}>
+                                            {(["week", "month", "year"] as const).map((p) => {
+                                                const isSelected = p === period;
+                                                return (
+                                                    <Button
+                                                        key={p}
+                                                        onPress={() => {
+                                                            setPeriod(p);
+                                                            setShowPicker(true);
+                                                            setTempDate(selectedDate);
+                                                        }}
+                                                        style={{
+                                                            backgroundColor: isSelected ? Color.blue : Color.white,
+                                                            borderColor: Color.blue,
+                                                            borderWidth: 1.5,
+                                                            paddingHorizontal: 10,
+                                                            borderRadius: 10,
+                                                            marginHorizontal: 6,
+                                                            height: 38,
+                                                            justifyContent: "center",
+                                                        }}
+                                                        rippleColor={"transparent"}
+                                                    >
+                                                        <Text
+                                                            style={{
+                                                                color: isSelected ? Color.white : Color.gray,
+                                                                fontSize: 14,
+                                                                fontWeight: "bold"
+                                                            }}
+                                                        >
+                                                            {p.charAt(0).toUpperCase() + p.slice(1)}
+                                                        </Text>
+                                                    </Button>
+                                                );
+                                            })}
+                                        </View>
+
+                                    </View>
+                                    <Text
+                                        style={{
+                                            color: "#9AAAB4",
+                                            fontWeight: "bold",
+                                            fontSize: 13,
+                                            marginBottom: 10,
+                                        }}
+                                    >
+                                        {isSuccess(TotalgamesData)
+                                            ? `${formatDateRange(
+                                                TotalgamesData.range.start,
+                                                TotalgamesData.range.end,
+                                                period
+                                            )}`
+                                            : "Games Played"}
+                                    </Text>
+                                    {/* <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                                         <View style={{ display: "flex", flexDirection: "row" }}>
                                             {(["week", "month", "year"] as const).map((p) => (
                                                 <Button
@@ -250,7 +366,7 @@ const UserOverviewPerformance = () => {
                                                 <Text style={{ color: Color.green, fontWeight: Typography.header20.fontWeight }}>Average of peers</Text>
                                             </View>
                                         </View>
-                                    </View>
+                                    </View> */}
                                     {showPicker && (
                                         <DateTimePickerModal
                                             isVisible={showPicker}
@@ -343,39 +459,73 @@ const UserOverviewPerformance = () => {
                                     >
                                         <VictoryAxis
                                             tickValues={TotalgamesData.labels}
-                                            style={{ tickLabels: { fontSize: 12, fill: Color.gray } }}
+                                            tickLabelComponent={
+                                                <VictoryLabel
+                                                    text={({ index }) => {
+                                                        const safeIndex = typeof index === "number" ? index : 0;
+                                                        if (period === "week") {
+                                                            if (!weekTickLabels[safeIndex]) {
+                                                                return TotalgamesData.labels[safeIndex];
+                                                            }
+                                                            return `${weekTickLabels[safeIndex].label}\n${weekTickLabels[safeIndex].date}`;
+                                                        } else if (period === "month") {
+                                                            if (!monthTickLabels[safeIndex]) {
+                                                                return TotalgamesData.labels[safeIndex];
+                                                            }
+                                                            return `${monthTickLabels[safeIndex].label}\n${monthTickLabels[safeIndex].range}`;
+                                                        }
+                                                        return TotalgamesData.labels[safeIndex];
+                                                    }}
+                                                    style={[
+                                                        { fontSize: 12, fill: Color.gray, fontWeight: "bold" },
+                                                        { fontSize: 10, fill: Color.gray }
+                                                    ]}
+                                                    lineHeight={[1, 1]}
+                                                />
+                                            }
+                                            style={{
+                                                tickLabels: { fontSize: 12, fill: Color.blue }, grid: {
+                                                    stroke: "transparent",
+                                                    strokeWidth: 1.5,
+                                                    strokeDasharray: 0.5,
+                                                },
+                                            }}
                                         />
-                                        <VictoryAxis dependentAxis />
-                                        <Defs>
+                                        <VictoryAxis dependentAxis style={{
+                                            axis: { stroke: "transparent", strokeWidth: 1.5 }, ticks: { stroke: "transparent" }, tickLabels: {
+                                                fill: Color.gray,
+                                                fontSize: 12,
+                                                fontWeight: "500",
+                                            }, grid: {
+                                                stroke: "#B5B5B5",
+                                                strokeWidth: 1.5,
+                                                strokeDasharray: 0.5,
+                                            },
+                                        }}
+                                        />
+                                        {/* <Defs>
                                             <LinearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
                                                 <Stop offset="0%" stopColor={Color.blue} />
                                                 <Stop offset="100%" stopColor="#4584ccff" />
                                             </LinearGradient>
-                                        </Defs>
+                                        </Defs> */}
                                         <VictoryBar
                                             data={periodSeries}
-                                            barWidth={30}
+                                            barWidth={40}
                                             cornerRadius={10}
                                             style={{
-                                                data: { fill: "url(#barGradient)" }
+                                                // data: { fill: "url(#barGradient)" }
+                                                data: { fill: Color.blue }
+
                                             }}
-                                            labels={({ datum }) => `${datum.y} games`}
+                                            labels={({ datum }) => `${datum.y}\n games`}
                                             labelComponent={
-                                                <VictoryTooltip
-                                                    flyoutStyle={{
-                                                        fill: "#fff",
-                                                        stroke: Color.black,
-                                                        strokeWidth: 1,
-                                                    }}
-                                                    style={{
-                                                        fill: Color.gray,
-                                                        fontWeight: "600",
-                                                        fontSize: 13,
-                                                        textAlign: "center",
-                                                    }}
+                                                <VictoryTooltip flyoutStyle={{ fill: "#fff", stroke: Color.blue, strokeWidth: 1, }}
+                                                    style={{ fill: Color.blue, fontWeight: "600", fontSize: 13, textAlign: "center" }}
                                                     flyoutPadding={{ top: 8, bottom: 8, left: 10, right: 10 }}
-                                                    activateData={true}
-                                                />
+                                                    dy={-10}
+                                                    pointerLength={0}
+                                                    activateData={true} />
                                             }
                                             events={[
                                                 {
@@ -386,7 +536,6 @@ const UserOverviewPerformance = () => {
                                                     },
                                                 },
                                             ]}
-                                            animate={{ duration: 1000, easing: "bounce" }}
                                         />
                                         {peerSeries.some((d) => d.y !== 0) && ([
                                             <VictoryLine
@@ -402,6 +551,16 @@ const UserOverviewPerformance = () => {
                                             />
                                         ])}
                                     </VictoryChart>
+                                    <View style={{ display: "flex", flexDirection: "row", justifyContent: "center", gap: 20 }}>
+                                        <View style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 5 }}>
+                                            <View style={{ backgroundColor: Color.blue, width: 5, height: 5, borderRadius: 9999 }} />
+                                            <Text style={{ color: Color.blue, fontWeight: Typography.body16.fontWeight }}>Your game played</Text>
+                                        </View>
+                                        <View style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 5 }}>
+                                            <View style={{ backgroundColor: Color.green, width: 5, height: 5, borderRadius: 999 }} />
+                                            <Text style={{ color: Color.green, fontWeight: Typography.body16.fontWeight }}>Average games by peers</Text>
+                                        </View>
+                                    </View>
                                 </Card>
                             ) : (
                                 <Text style={{ color: Color.gray }}>No chart data available</Text>
@@ -412,58 +571,110 @@ const UserOverviewPerformance = () => {
                     <View
                         style={{
                             width: "100%",
-                            height: "20%",
-                            alignSelf: "center",
+                            height: "35%",
+                            flexDirection: "row",
+                            alignSelf: "flex-start",
+                            // backgroundColor: "red",
                         }}
                     >
-                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 25 }}>
-                            <Text style={{ fontSize: Typography.header20.fontSize, fontWeight: Typography.header20.fontWeight, color: Color.gray }}>Overview statistcs</Text>
-                            <Button onPress={() => {
-                                setModalVisible(true);
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            style={{ height: "90%", width: "99%" }}
+                            contentContainerStyle={{
+                                paddingRight: "56%",
+                                paddingLeft: "1%",
+                                alignItems: "center",
+                                gap: 20
                             }}
-                                rippleColor={"transparent"}
+                        >
+                            {/* 🟦 Total Words Learned */}
+                            <Card
+                                style={{
+                                    width: "25%",
+                                    height: "60%",
+                                    backgroundColor: "#F2F8F9",
+                                    padding: 12,
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    borderRadius: 20,
+                                }}
                             >
-                                <Text style={{ color: Color.blue }} >
-                                    More details
-                                </Text>
-                            </Button>
-                        </View>
-                        <View style={{ display: "flex", flexDirection: "row", justifyContent: "space-around", height: "100%" }}>
-                            <Card style={{ width: "45%", height: "100%", backgroundColor: "#F2F8F9", padding: 10, justifyContent: "center", alignItems: "center" }}>
-                                <View style={{ display: "flex", flexDirection: "row", justifyContent: "center", alignItems: "center" }}>
+                                <View style={{ flexDirection: "row", alignItems: "center" }}>
                                     <Pencil width={50} height={50} />
-                                    <View style={{ display: "flex", flexDirection: "column" }}>
-                                        <Text style={{ fontWeight: "bold" }}>
-                                            Total Words Learned
+                                    <View style={{ marginLeft: 10 }}>
+                                        <Text style={{ fontSize: Typography.header20.fontSize, color: Color.gray }}>Words Learned</Text>
+                                        <Text style={{ color: Color.gray, fontSize: Typography.header16.fontSize }}>
+                                            {wordsLearned && "error" in wordsLearned
+                                                ? "Error"
+                                                : wordsLearned && "wordsLearned" in wordsLearned
+                                                    ? `${wordsLearned.wordsLearned} Word(s)`
+                                                    : "0 Word(s)"}
                                         </Text>
-                                        <Text style={{ color: Color.gray }}>{wordsLearned && "error" in wordsLearned
-                                            ? "Error"
-                                            : wordsLearned && "wordsLearned" in wordsLearned
-                                                ? `${wordsLearned.wordsLearned} Word(s)`
-                                                : "0 Word(s)"}</Text>
                                     </View>
                                 </View>
                             </Card>
-                            <Card style={{ width: "45%", height: "100%", backgroundColor: "#F2F8F9", padding: 10, justifyContent: "center", alignItems: "center" }}>
-                                <View style={{ display: "flex", flexDirection: "row", justifyContent: "center", alignItems: "center" }}>
+
+                            {/* 🟩 Total Playtime */}
+                            <Card
+                                style={{
+                                    width: "25%",
+                                    height: "60%",
+                                    backgroundColor: "#F2F8F9",
+                                    padding: 12,
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    borderRadius: 20,
+                                }}
+                            >
+                                <View style={{ flexDirection: "row", alignItems: "center" }}>
                                     <Clock width={50} height={50} />
-                                    <View style={{ display: "flex", flexDirection: "column", }}>
-                                        <Text style={{ fontWeight: "bold" }}>
-                                            Total Playtime
+                                    <View style={{ marginLeft: 10 }}>
+                                        <Text style={{ fontSize: Typography.header20.fontSize, color: Color.gray }}>Total Playtime</Text>
+                                        <Text style={{ color: Color.gray, fontSize: Typography.header16.fontSize }}>
+                                            {totalPlaytime && "error" in totalPlaytime
+                                                ? "Error"
+                                                : totalPlaytime && "totalPlaytime" in totalPlaytime
+                                                    ? `${totalPlaytime.totalPlaytime} Hour(s)`
+                                                    : "0 Hour(s)"}
                                         </Text>
-                                        <Text style={{ color: Color.gray }}> {totalPlaytime && "error" in totalPlaytime
-                                            ? "Error"
-                                            : totalPlaytime && "totalPlaytime" in totalPlaytime
-                                                ? `${totalPlaytime.totalPlaytime} Hour(s)`
-                                                : "0 Hour(s)"}</Text>
                                     </View>
                                 </View>
                             </Card>
-                        </View>
-                    </View >
+
+                            {streakCards.map((card, idx) => (
+                                <Card
+                                    key={idx}
+                                    style={{
+                                        width: "25%",
+                                        height: "60%",
+                                        backgroundColor: "#F2F8F9",
+                                        // paddingHorizontal: 20,
+                                        paddingRight: 20,
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        borderRadius: 20,
+                                    }}
+                                >
+                                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+                                        {/* Render the icon */}
+                                        <card.icon width={50} height={50} />
+                                        <View style={{ marginLeft: 3, gap: 5 }}>
+                                            <Text style={{ width: "100%", textAlign: "center", fontSize: Typography.header20.fontSize, color: Color.gray }}>{card.label}</Text>
+                                            <Text style={{
+                                                color: Color.gray, fontSize: Typography.header20.fontSize, textAlign: "center", fontWeight: "bold"
+                                            }}>
+                                                {card.value as any}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                </Card>
+                            ))}
+                        </ScrollView>
+                    </View>
                 </View >
             </View >
-            <Portal >
+            {/* <Portal >
                 <Modal
                     visible={modalVisible}
                     onDismiss={() => setModalVisible(false)}
@@ -513,7 +724,6 @@ const UserOverviewPerformance = () => {
                                             Gameplayed Streak
                                         </Text>
                                         <View style={{ display: "flex", flexDirection: "row", gap: 5, justifyContent: "space-around", height: "100%" }}>
-                                            {/* <ScrollView horizontal={true} style={{ width: "100%" }}> */}
                                             {loadingStreak ? (
                                                 <ActivityIndicator />
                                             ) : (
@@ -528,14 +738,8 @@ const UserOverviewPerformance = () => {
                                                     </Card>
                                                 ))
                                             )}
-                                            {/* </ScrollView> */}
                                         </View>
                                     </View>
-                                    {/* <View style={{ width: "100%" }}>
-                                        <Text style={{ fontWeight: "bold", fontSize: 20, color: Color.gray, marginBottom: 5, textAlign: "left" }}>
-                                            Average Gameplayed
-                                        </Text>
-                                    </View> */}
                                     <View style={{ width: "100%" }}>
                                         <Text style={{ fontWeight: "bold", fontSize: 20, color: Color.gray, marginBottom: 5, textAlign: "left" }}>
                                             User Current Progress
@@ -600,31 +804,6 @@ const UserOverviewPerformance = () => {
 
                                                     <View style={{ minWidth: "70%", flexDirection: "column", justifyContent: "center", gap: 20 }}>
                                                         {userProgress.summary.map((line, idx) => (
-                                                            // <List.Item
-                                                            //     key={idx}
-                                                            //     title={line}
-                                                            //     titleNumberOfLines={3}
-                                                            //     titleStyle={{
-                                                            //         color: Color.blue,
-                                                            //         fontSize: Typography.body16.fontSize,
-                                                            //         lineHeight: 20,
-                                                            //         textAlign: "center"
-                                                            //     }}
-                                                            //     left={(props) => (
-                                                            //         <List.Icon
-                                                            //             {...props}
-                                                            //             icon="alert-box"
-                                                            //             color={Color.yellow}
-                                                            //             style={{ marginRight: 0 }}
-                                                            //         />
-                                                            //     )}
-                                                            //     style={{
-                                                            //         backgroundColor: Color.gray,
-                                                            //         borderRadius: 10,
-                                                            //         paddingHorizontal: 20,
-                                                            //         width: "90%"
-                                                            //     }}
-                                                            // />
                                                             <Card
                                                                 key={idx}
                                                                 mode="elevated"
@@ -686,7 +865,7 @@ const UserOverviewPerformance = () => {
                     }
 
                 </Modal >
-            </Portal >
+            </Portal > */}
         </>
     );
 };
