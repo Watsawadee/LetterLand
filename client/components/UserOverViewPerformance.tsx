@@ -30,6 +30,7 @@ import Fire from "@/assets/icon/Fire";
 import Trophy from "@/assets/icon/Trophy";
 import { ColorProperties } from "react-native-reanimated/lib/typescript/Colors";
 import Carousel from "react-native-reanimated-carousel";
+import { AverageGamesByLevelPeerMultipleOrError } from "@/libs/type";
 
 function getWeekDates(startDateStr: string, labels: string[]) {
     const startDate = new Date(startDateStr);
@@ -85,6 +86,7 @@ const UserOverviewPerformance = () => {
     const [tempDate, setTempDate] = useState<Date>(new Date());
     const [monthRange, setMonthRange] = useState<{ start: Date; end: Date } | null>(null);
     const [period, setPeriod] = useState<"week" | "month" | "year">("week");
+    const [activeBarIndex, setActiveBarIndex] = useState<number | null>(null);
 
     useEffect(() => {
         const today = new Date();
@@ -318,110 +320,123 @@ const UserOverviewPerformance = () => {
             : [];
 
         return (
-            <VictoryChart
-                theme={VictoryTheme.material}
-                width={CHART_W}
-                height={CHART_H}
-                domainPadding={{ x: [30, 40] }}
-                domain={{ y: [0, maxY + 2] }}
-            >
-                <VictoryAxis
-                    tickValues={currentPeriod?.labels}
-                    tickLabelComponent={
-                        <VictoryLabel
-                            text={({ index }) => {
-                                const safeIndex = typeof index === "number" ? index : 0;
-                                if (item.period === "week") {
-                                    if (!weekTickLabels[safeIndex]) {
-                                        return item.labels[safeIndex];
+            <View style={{ paddingHorizontal: 25 }}>
+                <VictoryChart
+                    theme={VictoryTheme.material}
+                    width={CHART_W - 20}
+                    height={CHART_H}
+                    domainPadding={{ x: [30, 50] }}
+                    domain={{ y: [0, maxY + 2] }}
+                >
+                    <VictoryAxis
+                        tickValues={currentPeriod?.labels}
+                        tickLabelComponent={
+                            <VictoryLabel
+                                text={({ index }) => {
+                                    const safeIndex = typeof index === "number" ? index : 0;
+                                    if (item.period === "week") {
+                                        if (!weekTickLabels[safeIndex]) {
+                                            return item.labels[safeIndex];
+                                        }
+                                        return `${weekTickLabels[safeIndex].label}\n${weekTickLabels[safeIndex].date}`;
+                                    } else if (item.period === "month") {
+                                        if (!monthTickLabels[safeIndex]) {
+                                            return item.labels[safeIndex];
+                                        }
+                                        return `${monthTickLabels[safeIndex].label}\n${monthTickLabels[safeIndex].range}`;
                                     }
-                                    return `${weekTickLabels[safeIndex].label}\n${weekTickLabels[safeIndex].date}`;
-                                } else if (item.period === "month") {
-                                    if (!monthTickLabels[safeIndex]) {
-                                        return item.labels[safeIndex];
+                                    return item.labels[safeIndex];
+                                }}
+                                style={[
+                                    {
+                                        fontSize: 12, fill: Color.gray, fontWeight: "bold", fontFamily: Platform.select({
+                                            default: "System",
+                                        }),
+                                    },
+                                    {
+                                        fontSize: 10, fill: Color.gray, fontFamily: Platform.select({
+                                            default: "System",
+                                        }),
                                     }
-                                    return `${monthTickLabels[safeIndex].label}\n${monthTickLabels[safeIndex].range}`;
-                                }
-                                return item.labels[safeIndex];
-                            }}
-                            style={[
-                                { fontSize: 12, fill: Color.gray, fontWeight: "bold" },
-                                { fontSize: 10, fill: Color.gray }
-                            ]}
-                            lineHeight={[1, 1]}
-                        />
-                    }
-                    style={{
-                        tickLabels: { fontSize: 12, fill: Color.blue }, grid: {
-                            stroke: "transparent",
+                                ]}
+                                lineHeight={[1, 1]}
+                            />
+                        }
+                        style={{
+                            tickLabels: { fontSize: 12, fill: Color.blue }, grid: {
+                                stroke: "transparent",
+                                strokeWidth: 1.5,
+                                strokeDasharray: 0.5,
+                            },
+                        }}
+                    />
+                    <VictoryAxis dependentAxis style={{
+                        axis: { stroke: "transparent", strokeWidth: 1.5 }, ticks: { stroke: "transparent" }, tickLabels: {
+                            fill: Color.gray,
+                            fontSize: 12,
+                            fontWeight: "500",
+                        }, grid: {
+                            stroke: "#B5B5B5",
                             strokeWidth: 1.5,
                             strokeDasharray: 0.5,
                         },
                     }}
-                />
-                <VictoryAxis dependentAxis style={{
-                    axis: { stroke: "transparent", strokeWidth: 1.5 }, ticks: { stroke: "transparent" }, tickLabels: {
-                        fill: Color.gray,
-                        fontSize: 12,
-                        fontWeight: "500",
-                    }, grid: {
-                        stroke: "#B5B5B5",
-                        strokeWidth: 1.5,
-                        strokeDasharray: 0.5,
-                    },
-                }}
-                />
-
-                {peerSeries.length > 0 && peerSeries.some((d: any) => d.y !== 0) && ([
-                    <VictoryLine
-                        data={peerSeries}
-                        style={{ data: { stroke: Color.green, strokeWidth: 3, zIndex: 0 } }}
-                    />,
-                    <VictoryScatter
-                        data={peerSeries}
-                        size={5}
-                        style={{ data: { fill: Color.green } }}
-                        labels={({ datum }) => datum.y.toFixed(1)}
-                        labelComponent={<VictoryLabel dy={-10} style={{ fill: Color.green, fontSize: 12, stroke: Color.green, strokeWidth: 1 }} />}
                     />
-                ])}
 
-                {/* <Defs>
+
+
+                    {/* <Defs>
                                             <LinearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
                                                 <Stop offset="0%" stopColor={Color.blue} />
                                                 <Stop offset="100%" stopColor="#4584ccff" />
                                             </LinearGradient>
                                         </Defs> */}
-                <VictoryBar
-                    data={periodSeries}
-                    barWidth={40}
-                    cornerRadius={10}
-                    style={{
-                        // data: { fill: "url(#barGradient)" }
-                        data: { fill: Color.blue, zIndex: 20 },
+                    <VictoryBar
+                        data={periodSeries}
+                        barWidth={40}
+                        cornerRadius={10}
+                        style={{
+                            // data: { fill: "url(#barGradient)" }
+                            data: { fill: Color.blue, zIndex: 20 },
 
-                    }}
-                    labels={({ datum }) => `${datum.y}\n games`}
-                    labelComponent={
-                        <VictoryTooltip flyoutStyle={{ fill: "#fff", stroke: Color.blue, strokeWidth: 1, }}
-                            style={{ fill: Color.blue, fontWeight: "600", fontSize: 13, textAlign: "center", zIndex: 3 }}
-                            flyoutPadding={{ top: 8, bottom: 8, left: 10, right: 10 }}
-                            dy={-10}
-                            pointerLength={0}
-                            activateData={true} />
-                    }
-                    events={[
-                        {
-                            target: "data",
-                            eventHandlers: {
-                                onPressIn: () => [{ target: "labels", mutation: () => ({ active: true }) }],
-                                onPressOut: () => [{ target: "labels", mutation: () => ({ active: false }) }],
+                        }}
+                        labels={({ datum }) => `${datum.y}\n games`}
+                        labelComponent={
+                            <VictoryTooltip flyoutStyle={{ fill: "#fff", stroke: Color.blue, strokeWidth: 1, }}
+                                style={{
+                                    fill: Color.blue, fontWeight: "600", fontSize: 13, textAlign: "center", zIndex: 3
+                                }}
+                                flyoutPadding={{ top: 8, bottom: 8, left: 10, right: 10 }}
+                                dy={-10}
+                                pointerLength={0}
+                                activateData={true}
+                            />
+                        }
+                        events={[
+                            {
+                                target: "data",
+                                eventHandlers: {
+                                    onPressIn: () => [{ target: "labels", mutation: () => ({ active: true }) }],
+                                    onPressOut: () => [{ target: "labels", mutation: () => ({ active: false }) }],
+                                },
                             },
-                        },
-                    ]}
-                />
+                        ]}
+                    />
+                    {peerSeries.length > 0 && peerSeries.some((d: any) => d.y !== 0) && ([
+                        <VictoryLine
+                            data={peerSeries}
+                            style={{ data: { stroke: Color.green, strokeWidth: 3, zIndex: 0 } }}
+                        />,
+                        <VictoryScatter
+                            data={peerSeries}
+                            size={5}
+                            style={{ data: { fill: Color.green } }}
+                            labels={({ datum }) => datum.y.toFixed(1)}
+                            labelComponent={<VictoryLabel dy={-10} style={{ fill: Color.green, fontSize: 12, stroke: Color.green, strokeWidth: 1 }} />}
+                        />
+                    ])}
 
-                {/* {peerSeries.length > 0 && peerSeries.some((d: any) => d.y !== 0) && ([
+                    {/* {peerSeries.length > 0 && peerSeries.some((d: any) => d.y !== 0) && ([
                     <VictoryLine
                         data={peerSeries}
                         style={{ data: { stroke: Color.green, strokeWidth: 3 } }}
@@ -435,7 +450,8 @@ const UserOverviewPerformance = () => {
                     />
                 ])} */}
 
-            </VictoryChart>
+                </VictoryChart>
+            </View>
         );
     };
 
@@ -454,9 +470,11 @@ const UserOverviewPerformance = () => {
                             }}
                             hitSlop={10}
                         >
-                            <ArrowLeft color={Color.gray} />
+                            <ArrowLeft width={24} height={24} color={Color.gray} />
                         </Pressable>
-                        <Text style={{ color: Color.gray, fontSize: 20, fontWeight: "bold" }}>Dashboard</Text>
+                        <Text style={[Typography.header30, { color: Color.gray, marginLeft: 4 }]}>
+                            Dashboard
+                        </Text>
                     </View>
                     <TouchableOpacity
                         style={[ButtonStyles.wordBank.container, { flexDirection: "row", alignItems: "center" }]}
@@ -490,9 +508,6 @@ const UserOverviewPerformance = () => {
                                         overflow: "hidden",
                                     }}
                                 >
-                                    <View style={{ flex: 1, zIndex: 1 }}>
-                                        <FloatingBubble cardWidth={CHART_W} cardHeight={CHART_H} />
-                                    </View>
                                     <View style={{ display: "flex", flexDirection: "row", width: "100%", justifyContent: "space-between", alignItems: "center" }}>
                                         <Text
                                             style={{
@@ -614,7 +629,7 @@ const UserOverviewPerformance = () => {
                                                 let peerItem = undefined;
 
                                                 if (isSuccess(peerAvgData)) {
-                                                    peerItem = peerAvgData.results.find((p) => {
+                                                    peerItem = peerAvgData.results.find((p: any) => {
                                                         const startA = new Date(p.range.start);
                                                         const endA = new Date(p.range.end);
                                                         const startB = new Date(item.range.start);

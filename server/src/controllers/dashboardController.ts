@@ -1,7 +1,7 @@
 import prisma from "../configs/db";
 import { Request, Response } from "express";
 import { AuthenticatedRequest } from "../types/authenticatedRequest";
-import { startOfWeek, endOfWeek, eachDayOfInterval, format, addWeeks, startOfDay, isSameDay, addDays, subWeeks, startOfMonth, subMonths, startOfYear, subYears, subSeconds } from "date-fns";
+import { startOfWeek, endOfWeek, eachDayOfInterval, format, addWeeks, startOfDay, isSameDay, addDays, subWeeks, startOfMonth, subMonths, startOfYear, subYears, subSeconds, differenceInMinutes } from "date-fns";
 import {
   TotalPlaytimeResponseSchema,
   WordsLearnedResponseSchema,
@@ -540,12 +540,12 @@ export const getUserProgress = async (req: AuthenticatedRequest, res: Response) 
     }
     // Cumulative thresholds in hours
     const LEVEL_THRESHOLDS: Record<string, number> = {
-      A1: 200,
-      A2: 400,
-      B1: 600,
-      B2: 800,
-      C1: 1000,
-      C2: 1200,
+      A1: 30,
+      A2: 60,
+      B1: 90,
+      B2: 120,
+      C1: 150,
+      C2: 180,
     };
 
     const levels = ["A1", "A2", "B1", "B2", "C1", "C2"];
@@ -582,22 +582,36 @@ export const getUserProgress = async (req: AuthenticatedRequest, res: Response) 
     const startPrevWeek = addDays(startCurrentWeek, -7);
     const endPrevWeek = addDays(endCurrentWeek, -7);
 
-    const currentWeekGames = await prisma.game.count({
+    function avgDuration(games: { startedAt: Date; finishedAt: Date }[]) {
+      if (games.length === 0) return 0;
+      const total = games.reduce((sum, g) => sum + differenceInMinutes(g.finishedAt, g.startedAt), 0);
+      return total / games.length;
+    }
+
+    const currentWeekGamesRaw = await prisma.game.findMany({
       where: {
         userId,
         isFinished: true,
         startedAt: { gte: startCurrentWeek, lte: endCurrentWeek },
       },
+      select: { startedAt: true, finishedAt: true },
     });
-
-    const prevWeekGames = await prisma.game.count({
+    const prevWeekGamesRaw = await prisma.game.findMany({
       where: {
         userId,
         isFinished: true,
         startedAt: { gte: startPrevWeek, lte: endPrevWeek },
       },
+      select: { startedAt: true, finishedAt: true },
     });
-    const hasImprovedPerformance = currentWeekGames > prevWeekGames;
+    const currentWeekGames = currentWeekGamesRaw.filter(g => g.finishedAt !== null) as { startedAt: Date; finishedAt: Date }[];
+    const prevWeekGames = prevWeekGamesRaw.filter(g => g.finishedAt !== null) as { startedAt: Date; finishedAt: Date }[];
+
+    const avgCurrentWeek = avgDuration(currentWeekGames);
+    const avgPrevWeek = avgDuration(prevWeekGames);
+
+    // Compare average durations (lower is better)
+    const hasImprovedPerformance = avgCurrentWeek < avgPrevWeek;
 
     const summary: string[] = [];
     if (!hasEnoughPlaytime) {

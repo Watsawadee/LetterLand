@@ -331,11 +331,11 @@ export const progressLevelupController = async (
     });
 
     const LEVEL_THRESHOLDS: Record<EnglishLevel, number> = {
-      A1: 200 * 60 * 60,
-      A2: 400 * 60 * 60,
-      B1: 600 * 60 * 60,
-      B2: 800 * 60 * 60,
-      C1: 1000 * 60 * 60,
+      A1: 30 * 60 * 60,
+      A2: 60 * 60 * 60,
+      B1: 90 * 60 * 60,
+      B2: 120 * 60 * 60,
+      C1: 150 * 60 * 60,
       C2: Number.POSITIVE_INFINITY,
     };
     const requiredPlaytime = LEVEL_THRESHOLDS[user.englishLevel];
