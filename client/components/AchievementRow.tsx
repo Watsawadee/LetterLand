@@ -44,7 +44,7 @@ export default function AchievementsRow({
       );
       const msg =
         err?.response?.data?.message || err?.message || "Please try again.";
-      Alert.alert("Couldn’t load achievements", msg);
+      Alert.alert("Couldn't load achievements", msg);
       setAchievements([]);
     } finally {
       setLoading(false);
@@ -56,7 +56,7 @@ export default function AchievementsRow({
   }, [load]);
 
   const COLUMNS = showAll ? 3 : 1;
-  const GRID_GAP = 16;
+  const GRID_GAP = 24; // Changed to match your desired gap
 
   return (
     <View style={{ marginBottom: 70 }}>
@@ -90,10 +90,10 @@ export default function AchievementsRow({
               style={
                 showAll
                   ? {
-                      flex: 1 / 3, // ✅ 3 equal columns
-                      padding: GRID_GAP / 2, // spacing between cards
+                      width: `${100 / COLUMNS - 2}%`, // Calculate width accounting for gap
+                      marginBottom: GRID_GAP,
                     }
-                  : { marginRight: GRID_GAP }
+                  : { marginRight: GRID_GAP/2 }
               }
             >
               <AchievementCard
@@ -110,11 +110,14 @@ export default function AchievementsRow({
           showsHorizontalScrollIndicator={false}
           showsVerticalScrollIndicator={showAll}
           columnWrapperStyle={
-            showAll ? { justifyContent: "space-between" } : undefined
+            showAll ? { 
+              justifyContent: "flex-start",
+              gap: GRID_GAP,
+            } : undefined
           }
           contentContainerStyle={{
             paddingRight: showAll ? 0 : 4,
-            paddingBottom: showAll ? GRID_GAP : 0,
+            paddingBottom: showAll ? 40 : 0, // Added your marginBottom value
           }}
           initialNumToRender={showAll ? 9 : 3}
           windowSize={showAll ? 7 : 5}

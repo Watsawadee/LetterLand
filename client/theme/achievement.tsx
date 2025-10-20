@@ -6,7 +6,7 @@ export const AchievementCardStyles = StyleSheet.create({
     backgroundColor: "white",
     borderRadius: 16,
     padding: 16,
-    width: 220,
+    width: 210,
     height: 253,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -14,6 +14,7 @@ export const AchievementCardStyles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     marginRight: 20,
+    marginTop: 20,
   },
 
   // top icon
@@ -72,7 +73,7 @@ export const AchievementCardStyles = StyleSheet.create({
   },
   progressTrack: {
     flex: 1,
-    height: 16,
+    height: 15,
     backgroundColor: "#FFFFFF",
     borderRadius: 999,
     shadowColor: "#000",

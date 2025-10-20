@@ -1,15 +1,10 @@
 import React from "react";
-import {
-  Modal,
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-} from "react-native";
+import { Modal, View, Text, Pressable, StyleSheet } from "react-native";
 import { Color } from "@/theme/Color";
 import { Typography } from "@/theme/Font";
 import GreenTape from "@/assets/icon/GreenTape";
 import { CEFRLevel, getCEFRColor } from "@/theme/CEFR";
+import { useRouter } from "expo-router";
 
 type Props = {
   visible: boolean;
@@ -60,6 +55,7 @@ export default function UserLevelModal({
   const levelColor = getCEFRColor(level);
   const { label, detail } = LEVEL[level];
   const TAB = "\u2003\u2003";
+  const router = useRouter();
   return (
     <Modal
       visible={visible}
@@ -86,9 +82,9 @@ export default function UserLevelModal({
             <Text style={styles.sectionTitle}>What is CEFR level ?</Text>
             <View style={[styles.hr]} />
             <Text style={styles.body}>
-              {TAB} The CEFR (Common European Framework of Reference for Languages) is
-              an international system that shows how well you can understand and
-              use a language.
+              {TAB} The CEFR (Common European Framework of Reference for
+              Languages) is an international system that shows how well you can
+              understand and use a language.
             </Text>
 
             {/* Section 2 */}
@@ -96,11 +92,16 @@ export default function UserLevelModal({
               What does {level} mean ?
             </Text>
             <View style={[styles.hr]} />
-            <Text style={styles.body}>{TAB} {detail}</Text>
+            <Text style={styles.body}>
+              {TAB} {detail}
+            </Text>
 
             {/* CTA */}
             <Pressable
-              onPress={onConfirm}
+              onPress={() => {
+                onConfirm?.();
+                router.replace("/authentication/login");
+              }}
               style={({ pressed }) => [
                 styles.cta,
                 { backgroundColor: Color.blue, opacity: pressed ? 0.85 : 1 },
