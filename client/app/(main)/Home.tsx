@@ -242,7 +242,7 @@ export default function Home() {
               <TouchableOpacity
                 onPress={() => router.push("/Achievementboard")}
               >
-                <Text style={[Typography.body14, styles.link]}>view all</Text>
+                <Text style={[Typography.header13, styles.link]}>view all</Text>
               </TouchableOpacity>
             </View>
             <View style={styles.sectionContent}>
@@ -256,7 +256,7 @@ export default function Home() {
             <View style={styles.sectionHeader}>
               <Text style={Typography.header25}>Recent game</Text>
               <TouchableOpacity onPress={() => router.push("/Myboard")}>
-                <Text style={[Typography.body14, styles.link]}>view all</Text>
+                <Text style={[Typography.header13, styles.link]}>view all</Text>
               </TouchableOpacity>
             </View>
             <View style={styles.sectionContent}>

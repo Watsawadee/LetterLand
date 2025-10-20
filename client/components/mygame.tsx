@@ -264,16 +264,21 @@ export default function MyGamesRow({
         style={{ marginTop: 24, alignItems: "center", paddingHorizontal: 16 }}
       >
         <Text style={[Typography.header20, { marginBottom: 16 }]}>{title}</Text>
-        <Text
-          style={{
-            fontSize: 18,
-            color: "#555",
-            textAlign: "center",
-            marginBottom: 24,
-          }}
-        >
-          You haven't created any games yet. Let's create your dream game!
-        </Text>
+        <View
+  style={{
+    backgroundColor: "#D9D9D9",
+    width: 600,
+    height: 50,
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 24,
+  }}
+>
+  <Text style={{ fontSize: 18, color: "gray" , textAlign: "center", fontWeight:500 }}>
+    You haven't created any games yet. Let's create your dream game!
+  </Text>
+</View>
       </View>
     );
   }
@@ -392,6 +397,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "800",
     color: "#2A2A2A",
+    
   },
   levelPill: {
     paddingHorizontal: 10,

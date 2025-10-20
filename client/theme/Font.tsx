@@ -13,14 +13,17 @@ export const Typography: { [key: string]: TextStyle } = {
   body20: {
     fontSize: 20, fontWeight: 'medium',
   },
+  header11: {
+    fontSize: 10, fontWeight: 'bold',
+  },
   header13: {
     fontSize: 13, fontWeight: 'bold',
   },
   header16: {
-    fontSize: 16, fontWeight: 'bold',
+    fontSize: 16, fontWeight: 'bold'
   },
   header20: {
-    fontSize: 20, fontWeight: 'bold',
+    fontSize: 20, fontWeight: 'bold'
   },
   header25: {
     fontSize: 25, fontWeight: 'bold',

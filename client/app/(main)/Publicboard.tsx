@@ -101,7 +101,7 @@ export default function Publicboard() {
               </TouchableOpacity>
 
               {/* Search bar */}
-              <View style={{ width: isWide ? 340 : 200, position: 'relative' }}>
+              <View style={{ width: isWide ? 320 : 200, position: 'relative', marginHorizontal: 10 }}>
                 <FloatingSearch
                   value={gameName}
                   onChangeText={(txt) => {
