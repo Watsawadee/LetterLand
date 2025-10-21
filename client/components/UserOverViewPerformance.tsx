@@ -456,125 +456,134 @@ const UserOverviewPerformance = () => {
     };
 
     return (
-        <>
-            <View style={{ width: "100%", height: "100%", gap: 15 }}>
-                <View style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", width: "100%" }}>
-                    <View style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
-                        <Pressable
-                            onPress={() => {
-                                if (router.canGoBack?.()) {
-                                    router.back();
-                                } else {
-                                    router.replace("/Home");
-                                }
-                            }}
-                            hitSlop={10}
-                        >
-                            <ArrowLeft width={24} height={24} color={Color.gray} />
-                        </Pressable>
-                        <Text style={[Typography.header30, { color: Color.gray, marginLeft: 4 }]}>
-                            Dashboard
-                        </Text>
-                    </View>
-                    <TouchableOpacity
-                        style={[ButtonStyles.wordBank.container, { flexDirection: "row", alignItems: "center" }]}
-                        onPress={() => setShowBook(true)}
-                    >
-                        <Book width={50} height={50} style={{ marginRight: 4 }} />
-                        <View style={{ flexDirection: "column", alignItems: "flex-start", paddingLeft: 8 }}>
-                            <Text style={ButtonStyles.wordBank.text}>Word</Text>
-                            <Text style={ButtonStyles.wordBank.text}>Bank</Text>
-                        </View>
-                    </TouchableOpacity>
-
-                    {/* modal */}
-                    <WordBankModal visible={showBook} onClose={() => setShowBook(false)} />
+        <View style={{ width: "100%", height: "100%", gap: 15 }}>
+            {(loading || !isSuccess(gamesData) || sortedResults.length === 0) ? (
+                <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                    <ActivityIndicator size="large" color={Color.blue} />
+                    <Text style={{ color: Color.gray, marginTop: 8, fontWeight: "600" }}>
+                        Loading dashboard...
+                    </Text>
                 </View>
-
-
-                <View style={{ height: "84%", flexDirection: "column", justifyContent: "space-between" }}>
-                    <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 10 }}>
-                        <View style={{ alignItems: "center" }}>
-                            {loading ? (
-                                <ActivityIndicator size="large" />
-                            ) : isSuccess(gamesData) && isSuccess(peerAvgData) ? (
-                                <Card
-                                    style={{
-                                        backgroundColor: Color.white,
-                                        borderRadius: 16,
-                                        padding: 20,
-                                        width: "93%",
-                                        position: "relative",
-                                        overflow: "hidden",
+            ) : (
+                <>
+                    <View style={{ width: "100%", height: "100%", gap: 15 }}>
+                        <View style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", width: "100%" }}>
+                            <View style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
+                                <Pressable
+                                    onPress={() => {
+                                        if (router.canGoBack?.()) {
+                                            router.back();
+                                        } else {
+                                            router.replace("/Home");
+                                        }
                                     }}
+                                    hitSlop={10}
                                 >
-                                    <View style={{ display: "flex", flexDirection: "row", width: "100%", justifyContent: "space-between", alignItems: "center" }}>
-                                        <Text
+                                    <ArrowLeft width={24} height={24} color={Color.gray} />
+                                </Pressable>
+                                <Text style={[Typography.header30, { color: Color.gray, marginLeft: 4 }]}>
+                                    Dashboard
+                                </Text>
+                            </View>
+                            <TouchableOpacity
+                                style={[ButtonStyles.wordBank.container, { flexDirection: "row", alignItems: "center" }]}
+                                onPress={() => setShowBook(true)}
+                            >
+                                <Book width={50} height={50} style={{ marginRight: 4 }} />
+                                <View style={{ flexDirection: "column", alignItems: "flex-start", paddingLeft: 8 }}>
+                                    <Text style={ButtonStyles.wordBank.text}>Word</Text>
+                                    <Text style={ButtonStyles.wordBank.text}>Bank</Text>
+                                </View>
+                            </TouchableOpacity>
+
+                            {/* modal */}
+                            <WordBankModal visible={showBook} onClose={() => setShowBook(false)} />
+                        </View>
+
+
+                        <View style={{ height: "84%", flexDirection: "column", justifyContent: "space-between" }}>
+                            <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 10 }}>
+                                <View style={{ alignItems: "center" }}>
+                                    {loading ? (
+                                        <ActivityIndicator size="large" />
+                                    ) : isSuccess(gamesData) && isSuccess(peerAvgData) ? (
+                                        <Card
                                             style={{
-                                                color: Color.gray,
-                                                fontWeight: "bold",
-                                                fontSize: 20,
+                                                backgroundColor: Color.white,
+                                                borderRadius: 16,
+                                                padding: 20,
+                                                width: "93%",
+                                                position: "relative",
+                                                overflow: "hidden",
                                             }}
                                         >
-                                            {getPeriodLabel(period)}
-                                        </Text>
+                                            <View style={{ display: "flex", flexDirection: "row", width: "100%", justifyContent: "space-between", alignItems: "center" }}>
+                                                <Text
+                                                    style={{
+                                                        color: Color.gray,
+                                                        fontWeight: "bold",
+                                                        fontSize: 20,
+                                                    }}
+                                                >
+                                                    {getPeriodLabel(period)}
+                                                </Text>
 
-                                        <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center" }}>
-                                            {(["week", "month", "year"] as const).map((p) => {
-                                                const isSelected = p === period;
-                                                return (
-                                                    <Button
-                                                        key={p}
-                                                        onPress={() => {
-                                                            setPeriod(p);
-                                                            setShowPicker(true);
-                                                            setTempDate(selectedDate);
-                                                        }}
-                                                        style={{
-                                                            backgroundColor: isSelected ? Color.blue : Color.white,
-                                                            borderColor: Color.blue,
-                                                            borderWidth: 1.5,
-                                                            paddingHorizontal: 10,
-                                                            borderRadius: 10,
-                                                            marginHorizontal: 6,
-                                                            height: 38,
-                                                            justifyContent: "center",
-                                                        }}
-                                                        rippleColor={"transparent"}
-                                                    >
-                                                        <Text
-                                                            style={{
-                                                                color: isSelected ? Color.white : Color.gray,
-                                                                fontSize: 14,
-                                                                fontWeight: "bold"
-                                                            }}
-                                                        >
-                                                            {p.charAt(0).toUpperCase() + p.slice(1)}
-                                                        </Text>
-                                                    </Button>
-                                                );
-                                            })}
-                                        </View>
+                                                <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center" }}>
+                                                    {(["week", "month", "year"] as const).map((p) => {
+                                                        const isSelected = p === period;
+                                                        return (
+                                                            <Button
+                                                                key={p}
+                                                                onPress={() => {
+                                                                    setPeriod(p);
+                                                                    setShowPicker(true);
+                                                                    setTempDate(selectedDate);
+                                                                }}
+                                                                style={{
+                                                                    backgroundColor: isSelected ? Color.blue : Color.white,
+                                                                    borderColor: Color.blue,
+                                                                    borderWidth: 1.5,
+                                                                    paddingHorizontal: 10,
+                                                                    borderRadius: 10,
+                                                                    marginHorizontal: 6,
+                                                                    height: 38,
+                                                                    justifyContent: "center",
+                                                                }}
+                                                                rippleColor={"transparent"}
+                                                            >
+                                                                <Text
+                                                                    style={{
+                                                                        color: isSelected ? Color.white : Color.gray,
+                                                                        fontSize: 14,
+                                                                        fontWeight: "bold"
+                                                                    }}
+                                                                >
+                                                                    {p.charAt(0).toUpperCase() + p.slice(1)}
+                                                                </Text>
+                                                            </Button>
+                                                        );
+                                                    })}
+                                                </View>
 
-                                    </View>
-                                    <Text
-                                        style={{
-                                            color: "#9AAAB4",
-                                            fontWeight: "bold",
-                                            fontSize: 13,
-                                            marginBottom: 10,
-                                        }}
-                                    >
-                                        {sortedResults.length > 0 && sortedResults[activeIndex]
-                                            ? formatDateRange(
-                                                sortedResults[activeIndex].range.start,
-                                                sortedResults[activeIndex].range.end,
-                                                period
-                                            )
-                                            : "Games Played"}
+                                            </View>
+                                            <Text
+                                                style={{
+                                                    color: "#9AAAB4",
+                                                    fontWeight: "bold",
+                                                    fontSize: 13,
+                                                    marginBottom: 10,
+                                                }}
+                                            >
+                                                {sortedResults.length > 0 && sortedResults[activeIndex]
+                                                    ? formatDateRange(
+                                                        sortedResults[activeIndex].range.start,
+                                                        sortedResults[activeIndex].range.end,
+                                                        period
+                                                    )
+                                                    : "Games Played"}
 
-                                    </Text>
-                                    {/* <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                                            </Text>
+                                            {/* <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                                         <View style={{ display: "flex", flexDirection: "row" }}>
                                             {(["week", "month", "year"] as const).map((p) => (
                                                 <Button
@@ -611,256 +620,256 @@ const UserOverviewPerformance = () => {
                                     </View> */}
 
 
-                                    {loadingChart || loadingPeer ? (
-                                        <View style={{ height: CHART_H, justifyContent: "center", alignItems: "center" }}>
-                                            <ActivityIndicator size="large" color={Color.blue} />
-                                            <Text style={{ color: Color.gray, marginTop: 8, fontWeight: "600" }}>
-                                                Loading chart data...
-                                            </Text>
-                                        </View>
-                                    ) : isSuccess(gamesData) && gamesData.results.length > 0 ? (
-                                        <Carousel
-                                            width={CHART_W}
-                                            height={CHART_H}
-                                            data={sortedResults}
-                                            defaultIndex={initialIndex}
-                                            onSnapToItem={setActiveIndex}
-                                            renderItem={({ item }) => {
-                                                let peerItem = undefined;
+                                            {loadingChart || loadingPeer ? (
+                                                <View style={{ height: CHART_H, justifyContent: "center", alignItems: "center" }}>
+                                                    <ActivityIndicator size="large" color={Color.blue} />
+                                                    <Text style={{ color: Color.gray, marginTop: 8, fontWeight: "600" }}>
+                                                        Loading chart data...
+                                                    </Text>
+                                                </View>
+                                            ) : isSuccess(gamesData) && gamesData.results.length > 0 ? (
+                                                <Carousel
+                                                    width={CHART_W}
+                                                    height={CHART_H}
+                                                    data={sortedResults}
+                                                    defaultIndex={initialIndex}
+                                                    onSnapToItem={setActiveIndex}
+                                                    renderItem={({ item }) => {
+                                                        let peerItem = undefined;
 
-                                                if (isSuccess(peerAvgData)) {
-                                                    peerItem = peerAvgData.results.find((p: any) => {
-                                                        const startA = new Date(p.range.start);
-                                                        const endA = new Date(p.range.end);
-                                                        const startB = new Date(item.range.start);
-                                                        const endB = new Date(item.range.end);
+                                                        if (isSuccess(peerAvgData)) {
+                                                            peerItem = peerAvgData.results.find((p: any) => {
+                                                                const startA = new Date(p.range.start);
+                                                                const endA = new Date(p.range.end);
+                                                                const startB = new Date(item.range.start);
+                                                                const endB = new Date(item.range.end);
 
-                                                        return (
-                                                            p.period === item.period &&
-                                                            startA.getTime() <= endB.getTime() &&
-                                                            endA.getTime() >= startB.getTime()
-                                                        );
-                                                    });
-                                                }
+                                                                return (
+                                                                    p.period === item.period &&
+                                                                    startA.getTime() <= endB.getTime() &&
+                                                                    endA.getTime() >= startB.getTime()
+                                                                );
+                                                            });
+                                                        }
 
-                                                return renderPeriodChart(item, peerItem);
-                                            }}
-                                            style={{ alignSelf: "center" }}
-                                            loop={false}
-                                        />
-                                    ) : loadingChart ? (
-                                        <ActivityIndicator size="large" />
+                                                        return renderPeriodChart(item, peerItem);
+                                                    }}
+                                                    style={{ alignSelf: "center" }}
+                                                    loop={false}
+                                                />
+                                            ) : loadingChart ? (
+                                                <ActivityIndicator size="large" />
+                                            ) : (
+                                                <Text style={{ color: Color.gray }}>No chart data available</Text>
+                                            )}
+                                            <View style={{ display: "flex", flexDirection: "row", justifyContent: "center", alignItems: "flex-start", gap: 20 }}>
+                                                <View style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 5 }}>
+                                                    <View style={{ backgroundColor: Color.blue, width: 5, height: 5, borderRadius: 9999 }} />
+                                                    <Text style={{ color: Color.blue, fontWeight: Typography.body16.fontWeight }}>Your game played</Text>
+                                                </View>
+                                                <View style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 5 }}>
+                                                    <View style={{ backgroundColor: Color.green, width: 5, height: 5, borderRadius: 999 }} />
+                                                    <Text style={{ color: Color.green, fontWeight: Typography.body16.fontWeight }}>Average games by peers</Text>
+                                                </View>
+                                            </View>
+                                        </Card>
                                     ) : (
                                         <Text style={{ color: Color.gray }}>No chart data available</Text>
                                     )}
-                                    <View style={{ display: "flex", flexDirection: "row", justifyContent: "center", alignItems: "flex-start", gap: 20 }}>
-                                        <View style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 5 }}>
-                                            <View style={{ backgroundColor: Color.blue, width: 5, height: 5, borderRadius: 9999 }} />
-                                            <Text style={{ color: Color.blue, fontWeight: Typography.body16.fontWeight }}>Your game played</Text>
-                                        </View>
-                                        <View style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 5 }}>
-                                            <View style={{ backgroundColor: Color.green, width: 5, height: 5, borderRadius: 999 }} />
-                                            <Text style={{ color: Color.green, fontWeight: Typography.body16.fontWeight }}>Average games by peers</Text>
-                                        </View>
-                                    </View>
-                                </Card>
-                            ) : (
-                                <Text style={{ color: Color.gray }}>No chart data available</Text>
-                            )}
 
-                        </View>
-                    </View>
+                                </View>
+                            </View>
 
-                    <View
-                        style={{
-                            width: "100%",
-                            height: "35%",
-                            flexDirection: "row",
-                            alignSelf: "flex-start",
-                            // backgroundColor: "red",
-                        }}
-                    >
-                        <ScrollView
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            style={{ height: "90%", width: "99%" }}
-                            contentContainerStyle={{
-                                paddingRight: "56%",
-                                paddingLeft: "1%",
-                                alignItems: "center",
-                                gap: 20
-                            }}
-                        >
-                            {/* 🟦 Total Words Learned */}
-                            <Card
+                            <View
                                 style={{
-                                    width: "25%",
-                                    height: "60%",
-                                    backgroundColor: "#F2F8F9",
-                                    padding: 12,
-                                    justifyContent: "center",
-                                    alignItems: "center",
-                                    borderRadius: 20,
+                                    width: "100%",
+                                    height: "35%",
+                                    flexDirection: "row",
+                                    alignSelf: "flex-start",
+                                    // backgroundColor: "red",
                                 }}
                             >
-                                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                                    <Pencil width={50} height={50} />
-                                    <View style={{ marginLeft: 10 }}>
-                                        <Text style={{ fontSize: Typography.header20.fontSize, color: Color.gray }}>Words Learned</Text>
-                                        <Text style={{ color: Color.gray, fontSize: Typography.header16.fontSize }}>
-                                            {wordsLearned && "error" in wordsLearned
-                                                ? "Error"
-                                                : wordsLearned && "wordsLearned" in wordsLearned
-                                                    ? `${wordsLearned.wordsLearned} Word(s)`
-                                                    : "0 Word(s)"}
-                                        </Text>
-                                    </View>
-                                </View>
-                            </Card>
-
-                            {/* 🟩 Total Playtime */}
-                            <Card
-                                style={{
-                                    width: "25%",
-                                    height: "60%",
-                                    backgroundColor: "#F2F8F9",
-                                    padding: 12,
-                                    justifyContent: "center",
-                                    alignItems: "center",
-                                    borderRadius: 20,
-                                }}
-                            >
-                                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                                    <Clock width={50} height={50} />
-                                    <View style={{ marginLeft: 10 }}>
-                                        <Text style={{ fontSize: Typography.header20.fontSize, color: Color.gray }}>Total Playtime</Text>
-                                        <Text style={{ color: Color.gray, fontSize: Typography.header16.fontSize }}>
-                                            {totalPlaytime && "error" in totalPlaytime
-                                                ? "Error"
-                                                : totalPlaytime && "totalPlaytime" in totalPlaytime
-                                                    ? `${totalPlaytime.totalPlaytime} Hour(s)`
-                                                    : "0 Hour(s)"}
-                                        </Text>
-                                    </View>
-                                </View>
-                            </Card>
-
-                            {streakCards.map((card, idx) => (
-                                <Card
-                                    key={idx}
-                                    style={{
-                                        width: "25%",
-                                        height: "60%",
-                                        backgroundColor: "#F2F8F9",
-                                        // paddingHorizontal: 20,
-                                        paddingRight: 20,
-                                        justifyContent: "center",
+                                <ScrollView
+                                    horizontal
+                                    showsHorizontalScrollIndicator={false}
+                                    style={{ height: "90%", width: "99%" }}
+                                    contentContainerStyle={{
+                                        paddingRight: "56%",
+                                        paddingLeft: "1%",
                                         alignItems: "center",
-                                        borderRadius: 20,
+                                        gap: 20
                                     }}
                                 >
-                                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-                                        {/* Render the icon */}
-                                        <card.icon width={50} height={50} />
-                                        <View style={{ marginLeft: 3, gap: 5 }}>
-                                            <Text style={{ width: "100%", textAlign: "center", fontSize: Typography.header20.fontSize, color: Color.gray }}>{card.label}</Text>
-                                            <Text style={{
-                                                color: Color.gray, fontSize: Typography.header20.fontSize, textAlign: "center", fontWeight: "bold"
-                                            }}>
-                                                {card.value as any}
-                                            </Text>
+                                    {/* 🟦 Total Words Learned */}
+                                    <Card
+                                        style={{
+                                            width: "25%",
+                                            height: "60%",
+                                            backgroundColor: "#F2F8F9",
+                                            padding: 12,
+                                            justifyContent: "center",
+                                            alignItems: "center",
+                                            borderRadius: 20,
+                                        }}
+                                    >
+                                        <View style={{ flexDirection: "row", alignItems: "center" }}>
+                                            <Pencil width={50} height={50} />
+                                            <View style={{ marginLeft: 10 }}>
+                                                <Text style={{ fontSize: Typography.header20.fontSize, color: Color.gray }}>Words Learned</Text>
+                                                <Text style={{ color: Color.gray, fontSize: Typography.header16.fontSize }}>
+                                                    {wordsLearned && "error" in wordsLearned
+                                                        ? "Error"
+                                                        : wordsLearned && "wordsLearned" in wordsLearned
+                                                            ? `${wordsLearned.wordsLearned} Word(s)`
+                                                            : "0 Word(s)"}
+                                                </Text>
+                                            </View>
                                         </View>
-                                    </View>
-                                </Card>
-                            ))}
-                        </ScrollView>
-                    </View>
-                </View >
-                {showPicker && (
-                    <DateTimePickerModal
-                        isVisible={showPicker}
-                        mode="date"
-                        display="inline"
-                        date={selectedDate}
-                        onConfirm={() => {
+                                    </Card>
 
-                        }}
-                        maximumDate={new Date}
-                        onCancel={() => setShowPicker(false)}
-                        onChange={(date) => {
-                            if (date) setTempDate(date);
-                        }}
-                        textColor={Color.gray}
-                        themeVariant="light"
-                        pickerContainerStyleIOS={{
-                            backgroundColor: Color.white,
-                            borderRadius: 24,
-                            width: 420,
-                            alignSelf: "center",
-                            justifyContent: "center",
-                            alignItems: "center",
-                            shadowColor: "#000",
-                            shadowOpacity: 0.1,
-                            shadowRadius: 6,
-                            shadowOffset: { width: 0, height: 3 },
-                        }}
-                        customHeaderIOS={() => (
-                            <Text
-                                style={{
-                                    textAlign: "center",
-                                    color: Color.gray,
-                                    fontWeight: "700",
-                                    paddingVertical: 12,
-                                    fontSize: 20,
+                                    {/* 🟩 Total Playtime */}
+                                    <Card
+                                        style={{
+                                            width: "25%",
+                                            height: "60%",
+                                            backgroundColor: "#F2F8F9",
+                                            padding: 12,
+                                            justifyContent: "center",
+                                            alignItems: "center",
+                                            borderRadius: 20,
+                                        }}
+                                    >
+                                        <View style={{ flexDirection: "row", alignItems: "center" }}>
+                                            <Clock width={50} height={50} />
+                                            <View style={{ marginLeft: 10 }}>
+                                                <Text style={{ fontSize: Typography.header20.fontSize, color: Color.gray }}>Total Playtime</Text>
+                                                <Text style={{ color: Color.gray, fontSize: Typography.header16.fontSize }}>
+                                                    {totalPlaytime && "error" in totalPlaytime
+                                                        ? "Error"
+                                                        : totalPlaytime && "totalPlaytime" in totalPlaytime
+                                                            ? `${totalPlaytime.totalPlaytime} Hour(s)`
+                                                            : "0 Hour(s)"}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    </Card>
+
+                                    {streakCards.map((card, idx) => (
+                                        <Card
+                                            key={idx}
+                                            style={{
+                                                width: "25%",
+                                                height: "60%",
+                                                backgroundColor: "#F2F8F9",
+                                                // paddingHorizontal: 20,
+                                                paddingRight: 20,
+                                                justifyContent: "center",
+                                                alignItems: "center",
+                                                borderRadius: 20,
+                                            }}
+                                        >
+                                            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+                                                {/* Render the icon */}
+                                                <card.icon width={50} height={50} />
+                                                <View style={{ marginLeft: 3, gap: 5 }}>
+                                                    <Text style={{ width: "100%", textAlign: "center", fontSize: Typography.header20.fontSize, color: Color.gray }}>{card.label}</Text>
+                                                    <Text style={{
+                                                        color: Color.gray, fontSize: Typography.header20.fontSize, textAlign: "center", fontWeight: "bold"
+                                                    }}>
+                                                        {card.value as any}
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                        </Card>
+                                    ))}
+                                </ScrollView>
+                            </View>
+                        </View >
+                        {showPicker && (
+                            <DateTimePickerModal
+                                isVisible={showPicker}
+                                mode="date"
+                                display="inline"
+                                date={selectedDate}
+                                onConfirm={() => {
+
                                 }}
-                            >
-                                Choose {period}
-                            </Text>
-                        )}
-                        customConfirmButtonIOS={() => (
-
-                            <Button
-                                onPress={() => handleDateConfirm(tempDate)}
-                                style={{
+                                maximumDate={new Date}
+                                onCancel={() => setShowPicker(false)}
+                                onChange={(date) => {
+                                    if (date) setTempDate(date);
+                                }}
+                                textColor={Color.gray}
+                                themeVariant="light"
+                                pickerContainerStyleIOS={{
+                                    backgroundColor: Color.white,
+                                    borderRadius: 24,
+                                    width: 420,
                                     alignSelf: "center",
-                                    width: "100%",
-                                    borderTopColor: Color.gray,
-                                    borderTopWidth: 0.5,
-                                    backgroundColor: "transparent",
-                                    paddingTop: 5,
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    shadowColor: "#000",
+                                    shadowOpacity: 0.1,
+                                    shadowRadius: 6,
+                                    shadowOffset: { width: 0, height: 3 },
                                 }}
+                                customHeaderIOS={() => (
+                                    <Text
+                                        style={{
+                                            textAlign: "center",
+                                            color: Color.gray,
+                                            fontWeight: "700",
+                                            paddingVertical: 12,
+                                            fontSize: 20,
+                                        }}
+                                    >
+                                        Choose {period}
+                                    </Text>
+                                )}
+                                customConfirmButtonIOS={() => (
 
-                                rippleColor="transparent"
-                            >
-                                <Text style={{ color: Color.gray, fontSize: 18, fontWeight: "600" }}>
-                                    Confirm
-                                </Text>
-                            </Button>
+                                    <Button
+                                        onPress={() => handleDateConfirm(tempDate)}
+                                        style={{
+                                            alignSelf: "center",
+                                            width: "100%",
+                                            borderTopColor: Color.gray,
+                                            borderTopWidth: 0.5,
+                                            backgroundColor: "transparent",
+                                            paddingTop: 5,
+                                        }}
+
+                                        rippleColor="transparent"
+                                    >
+                                        <Text style={{ color: Color.gray, fontSize: 18, fontWeight: "600" }}>
+                                            Confirm
+                                        </Text>
+                                    </Button>
+                                )}
+                                customCancelButtonIOS={() => (
+                                    <Button
+                                        onPress={() => setShowPicker(false)}
+                                        style={{
+                                            backgroundColor: Color.lightblue,
+                                            borderRadius: 12,
+                                            alignSelf: "center",
+                                            width: "36%",
+                                            marginBottom: 20
+                                        }}
+                                        rippleColor="transparent"
+                                    >
+                                        <Text style={{ color: "red", fontSize: 18, fontWeight: "600" }}>
+                                            Cancel
+                                        </Text>
+                                    </Button>
+                                )}
+                            />
+
+
                         )}
-                        customCancelButtonIOS={() => (
-                            <Button
-                                onPress={() => setShowPicker(false)}
-                                style={{
-                                    backgroundColor: Color.lightblue,
-                                    borderRadius: 12,
-                                    alignSelf: "center",
-                                    width: "36%",
-                                    marginBottom: 20
-                                }}
-                                rippleColor="transparent"
-                            >
-                                <Text style={{ color: "red", fontSize: 18, fontWeight: "600" }}>
-                                    Cancel
-                                </Text>
-                            </Button>
-                        )}
-                    />
 
-
-                )}
-
-            </View >
-            {/* <Portal >
+                    </View >
+                    {/* <Portal >
                 <Modal
                     visible={modalVisible}
                     onDismiss={() => setModalVisible(false)}
@@ -1052,7 +1061,9 @@ const UserOverviewPerformance = () => {
 
                 </Modal >
             </Portal > */}
-        </>
+                </>
+            )}
+        </View>
     );
 };
 
