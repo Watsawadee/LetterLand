@@ -28,6 +28,7 @@ import {
 import { ProgressLevelupResponseSchema } from "../types/progressLevelup.schema";
 import { AuthenticatedRequest } from "../types/authenticatedRequest";
 import { EnglishLevel } from "../types/setup.schema";
+import { getLevelForPlaytime } from "../services/getLevelForPlaytime";
 
 export const getAllUserController = async (req: Request, res: Response) => {
   try {
@@ -268,7 +269,6 @@ export const progressLevelupController = async (
   req: AuthenticatedRequest,
   res: Response
 ): Promise<void> => {
-  const TWO_HUNDRED_HOURS_SECS = 200 * 60 * 60;
 
   try {
     const userId = req.user?.id;
@@ -289,6 +289,13 @@ export const progressLevelupController = async (
       res.status(404).json({ message: "User not found" });
       return;
     }
+    const correctLevel = getLevelForPlaytime(user.total_playtime);
+    if (user.englishLevel !== correctLevel) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { englishLevel: correctLevel },
+      });
+    }
 
     const nextLevelup = getNextLevel(user.englishLevel);
     if (!nextLevelup) {
@@ -298,9 +305,9 @@ export const progressLevelupController = async (
 
     const conditions: { name: string; passed: boolean; details?: any }[] = [];
 
-    // --- 1) Last 5 games & hints ---
+    // Last 5 games & hints ---
     const lastFiveGames = await prisma.game.findMany({
-      where: { userId },
+      where: { userId, isFinished: true, finishedAt: { not: null } },
       orderBy: { startedAt: "desc" },
       take: 5,
       select: { isHintUsed: true },
@@ -320,7 +327,7 @@ export const progressLevelupController = async (
       details: { usedAnyHints },
     });
 
-    // --- 2) Total playtime at current level ---
+    // Total playtime at current level ---
     const levelGames = await prisma.game.findMany({
       where: {
         userId,
@@ -336,21 +343,20 @@ export const progressLevelupController = async (
       B1: 90 * 60 * 60,
       B2: 120 * 60 * 60,
       C1: 150 * 60 * 60,
-      C2: Number.POSITIVE_INFINITY,
+      C2: 180 * 60 * 60,
     };
     const requiredPlaytime = LEVEL_THRESHOLDS[user.englishLevel];
     const hasEnoughPlaytime = user.total_playtime >= requiredPlaytime;
 
     conditions.push({
-      name: "200 hours playtime on current level",
+      name: `${requiredPlaytime / 3600} hours playtime on current level`,
       passed: hasEnoughPlaytime,
       details: {
-        requiredSeconds: TWO_HUNDRED_HOURS_SECS,
+        requiredSeconds: requiredPlaytime,
         accumulatedSeconds: user.total_playtime,
       },
     });
-
-    // --- 3) Weekly average check ---
+    //Weekly average check ---
     const now = new Date();
     const thisWeekStart = startOfISOWeekUTC(now);
     const lastWeekEnd = new Date(thisWeekStart.getTime() - 1);
@@ -388,8 +394,9 @@ export const progressLevelupController = async (
 
     const avgLastWeek = avg(lastWeekGames);
     const avgThisWeek = avg(thisWeekGames);
-    const weeklyRuleOk = avgThisWeek < avgLastWeek && avgLastWeek > 0;
-
+    const avgThisWeekCount = thisWeekGames.filter(g => g.finishedAt).length;
+    const weeklyRuleOk = avgThisWeek < avgLastWeek && avgLastWeek > 0 && avgThisWeekCount > 0;
+    // const weeklyRuleOk = avgThisWeek < avgLastWeek && avgLastWeek > 0;
     conditions.push({
       name: "AvgTime_this_week < AvgTime_last_week",
       passed: weeklyRuleOk,
@@ -399,7 +406,6 @@ export const progressLevelupController = async (
       },
     });
 
-    // --- Final check ---
     const allPassed = conditions.every((c) => c.passed);
 
     if (!allPassed) {

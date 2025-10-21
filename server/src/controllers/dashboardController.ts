@@ -16,6 +16,7 @@ import {
 } from "../types/type"
 import { EnglishLevel } from "@prisma/client";
 import { getPeriodRange } from "../services/getPeriodRange";
+import { secondsBetween, startOfISOWeekUTC } from "../services/levelupService";
 export const getUserTotalPlaytime = async (
   req: AuthenticatedRequest,
   res: Response<TotalPlaytimeOrError>
@@ -540,89 +541,89 @@ export const getUserProgress = async (req: AuthenticatedRequest, res: Response) 
     }
     // Cumulative thresholds in hours
     const LEVEL_THRESHOLDS: Record<string, number> = {
-      A1: 30,
-      A2: 60,
-      B1: 90,
-      B2: 120,
-      C1: 150,
-      C2: 180,
+      A1: 30 * 60 * 60,
+      A2: 60 * 60 * 60,
+      B1: 90 * 60 * 60,
+      B2: 120 * 60 * 60,
+      C1: 150 * 60 * 60,
+      C2: 180 * 60 * 60,
     };
 
     const levels = ["A1", "A2", "B1", "B2", "C1", "C2"];
     const currentLevel = user.englishLevel;
     const currentIdx = levels.indexOf(currentLevel);
     const nextLevel = levels[Math.min(currentIdx + 1, levels.length - 1)];
-    const requiredPlaytimeHours = LEVEL_THRESHOLDS[nextLevel];
-    const prevThreshold = currentIdx > 0 ? LEVEL_THRESHOLDS[levels[currentIdx - 1]] : 0;
+    const requiredPlaytime = LEVEL_THRESHOLDS[currentLevel];
     const totalPlaytimeHours = user.total_playtime / 3600;
-
-    const playtimeForCurrentLevel = Math.max(totalPlaytimeHours - prevThreshold, 0);
-    const hoursLeft = Math.max(requiredPlaytimeHours - totalPlaytimeHours, 0);
-
-    const progress = Math.min((playtimeForCurrentLevel / 200) * 100, 100);
+    const progress = Math.min((user.total_playtime / requiredPlaytime) * 100, 100);
     const filled = Number(progress.toFixed(2));
     const remaining = Number(Math.max(0, Math.min(100, 100 - filled)).toFixed(2));
 
+
     //Check hint used last five game
     const lastFiveGames = await prisma.game.findMany({
-      where: { userId, isFinished: true },
+      where: { userId, isFinished: true, finishedAt: { not: null } },
       orderBy: { finishedAt: "desc" },
       take: 5,
       select: { isHintUsed: true },
     });
-    const noHintsUsedRecently = lastFiveGames.length === 5 && lastFiveGames.every(g => !g.isHintUsed);
-
+    const enoughGamesPlayed = lastFiveGames.length >= 5;
+    const noHintsUsedRecently = enoughGamesPlayed && lastFiveGames.every(g => !g.isHintUsed);
     //Enough playtime
-    const hasEnoughPlaytime = playtimeForCurrentLevel >= 200;
+    const hasEnoughPlaytime = user.total_playtime >= requiredPlaytime;
 
     //Play current week > prev week
     const now = new Date();
-    const startCurrentWeek = startOfWeek(now, { weekStartsOn: 1 });
-    const endCurrentWeek = endOfWeek(now, { weekStartsOn: 1 });
-    const startPrevWeek = addDays(startCurrentWeek, -7);
-    const endPrevWeek = addDays(endCurrentWeek, -7);
+    const thisWeekStart = startOfISOWeekUTC(now);
+    const lastWeekEnd = new Date(thisWeekStart.getTime() - 1);
+    const lastWeekStart = new Date(thisWeekStart.getTime());
+    lastWeekStart.setUTCDate(lastWeekStart.getUTCDate() - 7);
 
-    function avgDuration(games: { startedAt: Date; finishedAt: Date }[]) {
-      if (games.length === 0) return 0;
-      const total = games.reduce((sum, g) => sum + differenceInMinutes(g.finishedAt, g.startedAt), 0);
-      return total / games.length;
-    }
 
-    const currentWeekGamesRaw = await prisma.game.findMany({
-      where: {
-        userId,
-        isFinished: true,
-        startedAt: { gte: startCurrentWeek, lte: endCurrentWeek },
-      },
-      select: { startedAt: true, finishedAt: true },
-    });
-    const prevWeekGamesRaw = await prisma.game.findMany({
-      where: {
-        userId,
-        isFinished: true,
-        startedAt: { gte: startPrevWeek, lte: endPrevWeek },
-      },
-      select: { startedAt: true, finishedAt: true },
-    });
-    const currentWeekGames = currentWeekGamesRaw.filter(g => g.finishedAt !== null) as { startedAt: Date; finishedAt: Date }[];
-    const prevWeekGames = prevWeekGamesRaw.filter(g => g.finishedAt !== null) as { startedAt: Date; finishedAt: Date }[];
+    const [lastWeekGames, thisWeekGames] = await Promise.all([
+      prisma.game.findMany({
+        where: {
+          userId,
+          isFinished: true,
+          finishedAt: { not: null },
+          startedAt: { gte: lastWeekStart, lte: lastWeekEnd },
+        },
+        select: { startedAt: true, finishedAt: true },
+      }),
+      prisma.game.findMany({
+        where: {
+          userId,
+          isFinished: true,
+          finishedAt: { not: null },
+          startedAt: { gte: thisWeekStart, lte: now },
+        },
+        select: { startedAt: true, finishedAt: true },
+      }),
+    ]);
+    const avg = (games: { startedAt: Date; finishedAt: Date | null }[]) => {
+      const finished = games.filter((g) => g.finishedAt);
+      if (finished.length === 0) return 0;
+      const total = finished.reduce(
+        (acc, g) => acc + secondsBetween(g.startedAt, g.finishedAt!),
+        0
+      );
+      return total / finished.length;
+    };
 
-    const avgCurrentWeek = avgDuration(currentWeekGames);
-    const avgPrevWeek = avgDuration(prevWeekGames);
-
-    // Compare average durations (lower is better)
-    const hasImprovedPerformance = avgCurrentWeek < avgPrevWeek;
+    const avgLastWeek = avg(lastWeekGames);
+    const avgThisWeek = avg(thisWeekGames);
+    const avgThisWeekCount = thisWeekGames.filter(g => g.finishedAt).length;
+    const hasImprovedPerformance = avgThisWeek < avgLastWeek && avgLastWeek > 0 && avgThisWeekCount > 0;
 
     const summary: string[] = [];
     if (!hasEnoughPlaytime) {
-      if (currentLevel === "C2") {
-        summary.push(`You need ${Math.ceil(200 - playtimeForCurrentLevel)} more hour(s) to complete the highest level of Letterland.`);
-      } else {
-        summary.push(`You need ${Math.ceil(200 - playtimeForCurrentLevel)} more hour(s) of playtime to reach ${nextLevel}.`);
-      }
+      summary.push(`You need more playtime to reach ${nextLevel}.`);
     }
     if (!noHintsUsedRecently) {
       summary.push("You must not use hints in your last 5 games.");
+    }
+    if (!enoughGamesPlayed) {
+      summary.push("You must finish at least 5 games.");
     }
     if (!hasImprovedPerformance) {
       summary.push("Your performance this week must exceed last week.");

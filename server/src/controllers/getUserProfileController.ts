@@ -3,9 +3,9 @@ import prisma from "../configs/db";
 import { AuthenticatedRequest } from "../types/authenticatedRequest";
 import { UserProfileOrError } from "../types/type";
 import { UserProfileResponseSchema } from "../types/userProfile.schema";
-import { getNextLevel } from "../services/levelupService";
+import { getNextLevel, secondsBetween, startOfISOWeekUTC } from "../services/levelupService";
 import { EnglishLevel } from "../types/setup.schema";
-import { addDays, differenceInMinutes, endOfWeek, startOfWeek } from "date-fns";
+import { addDays, differenceInMinutes, endOfWeek, startOfISOWeek, startOfWeek } from "date-fns";
 
 export const getUserProfile = async (
   req: AuthenticatedRequest,
@@ -13,12 +13,12 @@ export const getUserProfile = async (
 ) => {
 
   const LEVEL_THRESHOLDS: Record<EnglishLevel, number> = {
-    A1: 30,
-    A2: 60,
-    B1: 90,
-    B2: 120,
-    C1: 150,
-    C2: 180,
+    A1: 30 * 60 * 60,
+    A2: 60 * 60 * 60,
+    B1: 90 * 60 * 60,
+    B2: 120 * 60 * 60,
+    C1: 150 * 60 * 60,
+    C2: 180 * 60 * 60,
   };
   const levels: EnglishLevel[] = ["A1", "A2", "B1", "B2", "C1", "C2"];
   const userId = req.user?.id;
@@ -60,17 +60,20 @@ export const getUserProfile = async (
 
     // Progress for current level
     const playtimeForCurrentLevel = Math.max(totalPlaytimeHours - prevThreshold, 0);
-    const progress = Math.min((playtimeForCurrentLevel / 200) * 100, 100);
+    const progress = Math.min((playtimeForCurrentLevel / 30) * 100, 100);
     const progressPercent = Number(progress.toFixed(2));
 
     const requiredPlaytime = LEVEL_THRESHOLDS[user.englishLevel];
 
     const lastFive = await prisma.game.findMany({
-      where: { userId, isFinished: true },
+      where: { userId, isFinished: true, finishedAt: { not: null } },
       orderBy: { finishedAt: "desc" },
       take: 5,
       select: { isHintUsed: true },
     });
+    const fiveFinished = lastFive.length === 5;
+    const noHintsUsed = fiveFinished && lastFive.every((g) => !g.isHintUsed);
+
     const hasUsedHintRecently = lastFive.some((g) => g.isHintUsed);
 
     let rawProgress = nextLevel
@@ -88,22 +91,36 @@ export const getUserProfile = async (
 
 
     const now = new Date();
-    const startCurrentWeek = startOfWeek(now, { weekStartsOn: 1 });
-    const endCurrentWeek = endOfWeek(now, { weekStartsOn: 1 });
-    const startPrevWeek = addDays(startCurrentWeek, -7);
-    const endPrevWeek = addDays(endCurrentWeek, -7);
+    const thisWeekStart = startOfISOWeekUTC(now);
+    const lastWeekEnd = new Date(thisWeekStart.getTime() - 1);
+    const lastWeekStart = new Date(thisWeekStart.getTime());
+    lastWeekStart.setUTCDate(lastWeekStart.getUTCDate() - 7);
 
-    function avgDuration(games: { startedAt: Date; finishedAt: Date }[]) {
-      if (games.length === 0) return 0;
-      const total = games.reduce((sum, g) => sum + differenceInMinutes(g.finishedAt, g.startedAt), 0);
-      return total / games.length;
-    }
-
+    const [lastWeekGames, thisWeekGames] = await Promise.all([
+      prisma.game.findMany({
+        where: {
+          userId,
+          isFinished: true,
+          finishedAt: { not: null },
+          startedAt: { gte: lastWeekStart, lte: lastWeekEnd },
+        },
+        select: { startedAt: true, finishedAt: true },
+      }),
+      prisma.game.findMany({
+        where: {
+          userId,
+          isFinished: true,
+          finishedAt: { not: null },
+          startedAt: { gte: thisWeekStart, lte: now },
+        },
+        select: { startedAt: true, finishedAt: true },
+      }),
+    ]);
     const currentWeekGamesRaw = await prisma.game.findMany({
       where: {
         userId,
         isFinished: true,
-        startedAt: { gte: startCurrentWeek, lte: endCurrentWeek },
+        startedAt: { gte: lastWeekStart, lte: lastWeekEnd },
       },
       select: { startedAt: true, finishedAt: true },
     });
@@ -111,16 +128,12 @@ export const getUserProfile = async (
       where: {
         userId,
         isFinished: true,
-        startedAt: { gte: startPrevWeek, lte: endPrevWeek },
+        startedAt: { gte: thisWeekStart, lte: now },
       },
       select: { startedAt: true, finishedAt: true },
     });
     const currentWeekGames = currentWeekGamesRaw.filter(g => g.finishedAt !== null) as { startedAt: Date; finishedAt: Date }[];
     const prevWeekGames = prevWeekGamesRaw.filter(g => g.finishedAt !== null) as { startedAt: Date; finishedAt: Date }[];
-
-    const avgCurrentWeek = avgDuration(currentWeekGames);
-    const avgPrevWeek = avgDuration(prevWeekGames);
-    const hasImprovedPerformance = avgCurrentWeek < avgPrevWeek && avgPrevWeek > 0;
     // let canLevelUp = false;
     // if (nextLevel) {
     //   const lastFive = await prisma.game.findMany({
@@ -135,10 +148,28 @@ export const getUserProfile = async (
     //   canLevelUp = hasEnoughPlaytime && noHintsUsed;
     // }
 
-    const fiveFinished = lastFive.length === 5;
-    const noHintsUsed = fiveFinished && lastFive.every((g) => !g.isHintUsed);
-    const canLevelUp = hasEnoughPlaytime && noHintsUsed && hasImprovedPerformance;
+    const avg = (games: { startedAt: Date; finishedAt: Date | null }[]) => {
+      const finished = games.filter((g) => g.finishedAt);
+      if (finished.length === 0) return 0;
+      const total = finished.reduce(
+        (acc, g) => acc + secondsBetween(g.startedAt, g.finishedAt!),
+        0
+      );
+      return total / finished.length;
+    };
 
+
+    const avgCurrentWeek = avg(currentWeekGames);
+    const avgPrevWeek = avg(prevWeekGames);
+    const hasImprovedPerformance = avgCurrentWeek < avgPrevWeek && avgPrevWeek > 0 && currentWeekGames.length > 0;
+
+    const canLevelUp = hasEnoughPlaytime && noHintsUsed && hasImprovedPerformance && fiveFinished;
+    console.log("Check", {
+      hasEnoughPlaytime,
+      noHintsUsed,
+      fiveFinished,
+      hasImprovedPerformance
+    });
     const response = {
       id: user.id,
       username: user.username,
