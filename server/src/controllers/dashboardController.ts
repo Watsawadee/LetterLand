@@ -1,7 +1,7 @@
 import prisma from "../configs/db";
 import { Request, Response } from "express";
 import { AuthenticatedRequest } from "../types/authenticatedRequest";
-import { startOfWeek, endOfWeek, eachDayOfInterval, format, addWeeks, startOfDay, isSameDay, addDays, subWeeks, startOfMonth, subMonths, startOfYear, subYears, subSeconds } from "date-fns";
+import { startOfWeek, endOfWeek, eachDayOfInterval, format, addWeeks, startOfDay, isSameDay, addDays, subWeeks, startOfMonth, subMonths, startOfYear, subYears, subSeconds, differenceInMinutes } from "date-fns";
 import {
   TotalPlaytimeResponseSchema,
   WordsLearnedResponseSchema,
@@ -16,6 +16,7 @@ import {
 } from "../types/type"
 import { EnglishLevel } from "@prisma/client";
 import { getPeriodRange } from "../services/getPeriodRange";
+import { secondsBetween, startOfISOWeekUTC } from "../services/levelupService";
 export const getUserTotalPlaytime = async (
   req: AuthenticatedRequest,
   res: Response<TotalPlaytimeOrError>
@@ -540,75 +541,88 @@ export const getUserProgress = async (req: AuthenticatedRequest, res: Response) 
     }
     // Cumulative thresholds in hours
     const LEVEL_THRESHOLDS: Record<string, number> = {
-      A1: 200,
-      A2: 400,
-      B1: 600,
-      B2: 800,
-      C1: 1000,
-      C2: 1200,
+      A1: 30 * 60 * 60,
+      A2: 60 * 60 * 60,
+      B1: 90 * 60 * 60,
+      B2: 120 * 60 * 60,
+      C1: 150 * 60 * 60,
+      C2: 180 * 60 * 60,
     };
 
     const levels = ["A1", "A2", "B1", "B2", "C1", "C2"];
     const currentLevel = user.englishLevel;
     const currentIdx = levels.indexOf(currentLevel);
     const nextLevel = levels[Math.min(currentIdx + 1, levels.length - 1)];
-    const requiredPlaytimeHours = LEVEL_THRESHOLDS[nextLevel];
-    const prevThreshold = currentIdx > 0 ? LEVEL_THRESHOLDS[levels[currentIdx - 1]] : 0;
+    const requiredPlaytime = LEVEL_THRESHOLDS[currentLevel];
     const totalPlaytimeHours = user.total_playtime / 3600;
-
-    const playtimeForCurrentLevel = Math.max(totalPlaytimeHours - prevThreshold, 0);
-    const hoursLeft = Math.max(requiredPlaytimeHours - totalPlaytimeHours, 0);
-
-    const progress = Math.min((playtimeForCurrentLevel / 200) * 100, 100);
+    const progress = Math.min((user.total_playtime / requiredPlaytime) * 100, 100);
     const filled = Number(progress.toFixed(2));
     const remaining = Number(Math.max(0, Math.min(100, 100 - filled)).toFixed(2));
 
+
     //Check hint used last five game
     const lastFiveGames = await prisma.game.findMany({
-      where: { userId, isFinished: true },
+      where: { userId, isFinished: true, finishedAt: { not: null } },
       orderBy: { finishedAt: "desc" },
       take: 5,
       select: { isHintUsed: true },
     });
-    const noHintsUsedRecently = lastFiveGames.length === 5 && lastFiveGames.every(g => !g.isHintUsed);
-
+    const enoughGamesPlayed = lastFiveGames.length >= 5;
+    const noHintsUsedRecently = enoughGamesPlayed && lastFiveGames.every(g => !g.isHintUsed);
     //Enough playtime
-    const hasEnoughPlaytime = playtimeForCurrentLevel >= 200;
+    const hasEnoughPlaytime = user.total_playtime >= requiredPlaytime;
 
-    //Play current week > prev week
     const now = new Date();
-    const startCurrentWeek = startOfWeek(now, { weekStartsOn: 1 });
-    const endCurrentWeek = endOfWeek(now, { weekStartsOn: 1 });
-    const startPrevWeek = addDays(startCurrentWeek, -7);
-    const endPrevWeek = addDays(endCurrentWeek, -7);
+    const thisWeekStart = startOfWeek(now, { weekStartsOn: 0 }); // Sunday 12:00 AM
+    const thisWeekEnd = endOfWeek(now, { weekStartsOn: 0 });     // Saturday 11:59:59 PM
+    const lastWeekStart = addDays(thisWeekStart, -7);
+    const lastWeekEnd = addDays(thisWeekEnd, -7);
 
-    const currentWeekGames = await prisma.game.count({
-      where: {
-        userId,
-        isFinished: true,
-        startedAt: { gte: startCurrentWeek, lte: endCurrentWeek },
-      },
-    });
 
-    const prevWeekGames = await prisma.game.count({
-      where: {
-        userId,
-        isFinished: true,
-        startedAt: { gte: startPrevWeek, lte: endPrevWeek },
-      },
-    });
-    const hasImprovedPerformance = currentWeekGames > prevWeekGames;
+    const [lastWeekGames, thisWeekGames] = await Promise.all([
+      prisma.game.findMany({
+        where: {
+          userId,
+          isFinished: true,
+          finishedAt: { not: null },
+          startedAt: { gte: lastWeekStart, lte: lastWeekEnd },
+        },
+        select: { startedAt: true, finishedAt: true },
+      }),
+      prisma.game.findMany({
+        where: {
+          userId,
+          isFinished: true,
+          finishedAt: { not: null },
+          startedAt: { gte: thisWeekStart, lte: now },
+        },
+        select: { startedAt: true, finishedAt: true },
+      }),
+    ]);
+    const avg = (games: { startedAt: Date; finishedAt: Date | null }[]) => {
+      const finished = games.filter((g) => g.finishedAt);
+      if (finished.length === 0) return 0;
+      const total = finished.reduce(
+        (acc, g) => acc + secondsBetween(g.startedAt, g.finishedAt!),
+        0
+      );
+      return total / finished.length;
+    };
+
+    const avgLastWeek = avg(lastWeekGames);
+    const avgThisWeek = avg(thisWeekGames);
+    const avgThisWeekCount = thisWeekGames.filter(g => g.finishedAt).length;
+    const hasImprovedPerformance = avgThisWeek < avgLastWeek && avgLastWeek > 0 && avgThisWeekCount > 0;
 
     const summary: string[] = [];
     if (!hasEnoughPlaytime) {
-      if (currentLevel === "C2") {
-        summary.push(`You need ${Math.ceil(200 - playtimeForCurrentLevel)} more hour(s) to complete the highest level of Letterland.`);
-      } else {
-        summary.push(`You need ${Math.ceil(200 - playtimeForCurrentLevel)} more hour(s) of playtime to reach ${nextLevel}.`);
-      }
+      summary.push(`You need more playtime to reach ${nextLevel}.`);
     }
     if (!noHintsUsedRecently) {
       summary.push("You must not use hints in your last 5 games.");
+    }
+    if (!enoughGamesPlayed) {
+      summary.push("You must finish at least 5 games.");
     }
     if (!hasImprovedPerformance) {
       summary.push("Your performance this week must exceed last week.");
