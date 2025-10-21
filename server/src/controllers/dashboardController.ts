@@ -572,12 +572,11 @@ export const getUserProgress = async (req: AuthenticatedRequest, res: Response) 
     //Enough playtime
     const hasEnoughPlaytime = user.total_playtime >= requiredPlaytime;
 
-    //Play current week > prev week
     const now = new Date();
-    const thisWeekStart = startOfISOWeekUTC(now);
-    const lastWeekEnd = new Date(thisWeekStart.getTime() - 1);
-    const lastWeekStart = new Date(thisWeekStart.getTime());
-    lastWeekStart.setUTCDate(lastWeekStart.getUTCDate() - 7);
+    const thisWeekStart = startOfWeek(now, { weekStartsOn: 0 }); // Sunday 12:00 AM
+    const thisWeekEnd = endOfWeek(now, { weekStartsOn: 0 });     // Saturday 11:59:59 PM
+    const lastWeekStart = addDays(thisWeekStart, -7);
+    const lastWeekEnd = addDays(thisWeekEnd, -7);
 
 
     const [lastWeekGames, thisWeekGames] = await Promise.all([

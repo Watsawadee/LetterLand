@@ -29,6 +29,7 @@ import { ProgressLevelupResponseSchema } from "../types/progressLevelup.schema";
 import { AuthenticatedRequest } from "../types/authenticatedRequest";
 import { EnglishLevel } from "../types/setup.schema";
 import { getLevelForPlaytime } from "../services/getLevelForPlaytime";
+import { addDays, endOfWeek, startOfWeek } from "date-fns";
 
 export const getAllUserController = async (req: Request, res: Response) => {
   try {
@@ -358,10 +359,10 @@ export const progressLevelupController = async (
     });
     //Weekly average check ---
     const now = new Date();
-    const thisWeekStart = startOfISOWeekUTC(now);
-    const lastWeekEnd = new Date(thisWeekStart.getTime() - 1);
-    const lastWeekStart = new Date(thisWeekStart.getTime());
-    lastWeekStart.setUTCDate(lastWeekStart.getUTCDate() - 7);
+    const thisWeekStart = startOfWeek(now, { weekStartsOn: 0 });
+    const thisWeekEnd = endOfWeek(now, { weekStartsOn: 0 });
+    const lastWeekStart = addDays(thisWeekStart, -7);
+    const lastWeekEnd = addDays(thisWeekEnd, -7);
 
     const [lastWeekGames, thisWeekGames] = await Promise.all([
       prisma.game.findMany({

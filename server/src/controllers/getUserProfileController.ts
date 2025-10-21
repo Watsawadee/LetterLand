@@ -85,42 +85,31 @@ export const getUserProfile = async (
     if (rawProgress >= 99 && hasUsedHintRecently) {
       rawProgress = 99;
     }
+
+    console.log("Playtime check", {
+      total_playtime: user.total_playtime,
+      requiredPlaytime,
+      result: user.total_playtime >= requiredPlaytime
+    });
+
     const hasEnoughPlaytime =
       requiredPlaytime !== Number.POSITIVE_INFINITY &&
       user.total_playtime >= requiredPlaytime;
 
 
     const now = new Date();
-    const thisWeekStart = startOfISOWeekUTC(now);
-    const lastWeekEnd = new Date(thisWeekStart.getTime() - 1);
-    const lastWeekStart = new Date(thisWeekStart.getTime());
+    const thisWeekStart = startOfWeek(now, { weekStartsOn: 0 }); // Sunday 12:00 AM
+    const thisWeekEnd = endOfWeek(now, { weekStartsOn: 0 });     // Saturday 11:59:59 PM
+    const lastWeekStart = addDays(thisWeekStart, -7);
+    const lastWeekEnd = addDays(thisWeekEnd, -7);
+
     lastWeekStart.setUTCDate(lastWeekStart.getUTCDate() - 7);
 
-    const [lastWeekGames, thisWeekGames] = await Promise.all([
-      prisma.game.findMany({
-        where: {
-          userId,
-          isFinished: true,
-          finishedAt: { not: null },
-          startedAt: { gte: lastWeekStart, lte: lastWeekEnd },
-        },
-        select: { startedAt: true, finishedAt: true },
-      }),
-      prisma.game.findMany({
-        where: {
-          userId,
-          isFinished: true,
-          finishedAt: { not: null },
-          startedAt: { gte: thisWeekStart, lte: now },
-        },
-        select: { startedAt: true, finishedAt: true },
-      }),
-    ]);
     const currentWeekGamesRaw = await prisma.game.findMany({
       where: {
         userId,
         isFinished: true,
-        startedAt: { gte: lastWeekStart, lte: lastWeekEnd },
+        startedAt: { gte: thisWeekStart, lte: thisWeekEnd },
       },
       select: { startedAt: true, finishedAt: true },
     });
@@ -128,7 +117,7 @@ export const getUserProfile = async (
       where: {
         userId,
         isFinished: true,
-        startedAt: { gte: thisWeekStart, lte: now },
+        startedAt: { gte: lastWeekStart, lte: lastWeekEnd },
       },
       select: { startedAt: true, finishedAt: true },
     });
