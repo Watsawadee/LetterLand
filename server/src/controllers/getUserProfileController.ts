@@ -58,12 +58,12 @@ export const getUserProfile = async (
     const prevThreshold = currentIdx > 0 ? LEVEL_THRESHOLDS[levels[currentIdx - 1]] : 0;
     const totalPlaytimeHours = user.total_playtime / 3600;
 
-    // Progress for current level
+    // Progress current level
     const playtimeForCurrentLevel = Math.max(totalPlaytimeHours - prevThreshold, 0);
     const progress = Math.min((playtimeForCurrentLevel / 30) * 100, 100);
-    const progressPercent = Number(progress.toFixed(2));
 
-    const requiredPlaytime = LEVEL_THRESHOLDS[user.englishLevel];
+    const requiredPlaytime = LEVEL_THRESHOLDS[currentLevel];
+    const progressPercent = Number(Math.min((user.total_playtime / requiredPlaytime) * 100, 100).toFixed(2));
 
     const lastFive = await prisma.game.findMany({
       where: { userId, isFinished: true, finishedAt: { not: null } },
