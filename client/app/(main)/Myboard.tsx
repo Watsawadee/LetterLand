@@ -15,6 +15,7 @@ import MyGamesRow from "@/components/mygame";
 import UserOverviewCard from "@/components/UserOverViewCard";
 import Book from "@/assets/icon/Book";
 import ArrowLeft from "@/assets/icon/ArrowLeft";
+import { Color } from "@/theme/Color";
 
 export default function Public() {
   const router = useRouter();
@@ -45,8 +46,8 @@ export default function Public() {
               onPress={handleBackPress}
               style={styles.backButton}
             >
-              <ArrowLeft width={24} height={24} />
-              <Text style={[Typography.header30, { marginLeft: 4 }]}>
+             <ArrowLeft width={24} height={24} color={Color.gray} />
+              <Text style={[Typography.header30, { color: Color.gray, marginLeft: 4 }]}>
                 My Board
               </Text>
             </TouchableOpacity>

@@ -614,7 +614,7 @@ const UserOverviewPerformance = () => {
                                                 let peerItem = undefined;
 
                                                 if (isSuccess(peerAvgData)) {
-                                                    peerItem = peerAvgData.results.find((p) => {
+                                                    peerItem = peerAvgData.results.find((p:any) => {
                                                         const startA = new Date(p.range.start);
                                                         const endA = new Date(p.range.end);
                                                         const startB = new Date(item.range.start);
@@ -679,8 +679,8 @@ const UserOverviewPerformance = () => {
                             {/* 🟦 Total Words Learned */}
                             <Card
                                 style={{
-                                    width: "25%",
-                                    height: "60%",
+                                    width: "20%",
+                                    height: "55%",
                                     backgroundColor: "#F2F8F9",
                                     padding: 12,
                                     justifyContent: "center",
@@ -690,9 +690,9 @@ const UserOverviewPerformance = () => {
                             >
                                 <View style={{ flexDirection: "row", alignItems: "center" }}>
                                     <Pencil width={50} height={50} />
-                                    <View style={{ marginLeft: 10 }}>
-                                        <Text style={{ fontSize: Typography.header20.fontSize, color: Color.gray }}>Words Learned</Text>
-                                        <Text style={{ color: Color.gray, fontSize: Typography.header16.fontSize }}>
+                                    <View style={{ marginLeft: 10, gap: 2  }}>
+                                        <Text style={{ fontSize:15, color: Color.gray }}>Words Learned</Text>
+                                        <Text style={{ color: Color.gray, fontSize: 19, fontWeight: "700" }}>
                                             {wordsLearned && "error" in wordsLearned
                                                 ? "Error"
                                                 : wordsLearned && "wordsLearned" in wordsLearned
@@ -706,8 +706,8 @@ const UserOverviewPerformance = () => {
                             {/* 🟩 Total Playtime */}
                             <Card
                                 style={{
-                                    width: "25%",
-                                    height: "60%",
+                                    width: "20%",
+                                    height: "55%",
                                     backgroundColor: "#F2F8F9",
                                     padding: 12,
                                     justifyContent: "center",
@@ -717,9 +717,9 @@ const UserOverviewPerformance = () => {
                             >
                                 <View style={{ flexDirection: "row", alignItems: "center" }}>
                                     <Clock width={50} height={50} />
-                                    <View style={{ marginLeft: 10 }}>
-                                        <Text style={{ fontSize: Typography.header20.fontSize, color: Color.gray }}>Total Playtime</Text>
-                                        <Text style={{ color: Color.gray, fontSize: Typography.header16.fontSize }}>
+                                    <View style={{ marginLeft: 10, gap: 2   }}>
+                                    <Text style={{ fontSize:15, color: Color.gray }}>Total Played time</Text>
+                                        <Text style={{ color: Color.gray, fontSize: 19, fontWeight: "700" }}>
                                             {totalPlaytime && "error" in totalPlaytime
                                                 ? "Error"
                                                 : totalPlaytime && "totalPlaytime" in totalPlaytime
@@ -734,8 +734,8 @@ const UserOverviewPerformance = () => {
                                 <Card
                                     key={idx}
                                     style={{
-                                        width: "25%",
-                                        height: "60%",
+                                        width: "24%",
+                                        height: "55%",
                                         backgroundColor: "#F2F8F9",
                                         // paddingHorizontal: 20,
                                         paddingRight: 20,
@@ -747,10 +747,10 @@ const UserOverviewPerformance = () => {
                                     <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
                                         {/* Render the icon */}
                                         <card.icon width={50} height={50} />
-                                        <View style={{ marginLeft: 3, gap: 5 }}>
-                                            <Text style={{ width: "100%", textAlign: "center", fontSize: Typography.header20.fontSize, color: Color.gray }}>{card.label}</Text>
+                                        <View style={{ marginLeft: 3, gap: 6 }}>
+                                            <Text style={{ width: "100%", textAlign: "center",fontSize: 16, color: Color.gray }}>{card.label}</Text>
                                             <Text style={{
-                                                color: Color.gray, fontSize: Typography.header20.fontSize, textAlign: "center", fontWeight: "bold"
+                                                color: Color.gray, fontSize: 20, textAlign: "center",fontWeight: "700"
                                             }}>
                                                 {card.value as any}
                                             </Text>

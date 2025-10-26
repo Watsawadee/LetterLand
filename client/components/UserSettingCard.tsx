@@ -224,17 +224,17 @@ const UserSettingCard = ({ onBack }: Props) => {
             </Button>
           </View>
           <View style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-            <Button style={{ backgroundColor: user?.canLevelUp ? Color.blue : "#B5B5B5", width: "90%" }} contentStyle={{ height: 50 }} disabled={!user?.canLevelUp} onPress={() => {
+          <Button style={{ backgroundColor: user?.canLevelUp ? Color.blue : "#B5B5B5", width: "90%" }} contentStyle={{ height: 40 }} disabled={!user?.canLevelUp} onPress={() => {
               handleLevelup()
             }}>
-              <Text style={{ fontSize: Typography.header20.fontSize, fontWeight: Typography.header20.fontWeight, color: Color.white }} >
+              <Text style={{ fontSize: Typography.body16.fontSize, fontWeight: Typography.header20.fontWeight, color: Color.white }} >
                 {user?.nextLevel ? `Jump to ${user.nextLevel}` : "Jump to the next level"}
               </Text>
             </Button>
             <Portal>
               <Dialog visible={updateLevelDialogVisible} onDismiss={() => setupdateLevelDialogVisible(false)} style={{ backgroundColor: Color.lightblue, width: "50%", display: "flex", alignSelf: 'center' }}>
-                <View style={{ display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20 }}>
-                  <Dialog.Title style={{ fontWeight: "800", color: Color.gray }}>Upgrade Level</Dialog.Title>
+                <View style={{ display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 35 }}>
+                  <Dialog.Title style={{ fontWeight: "800", color: Color.gray, fontSize: Typography.popupheader.fontSize, paddingTop:10, }}>Upgrade Level</Dialog.Title>
                   <IconButton icon={CloseIcon} onPress={() => {
                     setupdateLevelDialogVisible(false)
                   }} />
@@ -245,8 +245,10 @@ const UserSettingCard = ({ onBack }: Props) => {
                       flexDirection: "row",
                       justifyContent: "center",
                       alignItems: "center",
-                      gap: 16,
-                      marginTop: 12,
+                      paddingLeft:28,
+                      paddingRight:28,
+                      paddingTop:15,
+                      paddingBottom:30,
                     }}
                   >
                     <Text style={{ color: Color.gray, fontSize: Typography.body20.fontSize, fontWeight: Typography.body20.fontWeight, textAlign: "center", lineHeight: 30 }}>
@@ -259,30 +261,42 @@ const UserSettingCard = ({ onBack }: Props) => {
           </View>
         </View>
       </View>
-      <View style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", height: "20%", marginBottom: 20 }}>
+      <View style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
 
-        <Button onPress={() => {
-          if (Platform.OS === "web") {
-            localStorage.removeItem("user-token");
-            queryClient.clear();
-            router.replace("/authentication/login");
-          } else {
-            SecureStore.deleteItemAsync("user-token")
-              .then(() => {
-                console.log("token cleared");
-                queryClient.clear();
-                router.replace("/authentication/login");
-              });
-          }
+      <Button
+  onPress={() => {
+    if (Platform.OS === "web") {
+      localStorage.removeItem("user-token");
+      queryClient.clear();
+      router.replace("/authentication/login");
+    } else {
+      SecureStore.deleteItemAsync("user-token").then(() => {
+        console.log("token cleared");
+        queryClient.clear();
+        router.replace("/authentication/login");
+      });
+    }
+  }}
+  rippleColor="transparent"
+  style={{
+    backgroundColor: Color.blue,
+    width: "100%",
+    height: "27%",
+    justifyContent: "center", // centers vertically
+  }}
+  contentStyle={{
+    height: "100%",
+    justifyContent: "center", // centers text vertically
+    alignItems: "center",     // centers text horizontally
+  }}
+  labelStyle={{
+    color: Color.white,
+    ...Typography.header16,
+  }}
+>
+  Logout
+</Button>
 
-        }}
-          rippleColor={"transparent"}
-          style={{ backgroundColor: Color.blue, width: "100%" }}
-        >
-          <Text style={{ color: Color.white, fontWeight: "bold" }}>
-            Logout
-          </Text>
-        </Button>
       </View>
 
     </Card >
