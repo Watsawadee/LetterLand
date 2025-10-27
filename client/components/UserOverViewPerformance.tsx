@@ -23,7 +23,7 @@ import { ButtonStyles } from "@/theme/ButtonStyles";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { addDays, addMonths, addWeeks, addYears, endOfMonth, endOfWeek, endOfYear, format, startOfMonth, startOfWeek, startOfYear, subMonths, subWeeks, subYears } from "date-fns";
 import { useColorScheme } from "react-native";
-import { Defs, LinearGradient, Stop } from "react-native-svg";
+import { Circle, Defs, LinearGradient, Path, Stop } from "react-native-svg";
 import { FloatingBubble } from "@/assets/images/bubblePopup";
 import BoxingGlove from "@/assets/icon/BoxingGlove";
 import Fire from "@/assets/icon/Fire";
@@ -397,7 +397,7 @@ const UserOverviewPerformance = () => {
                         cornerRadius={10}
                         style={{
                             // data: { fill: "url(#barGradient)" }
-                            data: { fill: Color.blue, zIndex: 20 },
+                            data: { fill: Color.blue, zIndex: 0 },
 
                         }}
                         labels={({ datum }) => `${datum.y}\n games`}
@@ -425,14 +425,31 @@ const UserOverviewPerformance = () => {
                     {peerSeries.length > 0 && peerSeries.some((d: any) => d.y !== 0) && ([
                         <VictoryLine
                             data={peerSeries}
-                            style={{ data: { stroke: Color.green, strokeWidth: 3, zIndex: 0 } }}
+                            style={{ data: { stroke: Color.green, strokeWidth: 3, zIndex: 10, } }}
+                            events={[
+                                {
+                                    target: "data",
+                                    eventHandlers: {
+                                        onPressIn: () => false,
+                                    },
+                                },
+                            ]}
+
                         />,
                         <VictoryScatter
                             data={peerSeries}
                             size={5}
-                            style={{ data: { fill: Color.green } }}
+                            style={{ data: { fill: Color.green, pointerEvents: "none" as any } }}
                             labels={({ datum }) => datum.y.toFixed(1)}
                             labelComponent={<VictoryLabel dy={-10} style={{ fill: Color.green, fontSize: 12, stroke: Color.green, strokeWidth: 1 }} />}
+                            events={[
+                                {
+                                    target: "data",
+                                    eventHandlers: {
+                                        onPressIn: () => false,
+                                    },
+                                },
+                            ]}
                         />
                     ])}
 
