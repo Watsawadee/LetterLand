@@ -25,6 +25,14 @@ type Props = {
   onClose: () => void;
 };
 
+function DefinitionLine({ text }: { text: string }) {
+  return <Text style={styles.def}>• {text}</Text>;
+}
+
+function ExampleLine({ text }: { text: string }) {
+  return <Text style={styles.ex}>"{text}"</Text>;
+}
+
 export default function MeaningTooltip({ visible, word, onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const [entry, setEntry] = useState<DictEntry | null>(null);
@@ -32,10 +40,10 @@ export default function MeaningTooltip({ visible, word, onClose }: Props) {
 
   const audioUrl = useMemo(() => entry?.audioUrls?.[0] ?? null, [entry]);
 
-  const player = useAudioPlayer(audioUrl ?? null, {
-    updateInterval: 500,
-  });
+  const player = useAudioPlayer(audioUrl ?? null, { updateInterval: 250 });
   const status = useAudioPlayerStatus(player);
+
+  const [pendingPlay, setPendingPlay] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -46,7 +54,13 @@ export default function MeaningTooltip({ visible, word, onClose }: Props) {
       setEntry(null);
       try {
         const e = await fetchDictionaryEntry(word);
-        if (mounted) setEntry(e);
+        if (mounted) {
+          if (!e || (e.meanings?.length ?? 0) === 0) {
+            setErr("No definition");
+          } else {
+            setEntry(e);
+          }
+        }
       } catch (e: any) {
         if (mounted) setErr(e?.message || "Meaning not found");
       } finally {
@@ -69,11 +83,35 @@ export default function MeaningTooltip({ visible, word, onClose }: Props) {
 
   useEffect(() => {
     if (!audioUrl) return;
+    setPendingPlay(false);
     try {
       player.pause();
       player.seekTo(0);
     } catch {}
   }, [audioUrl]);
+
+  const audioReady =
+    !!audioUrl && (status?.duration ?? 0) > 0 && !(status as any)?.isBuffering;
+
+  useEffect(() => {
+    if (!audioReady || !pendingPlay) return;
+    (async () => {
+      try {
+        if (
+          status &&
+          status.duration > 0 &&
+          status.currentTime >= status.duration
+        ) {
+          player.seekTo(0);
+        }
+        await player.play();
+      } catch {
+        if (audioUrl) Linking.openURL(audioUrl).catch(() => {});
+      } finally {
+        setPendingPlay(false);
+      }
+    })();
+  }, [audioReady, pendingPlay]);
 
   if (!visible) return null;
 
@@ -88,6 +126,12 @@ export default function MeaningTooltip({ visible, word, onClose }: Props) {
   const onToggleAudio = async () => {
     try {
       if (!audioUrl) return;
+
+      if (!audioReady) {
+        setPendingPlay(true);
+        return;
+      }
+
       if (status?.playing) {
         player.pause();
         return;
@@ -108,6 +152,10 @@ export default function MeaningTooltip({ visible, word, onClose }: Props) {
   const audioEnabled = !!audioUrl;
   const isPlaying = !!status?.playing;
 
+  const isNotFound =
+    typeof err === "string" &&
+    /(no\s*definition|meaning\s*not\s*found|not\s*found)/i.test(err ?? "");
+
   return (
     <View style={styles.overlay}>
       <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
@@ -123,13 +171,24 @@ export default function MeaningTooltip({ visible, word, onClose }: Props) {
           {audioEnabled ? (
             <Pressable
               onPress={onToggleAudio}
-              style={[styles.audioBtn, isPlaying && styles.audioBtnActive]}
+              style={[
+                styles.audioBtn,
+                (isPlaying || pendingPlay) && styles.audioBtnActive,
+                !audioReady && styles.audioBtnDisabled,
+              ]}
+              disabled={!audioReady}
               accessibilityRole="button"
               accessibilityLabel={
-                isPlaying ? "Stop pronunciation" : "Play pronunciation"
+                !audioReady
+                  ? "Loading pronunciation"
+                  : isPlaying
+                  ? "Stop pronunciation"
+                  : "Play pronunciation"
               }
             >
-              {isPlaying ? (
+              {!audioReady ? (
+                <ActivityIndicator />
+              ) : isPlaying ? (
                 <Stop width={24} height={24} />
               ) : (
                 <Play width={24} height={24} />
@@ -143,7 +202,11 @@ export default function MeaningTooltip({ visible, word, onClose }: Props) {
             <ActivityIndicator />
           </View>
         ) : err ? (
-          <Text style={styles.error}>{err}</Text>
+          isNotFound ? (
+            <Text style={styles.info}>No definition</Text>
+          ) : (
+            <Text style={styles.error}>{err}</Text>
+          )
         ) : entry ? (
           <ScrollView
             style={styles.bodyScroll}
@@ -156,16 +219,20 @@ export default function MeaningTooltip({ visible, word, onClose }: Props) {
               <View style={styles.synWrap}>
                 <Text style={styles.synLabel}>Synonyms: </Text>
                 <View style={styles.synChips}>
-                  {entry.synonyms.slice(0, 50).map((s) => (
-                    <View key={s} style={styles.synChip}>
-                      <Text style={styles.synChipText}>{s}</Text>
-                    </View>
-                  ))}
+                  {entry.synonyms.map(
+                    (
+                      s // no slice
+                    ) => (
+                      <View key={s} style={styles.synChip}>
+                        <Text style={styles.synChipText}>{s}</Text>
+                      </View>
+                    )
+                  )}
                 </View>
               </View>
             ) : null}
 
-            {renderTopMeanings(entry)}
+            {renderMeanings(entry)}
           </ScrollView>
         ) : null}
 
@@ -177,12 +244,12 @@ export default function MeaningTooltip({ visible, word, onClose }: Props) {
   );
 }
 
-function renderTopMeanings(entry: DictEntry) {
-  const parts = entry.meanings.slice(0, 4);
+function renderMeanings(entry: DictEntry) {
+  const parts = entry.meanings;
   return (
     <>
       {parts.map((m, i) => {
-        const defs = m.definitions.slice(0, 3);
+        const defs = m.definitions;
         return (
           <View key={`${m.partOfSpeech}-${i}`} style={{ marginBottom: 10 }}>
             {m.partOfSpeech ? (
@@ -190,10 +257,8 @@ function renderTopMeanings(entry: DictEntry) {
             ) : null}
             {defs.map((d, j) => (
               <View key={j} style={{ marginTop: 2 }}>
-                <Text style={styles.def}>• {truncate(d.definition, 220)}</Text>
-                {d.example ? (
-                  <Text style={styles.ex}>"{truncate(d.example, 160)}"</Text>
-                ) : null}
+                <DefinitionLine text={d.definition} />
+                {d.example ? <ExampleLine text={d.example} /> : null}
               </View>
             ))}
           </View>
@@ -201,11 +266,6 @@ function renderTopMeanings(entry: DictEntry) {
       })}
     </>
   );
-}
-
-function truncate(s: string, max: number) {
-  if (s.length <= max) return s;
-  return s.slice(0, max - 1) + "…";
 }
 
 const styles = StyleSheet.create({
@@ -243,6 +303,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   audioBtnActive: { backgroundColor: Color.white },
+  audioBtnDisabled: { opacity: 0.6 },
   bodyScroll: {
     maxHeight: 320,
     marginTop: 6,
@@ -271,7 +332,7 @@ const styles = StyleSheet.create({
   closeBtn: {
     alignSelf: "flex-end",
     marginTop: 10,
-    paddingHorizontal: 10, 
+    paddingHorizontal: 10,
     paddingVertical: 6,
     borderWidth: 1,
     borderRadius: 8,
@@ -279,5 +340,6 @@ const styles = StyleSheet.create({
   },
   closeText: { color: Color.gray, ...Typography.header13 },
   centerRow: { paddingVertical: 10, alignItems: "center" },
+  info: { color: Color.gray, fontSize: 14, marginTop: 4 },
   error: { color: "#c0392b", fontSize: 14, marginTop: 4 },
 });

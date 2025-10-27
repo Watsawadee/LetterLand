@@ -16,6 +16,8 @@ import Wordbank from "@/assets/backgroundTheme/wordbankBook";
 import { Color } from "@/theme/Color";
 import { Typography } from "@/theme/Font";
 import ArrowLeft from "@/assets/icon/ArrowLeft";
+import { normalizeWord } from "@/services/dictionaryService";
+import MeaningTooltip from "./MeaningTooltip";
 
 type Props = {
   visible: boolean;
@@ -47,11 +49,11 @@ export default function WordBankModal({ visible, onClose }: Props) {
     [data, page]
   );
 
-  // const [tipWord, setTipWord] = useState<string | null>(null);
+  const [tipWord, setTipWord] = useState<string | null>(null);
 
-  // useEffect(() => {
-  //   setTipWord(null);
-  // }, [page, source]);
+  useEffect(() => {
+    setTipWord(null);
+  }, [page, source]);
 
   useEffect(() => {
     if (visible) {
@@ -137,7 +139,7 @@ export default function WordBankModal({ visible, onClose }: Props) {
       <Pressable
         key={`${source}-${it.n}`}
         style={styles.lineRow}
-        // onPress={() => setTipWord(normalizeWord(it.word))}
+        onPress={() => setTipWord(normalizeWord(it.word))}
         accessibilityRole="button"
       >
         <Text style={styles.numCol}>{String(it.n).padStart(2, " ")}.</Text>
@@ -425,11 +427,11 @@ export default function WordBankModal({ visible, onClose }: Props) {
             </View>
           </View>
         </View>
-        {/* <MeaningTooltip
+        <MeaningTooltip
           visible={!!tipWord}
           word={tipWord}
           onClose={() => setTipWord(null)}
-        /> */}
+        />
       </View>
     </Modal>
   );
