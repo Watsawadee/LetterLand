@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     maxWidth: 1125,
     maxHeight: 850,
     paddingHorizontal: 0,
-    paddingTop: 16,
+    paddingTop: 20,
     paddingBottom: 24,
     flexDirection: "row",
     minHeight: 0,

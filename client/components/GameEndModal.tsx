@@ -215,11 +215,16 @@ export default function GameEndModal(props: GameEndModalProps) {
             </>
           ) : (
             <>
-              <DontGiveUpNotComplete />
-              <Text style={styles.subtitle}>
-                You didn’t quite make it this time, but don’t worry you’re
-                almost there!
-              </Text>
+             <Text style={styles.title}>
+        TIME'S UP
+      </Text>
+              <View style={styles.centerBlock}>
+      <DontGiveUpNotComplete />
+      </View>
+      <Text style={styles.subtitle}>
+        You didn’t quite make it this time, but don’t worry you’re almost there!
+      </Text>
+    
             </>
           )}
 
@@ -269,12 +274,27 @@ const styles = StyleSheet.create({
   icon: {
     paddingBottom: 15,
   },
+  centerBlock: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingBottom:8
+  },
   subtitle: {
     ...Typography.header25,
     color: Color.gray,
     marginBottom: 20,
     textAlign: "center",
     textOverflow: "wrapup",
+    paddingRight:10,
+    paddingLeft:10
+  },
+  title: {
+    ...Typography.header30,
+    color: Color.gray,
+    textAlign: "center",
+    textOverflow: "wrapup",
+    paddingTop:10,
+    paddingBottom:8
   },
   statsRow: {
     width: "100%",

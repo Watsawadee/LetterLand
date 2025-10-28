@@ -1,5 +1,6 @@
 import { StyleSheet } from "react-native";
 import { Color } from "./Color";
+import { Typography } from "./Font";
 
 export const AchievementCardStyles = StyleSheet.create({
   card: {
@@ -32,14 +33,14 @@ export const AchievementCardStyles = StyleSheet.create({
 
   // title + description
   title: {
-    fontSize: 17,
+    ...Typography.header16,
     fontWeight: "700",
     textAlign: "center",
     color: "#333",
   },
   description: {
     marginTop: 7,
-    fontSize: 13,
+    ...Typography.body13,
     color: "#666",
     textAlign: "center",
     lineHeight: 18,
@@ -59,7 +60,7 @@ export const AchievementCardStyles = StyleSheet.create({
     marginRight: 4,
   },
   coinText: {
-    fontSize: 20,
+    ...Typography.header20,
     fontWeight: "700",
     color: "#F4A300",
   },
@@ -111,7 +112,7 @@ export const AchievementCardStyles = StyleSheet.create({
   },
   claimTextStrong: {
     color: "white",
-    fontSize: 18,
+    ...Typography.header16,
     fontWeight: "800",
   },
   claimCoinWrap: {
@@ -121,7 +122,7 @@ export const AchievementCardStyles = StyleSheet.create({
   },
   claimCoinValue: {
     color: Color.white,
-    fontSize: 18,
+    ...Typography.header16,
     fontWeight: "700",
   },
 

@@ -24,6 +24,7 @@ import ArrowLeft from "@/assets/icon/ArrowLeft";
 
 import FloatingSearch from "@/components/Searchbar";
 import api from "@/services/api";
+import { Color } from "@/theme/Color";
 
 // Enable LayoutAnimation on Android
 if (
@@ -96,12 +97,12 @@ export default function Publicboard() {
             {/* Left side: Back button + Search */}
             <View style={styles.leftControls}>
               <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-                <ArrowLeft width={24} height={24} />
-                <Text style={[Typography.header30, { marginLeft:10  }]}>Public Board</Text>
+              <ArrowLeft width={24} height={24} color={Color.gray} />
+                <Text style={[Typography.header30, { color: Color.gray, marginLeft: 4 }]}>Public Board</Text>
               </TouchableOpacity>
 
               {/* Search bar */}
-              <View style={{ width: isWide ? 340 : 200, position: 'relative' }}>
+              <View style={{ width: isWide ? 320 : 200, position: 'relative', marginHorizontal: 10 }}>
                 <FloatingSearch
                   value={gameName}
                   onChangeText={(txt) => {
@@ -198,7 +199,7 @@ const styles = StyleSheet.create({
     maxWidth: 1125,
     maxHeight: 850,
     paddingHorizontal: 0,
-    paddingTop: 16,
+    paddingTop: 20,
     paddingBottom: 24,
     flexDirection: "row",
     minHeight: 0,
@@ -249,6 +250,5 @@ const styles = StyleSheet.create({
     gap: 16,
     flex: 1,
     minHeight: 0,
-    marginTop: 8,
   },
 });

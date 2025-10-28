@@ -86,8 +86,9 @@ export default function FloatingSearch({
   // Animate width from small circle → full bar
   const containerWidth = widthAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ["15%", "100%"], // expand to full width
+    outputRange: ["17%", "100%"], // expand to full width
   });
+
 
   return (
     <View style={styles.wrapper}>

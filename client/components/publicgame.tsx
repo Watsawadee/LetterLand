@@ -582,7 +582,7 @@ export default function PublicGames({
           columnWrapperStyle={{
             justifyContent: "flex-start",
             gap: 40,
-            marginBottom: 16,
+            marginBottom: 20,
           }}
         />
       ) : (

@@ -138,6 +138,10 @@
 // export default LoadingPopup;
 
 import CompleteGame from "@/assets/backgroundTheme/CompleteGame";
+import BoxingGlove from "@/assets/icon/BoxingGlove";
+import Coin from "@/assets/icon/Coin";
+import Fire from "@/assets/icon/Fire";
+import { Magnify } from "@/assets/icon/Magnify";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
     Animated,
@@ -161,9 +165,24 @@ const TIPS = [
 
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
+type ComponentName = "CompleteGame" | "Coin" | "Fire" | "BoxingGlove" | "Magnify";
+
 type BubbleLabel =
-    | { kind: "emoji"; value: string }
-    | { kind: "component"; name: "CompleteGame" };
+  | { kind: "emoji"; value: string }
+  | {
+      kind: "component";
+      name: ComponentName;
+      props?: Record<string, any>;
+      scale?: number;
+    };
+
+const ICON_REGISTRY: Record<ComponentName, React.ComponentType<any>> = {
+  CompleteGame,
+  Coin,
+  Fire,
+  BoxingGlove,
+  Magnify,
+};
 
 type BubbleInst = {
     id: number;
@@ -179,17 +198,31 @@ type BubbleInst = {
 
 function renderLabel(label: BubbleLabel, size: number) {
     if (label.kind === "emoji") {
-        return <Text style={{ fontSize: Math.max(20, size * 0.45) }}>{label.value}</Text>;
+      return <Text style={{ fontSize: Math.max(20, size * 0.45) }}>{label.value}</Text>;
     }
-    if (label.kind === "component" && label.name === "CompleteGame") {
-        return (
-            <View style={{ width: size * 0.8, height: size * 0.8, alignItems: "center", justifyContent: "center" }}>
-                <CompleteGame width="100%" height="100%" />
-            </View>
-        );
+    if (label.kind === "component") {
+      const Cmp = ICON_REGISTRY[label.name];
+      if (!Cmp) return null;
+  
+      const innerScale = label.scale ?? 0.8; // default similar to before
+      const dim = size * innerScale;
+  
+      return (
+        <View
+          style={{
+            width: dim,
+            height: dim,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Cmp width="100%" height="100%" {...(label.props ?? {})} />
+        </View>
+      );
     }
     return null;
-}
+  }
+
 
 /** Bubble view: input + visual (physics is outside) */
 function BubbleView({ inst, boxW, boxH }: { inst: BubbleInst; boxW: number; boxH: number }) {
@@ -294,13 +327,15 @@ const LoadingPopupCreateGame: React.FC<Props> = ({ visible, message, progress })
     useEffect(() => {
         if (!visible || box.w === 0 || box.h === 0) return;
 
-        const base: Array<{ id: number; label: BubbleLabel; size: number }> = [
-            { id: 1, label: { kind: "emoji", value: "🪄" }, size: 64 },
-            { id: 2, label: { kind: "emoji", value: "⭐" }, size: 56 },
-            { id: 3, label: { kind: "emoji", value: "💡" }, size: 52 },
-            { id: 4, label: { kind: "component", name: "CompleteGame" }, size: 64 },
-            { id: 5, label: { kind: "emoji", value: "🔎" }, size: 56 },
-        ];
+      const base: Array<{ id: number; label: BubbleLabel; size: number }> = [
+  { id: 1, label: { kind: "component", name: "Coin", scale: 0.6 }, size: 64 },
+  { id: 2, label: { kind: "component", name: "Fire" }, size: 56 },
+  { id: 3, label: { kind: "component", name: "BoxingGlove" }, size: 52 },
+  { id: 4, label: { kind: "component", name: "CompleteGame" }, size: 64 },
+  { id: 5, label: { kind: "component", name: "Magnify", props: { strokeWidth: 1.5 } }, size: 56 },
+  // you can still mix in emoji if you want:
+  // { id: 6, label: { kind: "emoji", value: "⭐" }, size: 56 },
+];
 
         const halfW = box.w / 2;
         const halfH = box.h / 2;

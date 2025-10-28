@@ -39,6 +39,14 @@ const UserOverviewCard = ({ coins, hint, onOpenSettings }: Props) => {
 
   const dialogWidth = Math.min(isTablet ? 560 : width - SP * 2, width - SP * 2);
   const dialogMaxHeight = Math.min(680, height - SP * 4);
+  const levelColors: Record<string, string> = {
+    A1: Color.A1,
+    A2: Color.A2,
+    B1: Color.B1,
+    B2: Color.B2,
+    C1: Color.C1,
+    C2: Color.C2,
+  };
 
   const [userId, setUserId] = useState<string | null>(null);
   const [gameType, setGameType] = useState<"crossword" | "wordsearch" | null>(null);
@@ -312,9 +320,9 @@ const UserOverviewCard = ({ coins, hint, onOpenSettings }: Props) => {
               </View>
             </View>
 
-            <ProgressBar
+  <ProgressBar
               progress={Math.min((user?.progressPercent ?? 0) / 100, 1)}
-              color="#FF6B9D"
+              color={levelColors[user.englishLevel] || Color.green}
               style={{
                 height: 12,
                 borderRadius: 999,
@@ -322,7 +330,7 @@ const UserOverviewCard = ({ coins, hint, onOpenSettings }: Props) => {
                 overflow: "hidden",
               }}
             />
-          </Pressable>
+</Pressable>
 
           {/* Dashboard */}
           <View
