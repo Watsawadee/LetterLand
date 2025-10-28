@@ -8,29 +8,23 @@ import Clock from "@/assets/icon/Clock";
 import Pencil from "@/assets/icon/Pencil";
 import {
     Axis,
-    VictoryAxis, VictoryBar, VictoryChart, VictoryLabel, VictoryLine, VictoryPie, VictoryScatter, VictoryTheme, VictoryTooltip,
+    VictoryAxis, VictoryBar, VictoryChart, VictoryLabel, VictoryLine, VictoryScatter, VictoryTheme, VictoryTooltip,
     VictoryVoronoiContainer,
 } from "victory-native";
 import { Typography } from "@/theme/Font";
-import NoGamePlayed from "@/assets/backgroundTheme/NoGamePlayed";
 import { Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import ArrowLeft from "@/assets/icon/ArrowLeft";
-import CloseIcon from "@/assets/icon/CloseIcon";
 import WordBankModal from "./WordBank";
 import Book from "@/assets/icon/Book";
 import { ButtonStyles } from "@/theme/ButtonStyles";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import { addDays, addMonths, addWeeks, addYears, endOfMonth, endOfWeek, endOfYear, format, startOfMonth, startOfWeek, startOfYear, subMonths, subWeeks, subYears } from "date-fns";
-import { useColorScheme } from "react-native";
-import { Circle, Defs, LinearGradient, Path, Stop } from "react-native-svg";
-import { FloatingBubble } from "@/assets/images/bubblePopup";
+import { addDays, endOfMonth, endOfWeek, endOfYear, format, startOfMonth, startOfWeek, startOfYear} from "date-fns";
 import BoxingGlove from "@/assets/icon/BoxingGlove";
 import Fire from "@/assets/icon/Fire";
 import Trophy from "@/assets/icon/Trophy";
-import { ColorProperties } from "react-native-reanimated/lib/typescript/Colors";
 import Carousel from "react-native-reanimated-carousel";
-import { AverageGamesByLevelPeerMultipleOrError } from "@/libs/type";
+
 
 function getWeekDates(startDateStr: string, labels: string[]) {
     const startDate = new Date(startDateStr);
@@ -382,15 +376,6 @@ const UserOverviewPerformance = () => {
                         },
                     }}
                     />
-
-
-
-                    {/* <Defs>
-                                            <LinearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                                                <Stop offset="0%" stopColor={Color.blue} />
-                                                <Stop offset="100%" stopColor="#4584ccff" />
-                                            </LinearGradient>
-                                        </Defs> */}
                     <VictoryBar
                         data={periodSeries}
                         barWidth={40}
@@ -452,20 +437,6 @@ const UserOverviewPerformance = () => {
                             ]}
                         />
                     ])}
-
-                    {/* {peerSeries.length > 0 && peerSeries.some((d: any) => d.y !== 0) && ([
-                    <VictoryLine
-                        data={peerSeries}
-                        style={{ data: { stroke: Color.green, strokeWidth: 3 } }}
-                    />,
-                    <VictoryScatter
-                        data={peerSeries}
-                        size={5}
-                        style={{ data: { fill: Color.green } }}
-                        labels={({ datum }) => datum.y.toFixed(1)}
-                        labelComponent={<VictoryLabel dy={-10} style={{ fill: Color.green, fontSize: 12, stroke: Color.green, strokeWidth: 1 }} />}
-                    />
-                ])} */}
 
                 </VictoryChart>
             </View>
@@ -600,43 +571,7 @@ const UserOverviewPerformance = () => {
                                                     : "Games Played"}
 
                                             </Text>
-                                            {/* <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                                        <View style={{ display: "flex", flexDirection: "row" }}>
-                                            {(["week", "month", "year"] as const).map((p) => (
-                                                <Button
-                                                    key={p}
-                                                    onPress={() => {
-                                                        setPeriod(p);
-                                                        setShowPicker(true);
-                                                        setTempDate(selectedDate);
-                                                    }}
-                                                    style={{
-                                                        backgroundColor: p === period ? Color.blue : Color.white,
-                                                        paddingHorizontal: 8,
-                                                        borderRadius: 999,
-                                                        marginHorizontal: 6,
-                                                    }}
-                                                    rippleColor={"transparent"}
-                                                >
-                                                    <Text style={{ color: p === period ? Color.white : Color.blue, fontWeight: "bold" }}>
-                                                        {p.charAt(0).toUpperCase() + p.slice(1)}
-                                                    </Text>
-                                                </Button>
-                                            ))}
-                                        </View>
-                                        <View style={{ display: "flex", flexDirection: "row", justifyContent: "flex-end", gap: 10 }}>
-                                            <View style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 5 }}>
-                                                <View style={{ backgroundColor: Color.blue, width: 25, height: 3, borderRadius: 20 }} />
-                                                <Text style={{ color: Color.blue, fontWeight: Typography.header20.fontWeight }}>Your game played</Text>
-                                            </View>
-                                            <View style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 5 }}>
-                                                <View style={{ backgroundColor: Color.green, width: 25, height: 3, borderRadius: 20 }} />
-                                                <Text style={{ color: Color.green, fontWeight: Typography.header20.fontWeight }}>Average of peers</Text>
-                                            </View>
-                                        </View>
-                                    </View> */}
-
-
+    
                                             {loadingChart || loadingPeer ? (
                                                 <View style={{ height: CHART_H, justifyContent: "center", alignItems: "center" }}>
                                                     <ActivityIndicator size="large" color={Color.gray} />
@@ -744,32 +679,7 @@ const UserOverviewPerformance = () => {
                                 </View>
                             </Card>
 
-                                    {/* 🟩 Total Playtime */}
-                                    <Card
-                                        style={{
-                                            width: "25%",
-                                            height: "60%",
-                                            backgroundColor: "#F2F8F9",
-                                            padding: 12,
-                                            justifyContent: "center",
-                                            alignItems: "center",
-                                            borderRadius: 20,
-                                        }}
-                                    >
-                                        <View style={{ flexDirection: "row", alignItems: "center" }}>
-                                            <Clock width={50} height={50} />
-                                            <View style={{ marginLeft: 10 }}>
-                                                <Text style={{ fontSize: Typography.header20.fontSize, color: Color.gray }}>Total Playtime</Text>
-                                                <Text style={{ color: Color.gray, fontSize: Typography.header16.fontSize }}>
-                                                    {totalPlaytime && "error" in totalPlaytime
-                                                        ? "Error"
-                                                        : totalPlaytime && "totalPlaytime" in totalPlaytime
-                                                            ? `${totalPlaytime.totalPlaytime} Hour(s)`
-                                                            : "0 Hour(s)"}
-                                                </Text>
-                                            </View>
-                                        </View>
-                                    </Card>
+                                  
                             {/* 🟩 Total Playtime */}
                             <Card
                                 style={{
@@ -802,7 +712,7 @@ const UserOverviewPerformance = () => {
                                             key={idx}
                                             style={{
                                                 width: "25%",
-                                                height: "60%",
+                                                height: "55%",
                                                 backgroundColor: "#F2F8F9",
                                                 // paddingHorizontal: 20,
                                                 paddingRight: 20,
@@ -829,44 +739,6 @@ const UserOverviewPerformance = () => {
                             </View>
                         </View >
                         {showPicker && (
-                            <DateTimePickerModal
-                                isVisible={showPicker}
-                                mode="date"
-                                display="inline"
-                                date={selectedDate}
-                                onConfirm={() => {
-                            {streakCards.map((card, idx) => (
-                                <Card
-                                    key={idx}
-                                    style={{
-                                        width: "24%",
-                                        height: "55%",
-                                        backgroundColor: "#F2F8F9",
-                                        // paddingHorizontal: 20,
-                                        paddingRight: 20,
-                                        justifyContent: "center",
-                                        alignItems: "center",
-                                        borderRadius: 20,
-                                    }}
-                                >
-                                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-                                        {/* Render the icon */}
-                                        <card.icon width={50} height={50} />
-                                        <View style={{ marginLeft: 3, gap: 6 }}>
-                                            <Text style={{ width: "100%", textAlign: "center",fontSize: 16, color: Color.gray }}>{card.label}</Text>
-                                            <Text style={{
-                                                color: Color.gray, fontSize: 20, textAlign: "center",fontWeight: "700"
-                                            }}>
-                                                {card.value as any}
-                                            </Text>
-                                        </View>
-                                    </View>
-                                </Card>
-                            ))}
-                        </ScrollView>
-                    </View>
-                </View >
-                {showPicker && (
                     <DateTimePickerModal
                         isVisible={showPicker}
                         mode="date"
@@ -950,200 +822,10 @@ const UserOverviewPerformance = () => {
                         )}
 
                     </View >
-                    {/* <Portal >
-                <Modal
-                    visible={modalVisible}
-                    onDismiss={() => setModalVisible(false)}
-                    contentContainerStyle={{
-                        backgroundColor: Color.white,
-                        margin: 20,
-                        borderRadius: 16,
-                        alignSelf: "center",
-                        paddingVertical: 20,
-                        paddingHorizontal: 30,
-                        maxHeight: "100%",
-                        width: "70%",
-                    }}
-                >
-                    {loading ? (
-                        <ActivityIndicator />
-                    ) : isSuccess(TotalgamesData) && isSuccess(peerAvgData) ? (
-                        <View style={{ width: "90%", flexDirection: "column", gap: 30, height: "100%", alignSelf: "center" }}>
-                            <View style={{ flexDirection: "row" }}>
-                                <View style={{ flexDirection: "column", alignItems: "center", width: "100%" }}>
-                                    <Text style={{ fontWeight: "bold", fontSize: 20, color: Color.gray, marginBottom: 5 }}>
-                                        Overall Information
-                                    </Text>
-                                    <Text style={{ fontWeight: "bold", fontSize: 16, color: Color.gray }}>
-                                        {period.charAt(0).toUpperCase() + period.slice(1)}:{" "}
-                                        {formatDateRange(
-                                            TotalgamesData.range.start,
-                                            TotalgamesData.range.end,
-                                            period)}
-                                    </Text>
-                                </View>
-                                <IconButton
-                                    icon={(p) => <CloseIcon width={18} height={18} fillColor={Color.gray} {...p} />}
-                                    onPress={() => setModalVisible(false)}
-                                    style={{ margin: 0 }}
-                                    accessibilityLabel="Close dialog"
-                                />
-                            </View>
-                            <ScrollView style={{ flexGrow: 0 }}
-                                contentContainerStyle={{ paddingBottom: 100 }}
-                                keyboardShouldPersistTaps="handled"
-                                nestedScrollEnabled={true}>
-                                <View style={{ flexDirection: "column", justifyContent: "space-between", height: "100%" }}>
-
-                                    <View style={{ width: "100%", height: "30%", }}>
-                                        <Text style={{ fontWeight: "bold", fontSize: 20, color: Color.gray, marginBottom: 5, textAlign: "left" }}>
-                                            Gameplayed Streak
-                                        </Text>
-                                        <View style={{ display: "flex", flexDirection: "row", gap: 5, justifyContent: "space-around", height: "100%" }}>
-                                            {loadingStreak ? (
-                                                <ActivityIndicator />
-                                            ) : (
-                                                streakCards.map((card, idx) => (
-                                                    <Card key={idx} style={{ backgroundColor: Color.blue, padding: 10, height: "80%", width: "32%", flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-                                                        <Text style={{ color: Color.white, fontWeight: "bold", fontSize: 16, textAlign: "center" }}>
-                                                            {card.label}
-                                                        </Text>
-                                                        <Text style={{ color: Color.white, fontSize: 22, marginTop: 8, textAlign: "center" }}>
-                                                            {card.value as any}
-                                                        </Text>
-                                                    </Card>
-                                                ))
-                                            )}
-                                        </View>
-                                    </View>
-                                    <View style={{ width: "100%" }}>
-                                        <Text style={{ fontWeight: "bold", fontSize: 20, color: Color.gray, marginBottom: 5, textAlign: "left" }}>
-                                            User Current Progress
-                                        </Text>
-                                        {loadingProgress ? (
-                                            <ActivityIndicator />
-                                        ) : isSuccess(userProgress) ? (
-                                            <>
-                                                <View
-                                                    style={{
-                                                        alignItems: "center",
-                                                        justifyContent: "center",
-                                                        // marginVertical: 10,
-                                                    }}
-                                                >
-                                                    <View style={{ position: "relative", alignItems: "center", justifyContent: "center" }}>
-                                                        <VictoryPie
-                                                            data={[
-                                                                { x: "Progress", y: userProgress.donut.filled },
-                                                                { x: "Remaining", y: userProgress.donut.remaining },
-                                                            ]}
-                                                            width={250}
-                                                            height={250}
-                                                            colorScale={[Color.green, "#EAEAEA"]}
-                                                            innerRadius={70}
-                                                            cornerRadius={5}
-                                                            labels={() => null}
-                                                            padding={45}
-                                                        />
-                                                        <View
-                                                            style={{
-                                                                position: "absolute",
-                                                                top: "50%",
-                                                                left: "50%",
-                                                                transform: [{ translateX: -240 }, { translateY: -20 }],
-                                                                alignItems: "center",
-                                                                justifyContent: "center",
-                                                            }}
-                                                        >
-                                                            <Text
-                                                                style={{
-                                                                    fontSize: 25,
-                                                                    fontWeight: "bold",
-                                                                    color: Color.gray,
-                                                                    textAlign: "center",
-                                                                }}
-                                                            >
-                                                                {userProgress.donut.filled.toFixed(0)}%
-                                                            </Text>
-                                                            <Text
-                                                                style={{
-                                                                    color: Color.gray,
-                                                                    fontSize: 16,
-                                                                    textAlign: "center",
-                                                                    fontWeight: "500",
-                                                                }}
-                                                            >
-                                                                {userProgress.englishLevel}
-                                                            </Text>
-                                                        </View>
-                                                    </View>
-
-                                                    <View style={{ minWidth: "70%", flexDirection: "column", justifyContent: "center", gap: 20 }}>
-                                                        {userProgress.summary.map((line, idx) => (
-                                                            <Card
-                                                                key={idx}
-                                                                mode="elevated"
-                                                                style={{
-                                                                    backgroundColor: "#F8FBFF",
-                                                                    borderRadius: 14,
-                                                                    minWidth: "90%",
-                                                                    paddingVertical: 10,
-                                                                    paddingHorizontal: 15,
-                                                                    elevation: 2,
-                                                                    flexDirection: "row",
-                                                                    alignItems: "center",
-                                                                }}
-                                                            >
-                                                                <View style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
-                                                                    <View
-                                                                        style={{
-                                                                            width: 32,
-                                                                            height: 32,
-                                                                            borderRadius: 8,
-                                                                            backgroundColor: "#FFE58B",
-                                                                            flexDirection: "row",
-                                                                            justifyContent: "center",
-                                                                            alignItems: "center",
-                                                                            marginRight: 12,
-                                                                        }}
-                                                                    >
-                                                                        <Text style={{ color: "#A67C00", fontWeight: "bold", fontSize: 18 }}>!</Text>
-                                                                    </View>
-                                                                    <Text
-                                                                        style={{
-                                                                            flexShrink: 1,
-                                                                            color: Color.blue,
-                                                                            fontSize: Typography.body16.fontSize,
-                                                                            fontWeight: "500",
-                                                                            lineHeight: 22,
-                                                                        }}
-                                                                    >
-                                                                        {line}
-                                                                    </Text>
-                                                                </View>
-                                                            </Card>
-                                                        ))}
-                                                    </View>
-                                                </View>
-                                            </>
-                                        ) : (
-                                            <Text style={{ color: Color.gray }}>No progress data available</Text>
-                                        )}
-                                    </View>
-                                </View>
-                            </ScrollView>
-
-
-                        </View>
-                    ) : (
-                        <Text>No data available</Text>
-                    )
-                    }
-
-                </Modal >
-            </Portal > */}
                 </>
             )}
+                    
+
         </View>
     );
 };
