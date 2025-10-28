@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import {
   View,
@@ -6,7 +6,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   useWindowDimensions,
-  Image,
   AppState,
   AppStateStatus,
 } from "react-native";
@@ -16,7 +15,6 @@ import { ButtonStyles } from "@/theme/ButtonStyles";
 import { Typography } from "@/theme/Font";
 import MyGamesRow from "@/components/mygame";
 import UserOverviewCard from "@/components/UserOverViewCard";
-import mascot from "@/assets/images/mascot.png";
 import Book from "@/assets/icon/Book";
 import AchievementsRow from "../../components/AchievementRow";
 import { fetchUserCoins } from "@/services/achievementService";
@@ -26,6 +24,10 @@ import UserSettingCard from "@/components/UserSettingCard";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useUserLastFinishedGame } from "@/hooks/useGetUserLastFinishedGame";
 import { formatDistanceToNow } from "date-fns";
+import CoinMascot from "@/assets/icon/CoinMascot";
+import NoseeMascot from "@/assets/icon/NoseeMascot";
+import PuzzleSolveMascot from "@/assets/icon/PuzzleSolveMascot";
+import GreetingMascot from "@/assets/icon/GreetingMascot";
 
 export default function Home() {
   const router = useRouter();
@@ -52,6 +54,27 @@ export default function Home() {
 
   const displayName =
     (profile && !("error" in profile) && profile.username) || username || "";
+
+  // ✅ Store a React element (works even if your SVG modules export JSX elements)
+  const [mascotEl, setMascotEl] = useState<React.ReactElement | null>(
+    <GreetingMascot width="100%" height="100%" />
+  );
+
+  const resolveMascotForMessage = (msg: string): React.ReactElement => {
+    // greetings group → one mascot
+    if (
+      /Good morning/.test(msg) ||
+      /Good afternoon/.test(msg) ||
+      /Good evening/.test(msg) ||
+      /Welcome back/.test(msg)
+    ) {
+      return <GreetingMascot width="100%" height="100%" />;
+    }
+    if (/Long time no see/.test(msg)) return <NoseeMascot width="100%" height="100%" />;
+    if (/Your last puzzle/.test(msg)) return <PuzzleSolveMascot width="100%" height="100%" />;
+    if (/coins/.test(msg)) return <CoinMascot width="100%" height="100%" />;
+    return <GreetingMascot width="100%" height="100%" />;
+  };
 
   useEffect(() => {
     const loadCoins = async () => {
@@ -85,31 +108,38 @@ export default function Home() {
         const key = `lastVisit_${userId}`;
         const lastVisitStr = await AsyncStorage.getItem(key);
 
-        const hour = now.getHours();
-        const timeGreeting =
-          hour < 12
-            ? `Good morning 🌞 ${userName}!`
-            : hour < 18
-            ? `Good afternoon 🌤️ ${userName}!`
-            : `Good evening 🌙 ${userName}!`;
-
-        let visitMsg = "";
-        if (lastVisitStr) {
-          const lastVisit = new Date(lastVisitStr);
-          const diffDays =
-            (now.getTime() - lastVisit.getTime()) / (1000 * 60 * 60 * 24);
-          if (diffDays >= 2) {
-            visitMsg = `Long time no see, ${userName}! You haven’t entered the app for ${Math.floor(
-              diffDays
-            )} days 👀`;
-          } else if (diffDays >= 1) {
-            visitMsg = `Welcome back, ${userName}! It’s been a day`;
-          } else {
-            visitMsg = `Welcome, ${userName}! Great to see you again today`;
-          }
+        const capitalizeFirst = (name: string) =>
+        name.charAt(0).toUpperCase() + name.slice(1);
+      
+      const userDisplayName = userName ? capitalizeFirst(userName) : "";
+      
+      // Greeting messages
+      const hour = now.getHours();
+      const timeGreeting =
+        hour < 12
+          ? `Good morning 🌞 ${userDisplayName}!`
+          : hour < 18
+          ? `Good afternoon 🌤️ ${userDisplayName}!`
+          : `Good evening 🌙 ${userDisplayName}!`;
+      
+      let visitMsg = "";
+      if (lastVisitStr) {
+        const lastVisit = new Date(lastVisitStr);
+        const diffDays =
+          (now.getTime() - lastVisit.getTime()) / (1000 * 60 * 60 * 24);
+      
+        if (diffDays >= 2) {
+          visitMsg = `Long time no see, ${userDisplayName}! You haven’t entered the app for ${Math.floor(
+            diffDays
+          )} days 👀`;
+        } else if (diffDays >= 1) {
+          visitMsg = `Welcome back, ${userDisplayName}! It’s been a day`;
         } else {
-          visitMsg = `Hi ${userName}! Nice to meet you for the first time`;
+          visitMsg = `Welcome, ${userDisplayName}! Great to see you again today`;
         }
+      } else {
+        visitMsg = `Hi ${userDisplayName}! Nice to meet you for the first time`;
+      }      
 
         let gameMsg =
           "You haven’t finished any games yet — let’s start one today!";
@@ -136,6 +166,7 @@ export default function Home() {
           messages[Math.floor(Math.random() * messages.length)];
 
         setGreeting(randomMessage);
+        setMascotEl(resolveMascotForMessage(randomMessage));
         await AsyncStorage.setItem(key, now.toISOString());
       } catch (err) {
         console.error("Error tracking last visit:", err);
@@ -180,16 +211,18 @@ export default function Home() {
         >
           <View style={styles.headerRow}>
             <View style={styles.greetingContainer}>
-              <Image
-                source={mascot}
+              <View
                 style={{
-                  width: 90,
-                  height: 90,
+                  width: 95,
+                  height: 95,
                   borderRadius: 25,
                   transform: [{ scaleX: -1 }],
+                  overflow: "hidden",
                 }}
-                resizeMode="contain"
-              />
+              >
+                {mascotEl}
+              </View>
+
               <View style={{ flex: 1 }}>
                 <Text style={[Typography.header25, { marginBottom: 4 }]}>
                   Hello {displayName ? capitalizeWords(displayName) : ""}
@@ -315,7 +348,7 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 1125,
     paddingHorizontal: 0,
-    paddingTop: 16,
+    paddingTop: 20,
     paddingBottom: 24,
     flexDirection: "row",
   },
@@ -327,7 +360,7 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: "row",
     alignItems: "flex-start",
-    marginBottom: 35,
+    marginBottom: 30,
   },
   section: {
     marginBottom: 1,
@@ -336,7 +369,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 2,
+    marginBottom: 1,
   },
   sectionContent: {},
   link: {
