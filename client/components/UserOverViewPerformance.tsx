@@ -475,8 +475,8 @@ const UserOverviewPerformance = () => {
     return (
         <View style={{ width: "100%", height: "100%", gap: 15 }}>
             {(loading || !isSuccess(gamesData) || sortedResults.length === 0) ? (
-                <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-                    <ActivityIndicator size="large" color={Color.blue} />
+                <View style={{ flex: 1, justifyContent: "center", alignItems: "center", gap: 20, width: "100%" }}>
+                    <ActivityIndicator size="large" color={Color.gray} />
                     <Text style={{ color: Color.gray, marginTop: 8, fontWeight: "600" }}>
                         Loading dashboard...
                     </Text>
@@ -522,7 +522,7 @@ const UserOverviewPerformance = () => {
                             <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 10 }}>
                                 <View style={{ alignItems: "center" }}>
                                     {loading ? (
-                                        <ActivityIndicator size="large" />
+                                        <ActivityIndicator size="large" color={Color.gray} />
                                     ) : isSuccess(gamesData) && isSuccess(peerAvgData) ? (
                                         <Card
                                             style={{
@@ -639,7 +639,7 @@ const UserOverviewPerformance = () => {
 
                                             {loadingChart || loadingPeer ? (
                                                 <View style={{ height: CHART_H, justifyContent: "center", alignItems: "center" }}>
-                                                    <ActivityIndicator size="large" color={Color.blue} />
+                                                    <ActivityIndicator size="large" color={Color.gray} />
                                                     <Text style={{ color: Color.gray, marginTop: 8, fontWeight: "600" }}>
                                                         Loading chart data...
                                                     </Text>
@@ -675,7 +675,7 @@ const UserOverviewPerformance = () => {
                                                     loop={false}
                                                 />
                                             ) : loadingChart ? (
-                                                <ActivityIndicator size="large" />
+                                                <ActivityIndicator size="large" color={Color.gray} />
                                             ) : (
                                                 <Text style={{ color: Color.gray }}>No chart data available</Text>
                                             )}

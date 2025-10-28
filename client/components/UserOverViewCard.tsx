@@ -1,8 +1,8 @@
 // components/UserOverviewCard.tsx
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Image, Platform, useWindowDimensions, StyleSheet, Pressable } from "react-native";
-import { useRouter, useFocusEffect } from "expo-router";
-import { Button, Card, Dialog, IconButton, Portal, ProgressBar, Text, ActivityIndicator } from "react-native-paper";
+import { View, Image, Platform, useWindowDimensions, StyleSheet, Pressable, ActivityIndicator } from "react-native";
+import { useRouter, useFocusEffect, usePathname } from "expo-router";
+import { Button, Card, Dialog, IconButton, Portal, ProgressBar, Text } from "react-native-paper";
 import { useQueryClient } from "@tanstack/react-query";
 import { VictoryPie } from "victory-native";
 import { getLoggedInUserId } from "@/utils/auth";
@@ -50,19 +50,25 @@ const UserOverviewCard = ({ coins, hint, onOpenSettings }: Props) => {
   const { data: userProgress, isLoading: loadingProgress, refetch: refetchProgress } = useUserProgress();
   const { data: user, isLoading, refetch: refetchUser } = useUserProfile();
 
+  const pathname = usePathname();
+  const onDashboard = (pathname ?? "").toLowerCase() === "/dashboard";
+
   useFocusEffect(
-  useCallback(() => {
-    refetchUser();
-    refetchProgress();
-  }, [refetchUser, refetchProgress])
-);
+    useCallback(() => {
+      refetchUser();
+      refetchProgress();
+    }, [refetchUser, refetchProgress])
+  );
 
   useEffect(() => {
     const fetchId = async () => setUserId(await getLoggedInUserId());
     fetchId();
   }, []);
 
-  if (!userId || isLoading || !user) return <Text>Loading...</Text>;
+  if (!userId || isLoading || !user) return (<View style={{ flexDirection: "column", height: "100%", justifyContent: "center" }}>
+    <ActivityIndicator color={Color.gray} />
+    <Text style={{ textAlign: "center", color: Color.gray }}>...Loading</Text>
+  </View>)
   if ("error" in user) return <Text>Failed to load user data.</Text>;
 
   const handleSelect = (type: "crossword" | "wordsearch") => {
@@ -83,10 +89,10 @@ const UserOverviewCard = ({ coins, hint, onOpenSettings }: Props) => {
         width: "100%",
         maxWidth: 720,
         alignSelf: "center",
-        paddingRight:30,
-        paddingLeft:30,
-        paddingTop:25,
-        paddingBottom:30,
+        paddingRight: 30,
+        paddingLeft: 30,
+        paddingTop: 25,
+        paddingBottom: 30,
         borderRadius: 24,
         backgroundColor: "white",
       }}
@@ -95,17 +101,17 @@ const UserOverviewCard = ({ coins, hint, onOpenSettings }: Props) => {
         <View style={{ flexDirection: "column", gap: 20 }}>
           {/* Header */}
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <Text variant="titleLarge" style={{ fontWeight: "700", fontSize: 28, color: "#2D3142", marginTop: 9}}>
-             {user.username.charAt(0).toUpperCase() + user.username.slice(1).toLowerCase()}
+            <Text variant="titleLarge" style={{ fontWeight: "700", fontSize: 28, color: "#2D3142", marginTop: 9 }}>
+              {user.username.charAt(0).toUpperCase() + user.username.slice(1).toLowerCase()}
             </Text>
             <Button
               onPress={onOpenSettings}
-              contentStyle={{ padding: 8}}
+              contentStyle={{ padding: 8 }}
               style={{ width: undefined, minWidth: 0, padding: 0, borderRadius: 50 }}
               theme={{ roundness: 1 }}
               rippleColor="transparent"
               compact
-              icon={({ size }) => <SettingIcon width={ 24} height={24} fill="#2D3142" />}
+              icon={({ size }) => <SettingIcon width={24} height={24} fill="#2D3142" />}
             >
               {""}
             </Button>
@@ -183,7 +189,7 @@ const UserOverviewCard = ({ coins, hint, onOpenSettings }: Props) => {
               }}
             >
               <View style={{ width: 36, height: 36, marginRight: 2 }}>
-                <View style={{ flexDirection: "row", marginBottom: 2}}>
+                <View style={{ flexDirection: "row", marginBottom: 2 }}>
                   <View
                     style={{
                       width: 14,
@@ -247,76 +253,76 @@ const UserOverviewCard = ({ coins, hint, onOpenSettings }: Props) => {
             </View>
           </View>
 
-{/* Level progress (whole block is clickable) */}
-<Pressable
-  onPress={() => setShowProgressDialog(true)}
-  accessibilityRole="button"
-  accessibilityLabel="Open level progress details"
-  android_ripple={{ color: "#00000010", borderless: false }}
-  style={{
-    backgroundColor: "#ffffff",
-    padding: 20,
-    borderRadius: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  }}
->
-  <View
-    style={{
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      marginBottom: 12,
-    }}
-  >
-    <View style={{ flexDirection: "row", alignItems: "center" }}>
-      <Text style={{ fontSize: 24, marginRight: 12 }}>📖</Text>
-      <View>
-        <Text style={{ fontWeight: "700", fontSize: 16, color: "#2D3142" }}>
-          Level Progress
-        </Text>
-        <Text style={{ fontSize: 12, color: "#8B8D98" }}>Keep playing to level up!</Text>
-      </View>
-    </View>
+          {/* Level progress (whole block is clickable) */}
+          <Pressable
+            onPress={() => setShowProgressDialog(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Open level progress details"
+            android_ripple={{ color: "#00000010", borderless: false }}
+            style={{
+              backgroundColor: "#ffffff",
+              padding: 20,
+              borderRadius: 20,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.08,
+              shadowRadius: 8,
+              elevation: 3,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 12,
+              }}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Text style={{ fontSize: 24, marginRight: 12 }}>📖</Text>
+                <View>
+                  <Text style={{ fontWeight: "700", fontSize: 16, color: "#2D3142" }}>
+                    Level Progress
+                  </Text>
+                  <Text style={{ fontSize: 12, color: "#8B8D98" }}>Keep playing to level up!</Text>
+                </View>
+              </View>
 
-    <View
-      style={{
-        backgroundColor: (() => {
-          const levelColors = {
-            A1: "#F2B9DD",
-            A2: "#FB7FC7",
-            B1: "#F19DB8",
-            B2: "#FB6C97",
-            C1: "#C8A8E0",
-            C2: "#AE7EDF",
-          };
-          return levelColors[user.englishLevel] || "#FFE5F0";
-        })(),
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 20,
-      }}
-    >
-      <Text style={{ fontWeight: "700", fontSize: 14, color: "#FFFFFF" }}>
-        {user.englishLevel}
-      </Text>
-    </View>
-  </View>
+              <View
+                style={{
+                  backgroundColor: (() => {
+                    const levelColors = {
+                      A1: "#F2B9DD",
+                      A2: "#FB7FC7",
+                      B1: "#F19DB8",
+                      B2: "#FB6C97",
+                      C1: "#C8A8E0",
+                      C2: "#AE7EDF",
+                    };
+                    return levelColors[user.englishLevel] || "#FFE5F0";
+                  })(),
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderRadius: 20,
+                }}
+              >
+                <Text style={{ fontWeight: "700", fontSize: 14, color: "#FFFFFF" }}>
+                  {user.englishLevel}
+                </Text>
+              </View>
+            </View>
 
-  <ProgressBar
-    progress={Math.min((user?.progressPercent ?? 0) / 100, 1)}
-    color="#FF6B9D"
-    style={{
-      height: 12,
-      borderRadius: 999,
-      backgroundColor: "#E7E6E6",
-      overflow: "hidden",
-    }}
-  />
-</Pressable>
+            <ProgressBar
+              progress={Math.min((user?.progressPercent ?? 0) / 100, 1)}
+              color="#FF6B9D"
+              style={{
+                height: 12,
+                borderRadius: 999,
+                backgroundColor: "#E7E6E6",
+                overflow: "hidden",
+              }}
+            />
+          </Pressable>
 
           {/* Dashboard */}
           <View
@@ -329,8 +335,8 @@ const UserOverviewCard = ({ coins, hint, onOpenSettings }: Props) => {
             }}
           >
             <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
-            <Dashboard/>
-              <Text style={{ fontSize: 14, color: "#2D3142", flex: 1, lineHeight: 20 , marginLeft:15 }}>
+              <Dashboard />
+              <Text style={{ fontSize: 14, color: "#2D3142", flex: 1, lineHeight: 20, marginLeft: 15 }}>
                 Access all your stats and updates in the dashboard.
               </Text>
             </View>
@@ -339,7 +345,7 @@ const UserOverviewCard = ({ coins, hint, onOpenSettings }: Props) => {
               style={{ backgroundColor: Color.A1, borderRadius: 16 }}
               contentStyle={{ height: 48 }}
               labelStyle={{ fontSize: 15, fontWeight: "700", color: "#FFF" }}
-              onPress={() => router.push("/Dashboard")}
+              onPress={onDashboard ? undefined : () => router.push("/Dashboard")}
             >
               View Dashboard →
             </Button>
@@ -356,8 +362,8 @@ const UserOverviewCard = ({ coins, hint, onOpenSettings }: Props) => {
             }}
           >
             <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
-            <ExploreIcon />
-              <Text style={{ fontSize: 14, color: "#2D3142", flex: 1, lineHeight: 20,  marginLeft:15 }}>
+              <ExploreIcon />
+              <Text style={{ fontSize: 14, color: "#2D3142", flex: 1, lineHeight: 20, marginLeft: 15 }}>
                 Explore and solve puzzles from the community
               </Text>
             </View>
@@ -569,26 +575,26 @@ const UserOverviewCard = ({ coins, hint, onOpenSettings }: Props) => {
         <Dialog
           visible={showProgressDialog}
           onDismiss={() => setShowProgressDialog(false)}
-          style={{ 
-            borderRadius: 16, 
-            width: dialogWidth, 
-            maxHeight: dialogMaxHeight, 
+          style={{
+            borderRadius: 16,
+            width: dialogWidth,
+            maxHeight: dialogMaxHeight,
             alignSelf: "center",
             backgroundColor: "#FFFFFF",
           }}
         >
           <View style={{ paddingHorizontal: 29, paddingTop: 10, paddingBottom: 4 }}>
-            <Text style={{ 
-              fontSize: 25, 
-              fontWeight: "700", 
+            <Text style={{
+              fontSize: 25,
+              fontWeight: "700",
               color: Color.black,
               marginBottom: 5,
-              marginLeft:19,
+              marginLeft: 19,
             }}>
               User Current Progress
             </Text>
           </View>
-          
+
           <Dialog.ScrollArea style={{ borderTopWidth: 0, borderBottomWidth: 0 }}>
             <View style={{ paddingHorizontal: 29, paddingBottom: 15 }}>
               {loadingProgress ? (
