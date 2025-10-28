@@ -98,18 +98,16 @@ export const getUserProfile = async (
 
 
     const now = new Date();
-    const thisWeekStart = startOfWeek(now, { weekStartsOn: 0 }); // Sunday 12:00 AM
-    const thisWeekEnd = endOfWeek(now, { weekStartsOn: 0 });     // Saturday 11:59:59 PM
+    const thisWeekStart = startOfWeek(now, { weekStartsOn: 0 });
+    const thisWeekEnd = endOfWeek(now, { weekStartsOn: 0 });
     const lastWeekStart = addDays(thisWeekStart, -7);
     const lastWeekEnd = addDays(thisWeekEnd, -7);
-
-    lastWeekStart.setUTCDate(lastWeekStart.getUTCDate() - 7);
 
     const currentWeekGamesRaw = await prisma.game.findMany({
       where: {
         userId,
         isFinished: true,
-        startedAt: { gte: thisWeekStart, lte: thisWeekEnd },
+        startedAt: { gte: thisWeekStart, lte: now },
       },
       select: { startedAt: true, finishedAt: true },
     });
