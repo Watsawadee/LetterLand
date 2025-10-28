@@ -151,7 +151,7 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
     let imageData = null;
     let fileName: string | null = null;
     const age = Number(user.age);
-    const imageStyle = age && age >= 1 && age <= 15 ? "anime" : "realistic";
+    const imageStyle = age && age >= 1 && age <= 15 ? "anime" : "imagine-turbo";
     console.log("User age:", age, "Image style:", imageStyle);
     if (geminiResult.imagePrompt) {
       const sanitizedTopic = geminiResult.game.gameTopic.toLowerCase().replace(/\s+/g, "_");
