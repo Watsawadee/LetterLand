@@ -156,7 +156,7 @@ const UserSettingCard = ({ onBack }: Props) => {
       <View style={{ flexDirection: "column", justifyContent: "space-between", height: "80%", marginTop: 30 }}>
         <View style={{ flexDirection: "column", gap: 20 }} >
           <View>
-            <View style={{ flexDirection: "column", width: "100%",  gap: 6 }} >
+            <View style={{ flexDirection: "column", width: "100%", gap: 6 }} >
               <Text style={{ color: Color.black, fontWeight: Typography.header20.fontWeight, fontSize: Typography.header16.fontSize }}>Username</Text>
               <TextInput
                 mode="outlined"
@@ -209,7 +209,7 @@ const UserSettingCard = ({ onBack }: Props) => {
               </Button>)}
           </View>
 
-          <View style={{ display: "flex", flexDirection: "row",  alignItems: "center" }}>
+          <View style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
             <Text style={{ fontSize: Typography.header25.fontSize, fontWeight: Typography.header25.fontWeight, color: Color.black }}>
               Upgrade Level
             </Text>
@@ -252,7 +252,7 @@ const UserSettingCard = ({ onBack }: Props) => {
                     }}
                   >
                     <Text style={{ color: Color.gray, fontSize: Typography.body20.fontSize, fontWeight: Typography.body20.fontWeight, textAlign: "center", lineHeight: 30 }}>
-                      To advance to the next level, your performance for the current week must exceed that of the previous week, no hints should have been used in the last five games, and a minimum of 200 total play hours must be accumulated.
+                      To advance to the next level, your performance for the current week must exceed that of the previous week, no hints should have been used in the last five games, and a minimum of 30 total play hours must be accumulated.
                     </Text>
                   </View>
                 </Dialog.Content>
