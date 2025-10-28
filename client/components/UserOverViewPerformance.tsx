@@ -475,7 +475,7 @@ const UserOverviewPerformance = () => {
     return (
         <View style={{ width: "100%", height: "100%", gap: 15 }}>
             {(loading || !isSuccess(gamesData) || sortedResults.length === 0) ? (
-                <View style={{ flex: 1, justifyContent: "center", alignItems: "center", gap: 20, width: "20%" }}>
+                <View style={{ flex: 1, justifyContent: "center", alignItems: "center", gap: 20, width: "100%" }}>
                     <ActivityIndicator size="large" color={Color.gray} />
                     <Text style={{ color: Color.gray, marginTop: 8, fontWeight: "600" }}>
                         Loading dashboard...
