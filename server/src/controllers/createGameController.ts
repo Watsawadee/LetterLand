@@ -72,6 +72,11 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
       Number(userId),
       difficulty
     );
+    if (geminiResult.imagePrompt) {
+      console.log("Gemini generated imagePrompt:", geminiResult.imagePrompt);
+    } else {
+      console.log("Gemini did NOT generate an imagePrompt.");
+    }
 
     const createdQuestions = await Promise.all(
       geminiResult.game.questions.map((q: any) =>
@@ -180,7 +185,7 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
       message: "Game created successfully from Gemini",
       game: {
         ...game,
-        gameCode: game.gameTemplate.gameCode, // <-- Add this line
+        gameCode: game.gameTemplate.gameCode,
         imagePrompt: geminiResult.imagePrompt,
         image: imageData,
         gameTemplate: {
@@ -189,6 +194,7 @@ export const createGameFromGemini = async (req: Request, res: Response) => {
         },
       },
     });
+    console.log("response", result)
 
 
     if (!result.success) {
