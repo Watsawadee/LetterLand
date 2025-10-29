@@ -320,7 +320,7 @@ const UserOverviewCard = ({ coins, hint, onOpenSettings }: Props) => {
               </View>
             </View>
 
-  <ProgressBar
+            <ProgressBar
               progress={Math.min((user?.progressPercent ?? 0) / 100, 1)}
               color={levelColors[user.englishLevel] || Color.green}
               style={{
@@ -330,7 +330,7 @@ const UserOverviewCard = ({ coins, hint, onOpenSettings }: Props) => {
                 overflow: "hidden",
               }}
             />
-</Pressable>
+          </Pressable>
 
           {/* Dashboard */}
           <View
@@ -626,7 +626,7 @@ const UserOverviewCard = ({ coins, hint, onOpenSettings }: Props) => {
                       />
                       <View style={[StyleSheet.absoluteFillObject, styles.centered]}>
                         <Text style={{ fontSize: 25, fontWeight: "bold", color: Color.gray, textAlign: "center" }}>
-                          {userProgress.donut.filled.toFixed(0)}%
+                          {Number.isInteger(userProgress.donut.filled) ? userProgress.donut.filled.toFixed(0) : userProgress.donut.filled.toFixed(1)}%
                         </Text>
                         <Text style={{ color: Color.gray, fontSize: 16, textAlign: "center", fontWeight: "500" }}>
                           {userProgress.englishLevel}
