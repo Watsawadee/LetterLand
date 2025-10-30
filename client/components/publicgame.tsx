@@ -56,9 +56,7 @@ function TimerChips({
           if (opt === "300") {
             label = "5 min"
           }
-          else if (label === "420") {
-            label = "7 min"
-          }
+          else if (opt === "420") label = "7 min";
           else if (opt === "540") label = "9 min";
           return (
             <Pressable
