@@ -369,13 +369,32 @@ export const getAverageGamesByLevelPerPeriod = async (
           let weekIdx = 1;
           while (current <= end) {
             const weekStart = current;
-            const weekEnd = addDays(weekStart, 6);
+            const weekEnd = addDays(weekStart, 6) > end ? end : addDays(weekStart, 6);
             buckets.push({
               start: weekStart,
-              end: weekEnd > end ? end : weekEnd,
+              end: weekEnd,
             });
             labels.push(`W${weekIdx++}`);
             current = addDays(weekEnd, 1);
+          }
+          let counts: number[] = [];
+          if (peerCount === 0) {
+            counts = labels.map(() => 0);
+          } else {
+            const peerGames = await prisma.game.findMany({
+              where: {
+                userId: { in: sameLevelUserIds },
+                isFinished: true,
+                startedAt: { gte: start, lte: end },
+              },
+              select: { startedAt: true },
+            });
+            counts = buckets.map(({ start: bStart, end: bEnd }) => {
+              const gamesInBucket = peerGames.filter(g =>
+                g.startedAt >= bStart && g.startedAt <= bEnd
+              ).length;
+              return Number((gamesInBucket / peerCount).toFixed(2));
+            });
           }
         } else if (period === "year") {
           for (let i = 0; i < 12; i++) {
@@ -401,11 +420,16 @@ export const getAverageGamesByLevelPerPeriod = async (
             },
             select: { startedAt: true },
           });
+          console.log("peerGames for month", peerGames, "peerCount", peerCount, "buckets", buckets);
           counts = buckets.map(({ start: bStart, end: bEnd }) => {
-            const count = peerGames.filter(g =>
+            const gamesInBucket = peerGames.filter(g =>
               g.startedAt >= bStart && g.startedAt <= bEnd
             ).length;
-            return Number((count / peerCount).toFixed(2));
+            if (peerCount > 0) {
+              return Number((gamesInBucket / peerCount).toFixed(2));
+            } else {
+              return 0;
+            }
           });
         }
         console.log({

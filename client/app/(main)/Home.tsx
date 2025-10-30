@@ -109,37 +109,37 @@ export default function Home() {
         const lastVisitStr = await AsyncStorage.getItem(key);
 
         const capitalizeFirst = (name: string) =>
-        name.charAt(0).toUpperCase() + name.slice(1);
-      
-      const userDisplayName = userName ? capitalizeFirst(userName) : "";
-      
-      // Greeting messages
-      const hour = now.getHours();
-      const timeGreeting =
-        hour < 12
-          ? `Good morning 🌞 ${userDisplayName}!`
-          : hour < 18
-          ? `Good afternoon 🌤️ ${userDisplayName}!`
-          : `Good evening 🌙 ${userDisplayName}!`;
-      
-      let visitMsg = "";
-      if (lastVisitStr) {
-        const lastVisit = new Date(lastVisitStr);
-        const diffDays =
-          (now.getTime() - lastVisit.getTime()) / (1000 * 60 * 60 * 24);
-      
-        if (diffDays >= 2) {
-          visitMsg = `Long time no see, ${userDisplayName}! You haven’t entered the app for ${Math.floor(
-            diffDays
-          )} days 👀`;
-        } else if (diffDays >= 1) {
-          visitMsg = `Welcome back, ${userDisplayName}! It’s been a day`;
+          name.charAt(0).toUpperCase() + name.slice(1);
+
+        const userDisplayName = userName ? capitalizeFirst(userName) : "";
+
+        // Greeting messages
+        const hour = now.getHours();
+        const timeGreeting =
+          hour < 12
+            ? `Good morning 🌞 ${userDisplayName}!`
+            : hour < 18
+              ? `Good afternoon 🌤️ ${userDisplayName}!`
+              : `Good evening 🌙 ${userDisplayName}!`;
+
+        let visitMsg = "";
+        if (lastVisitStr) {
+          const lastVisit = new Date(lastVisitStr);
+          const diffDays =
+            (now.getTime() - lastVisit.getTime()) / (1000 * 60 * 60 * 24);
+
+          if (diffDays >= 2) {
+            visitMsg = `Long time no see, ${userDisplayName}! You haven’t entered the app for ${Math.floor(
+              diffDays
+            )} days 👀`;
+          } else if (diffDays >= 1) {
+            visitMsg = `Welcome back, ${userDisplayName}! It’s been a day`;
+          } else {
+            visitMsg = `Welcome, ${userDisplayName}! Great to see you again today`;
+          }
         } else {
-          visitMsg = `Welcome, ${userDisplayName}! Great to see you again today`;
+          visitMsg = `Hi ${userDisplayName}! Nice to meet you for the first time`;
         }
-      } else {
-        visitMsg = `Hi ${userDisplayName}! Nice to meet you for the first time`;
-      }      
 
         let gameMsg =
           "You haven’t finished any games yet — let’s start one today!";
@@ -148,12 +148,11 @@ export default function Home() {
           lastFinishedGame.finishedAt &&
           !isNaN(new Date(lastFinishedGame.finishedAt).getTime())
         ) {
-          gameMsg = `Your last puzzle was "${
-            lastFinishedGame.topic
-          }" — finished ${formatDistanceToNow(
-            new Date(lastFinishedGame.finishedAt),
-            { addSuffix: true }
-          )}`;
+          gameMsg = `Your last puzzle was "${lastFinishedGame.topic
+            }" — finished ${formatDistanceToNow(
+              new Date(lastFinishedGame.finishedAt),
+              { addSuffix: true }
+            )}`;
         }
 
         let coinMsg = "";
@@ -196,7 +195,7 @@ export default function Home() {
 
   if (isLoading) return <Text>Loading...</Text>;
   if (error || !profile) return <Text>Error loading user profile</Text>;
-  if ("error" in profile) return <Text>Failed to load user profile</Text>;
+  // if ("error" in profile) return <Text>Failed to load user profile</Text>;
 
   return (
     <View style={styles.root}>
