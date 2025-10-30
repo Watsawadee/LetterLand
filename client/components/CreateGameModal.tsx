@@ -38,8 +38,8 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
   const router = useRouter();
 
   const [englishLevel, setEnglishLevel] = useState<CreateGameFromGeminiRequest["difficulty"]>();
-  type UiTimer = "none" | "60" | "180" | "300";
-  const TIMER_OPTIONS: UiTimer[] = ["none", "60", "180", "300"];
+  type UiTimer = "none" | "300" | "420" | "540";
+  const TIMER_OPTIONS: UiTimer[] = ["none", "300", "420", "540"];
 
   type CEFR = "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
 
@@ -80,8 +80,10 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
 
   const formatTimerLabel = (t: UiTimer) => {
     if (t === "none") return "None";
-    const mins = Number(t) / 60;
-    return `${mins} ${mins === 1 ? "min" : "mins"}`;
+    if (t === "300") return "5 min";
+    if (t === "420") return "7 min";
+    if (t === "540") return "9 min";
+    return `${Number(t) / 60} min`;
   };
   const [timer, setTimer] = useState<UiTimer>("none");
   const [uploadType, setUploadType] = useState<"text" | "link" | "pdf">("text");
@@ -90,6 +92,7 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
   const [pdfFile, setPdfFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
   const [infoDialogVisible, setInfoDialogVisible] = useState(false);
   const [showLevelDialog, setShowLevelDialog] = useState(false);
+  const [successModalVisible, setSuccessModalVisible] = useState(false);
   // ...existing code...
   const [suspendParent, setSuspendParent] = useState(false);
 
@@ -175,10 +178,15 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
       },
       {
         onSuccess: (game) => {
-          const id = String(game.id);
-          router.replace({ pathname: "/GameScreen", params: { gameId: id } });
+          onClose();
+          setSuccessModalVisible(true);
+          setTimeout(() => {
+            setSuccessModalVisible(false);
+            const id = String(game.id);
+            router.replace({ pathname: "/GameScreen", params: { gameId: id } });
+          }, 1500);
         },
-      }
+      },
     );
   };
 
@@ -678,6 +686,55 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
             </Pressable>
           </Modal>
         )}
+      <Modal
+        visible={successModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSuccessModalVisible(false)}
+      >
+        <View style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "rgba(0,0,0,0.4)",
+          width: "10000%"
+        }}>
+          <View style={{
+            backgroundColor: "#fff",
+            padding: 32,
+            borderRadius: 16,
+            alignItems: "center",
+            elevation: 8,
+            maxWidth: 320,
+          }}>
+            <Text style={{ fontWeight: "bold", fontSize: 18, color: Color.blue, marginBottom: 8 }}>
+              Game created successfully!
+            </Text>
+            <Text style={{ color: Color.gray, textAlign: "center" }}>
+              Your game has been created.
+            </Text>
+            <Button
+              mode="contained"
+              onPress={() => {
+                setSuccessModalVisible(false);
+                if (createGameMutation.data?.id) {
+                  router.replace({
+                    pathname: "/GameScreen",
+                    params: { gameId: String(createGameMutation.data.id) },
+                  });
+                }
+              }}
+              style={{
+                backgroundColor: Color.blue,
+                borderRadius: 10,
+                marginTop: 8,
+              }}
+            >
+              <Text style={{ color: "white", fontWeight: "bold" }}>OK</Text>
+            </Button>
+          </View>
+        </View>
+      </Modal>
     </>
   );
 };

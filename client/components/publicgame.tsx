@@ -35,8 +35,8 @@ import { getUserProfile } from "@/services/getUserProfileService";
 import GameTypeDetails from "./GameTypeDetails";
 
 /* ------------------ Timer pills (UiTimer = seconds-as-strings) ------------------ */
-export type UiTimer = "none" | "60" | "180" | "300";
-const TIMER_OPTIONS: UiTimer[] = ["none", "60", "180", "300"];
+export type UiTimer = "none" | "300" | "420" | "540";
+const TIMER_OPTIONS: UiTimer[] = ["none", "300", "420", "540"];
 
 function TimerChips({
   value,
@@ -52,8 +52,14 @@ function TimerChips({
         {TIMER_OPTIONS.map((opt) => {
           const selected = value === opt;
           const mins = opt === "none" ? null : Number(opt) / 60;
-          const label =
-            mins === null ? "None" : `${mins} min${mins === 1 ? "" : "s"}`;
+          let label = "None";
+          if (opt === "300") {
+            label = "5 min"
+          }
+          else if (label === "420") {
+            label = "7 min"
+          }
+          else if (opt === "540") label = "9 min";
           return (
             <Pressable
               key={opt}

@@ -20,7 +20,7 @@ const VocabEvalScreen = () => {
   const router = useRouter();
   const [cefrLevel, setCefrLevel] = useState<CEFRLevel | null>(null);
   const [levelModalVisible, setLevelModalVisible] = useState(false);
-
+  const [showLoadingMoreWord, setShowLoadingMoreWord] = useState(false);
   useEffect(() => {
     const init = async () => {
       const id = await getLoggedInUserId();
@@ -56,6 +56,30 @@ const VocabEvalScreen = () => {
       prev.includes(word) ? prev.filter((w) => w !== word) : [...prev, word]
     );
   };
+
+  const handleLoadMoreWords = async () => {
+    setShowLoadingMoreWord(true);
+    try {
+      const data = await getWords();
+      if ("error" in data) {
+        alert("Failed to load more words.");
+      }
+      else {
+        setHeadwords((prev) => [
+          ...prev,
+          ...data.headwords.filter((w) => !prev.includes(w)),
+        ]);
+      }
+
+    }
+    catch (error) {
+      alert("Failed to load more words")
+      setShowLoadingMoreWord(false);
+    }
+    finally {
+      setShowLoadingMoreWord(false)
+    }
+  }
 
   const handleSubmit = async () => {
     if (!userId || !age) {
@@ -171,7 +195,26 @@ const VocabEvalScreen = () => {
                 </Button>
               ))}
             </View>
-
+            {selectedHeadwords.length >= 10 && (
+              <Button
+                mode="outlined"
+                onPress={handleLoadMoreWords}
+                loading={showLoadingMoreWord}
+                disabled={selectedHeadwords.length < 10}
+                style={{
+                  borderRadius: 10,
+                  marginTop: 16,
+                  alignSelf: "center",
+                  borderColor: "#58A7F8",
+                }}
+                labelStyle={{
+                  color: "#58A7F8",
+                  fontWeight: "700",
+                }}
+              >
+                Load More Words
+              </Button>
+            )}
             <Button
               mode="contained"
               onPress={handleSubmit}
@@ -189,14 +232,14 @@ const VocabEvalScreen = () => {
           </View>
         </Card>
       </View>
-        {cefrLevel && (
-          <UserLevelModal
-            visible={levelModalVisible}
-            level={cefrLevel}
-            onConfirm={() => setLevelModalVisible(false)}
-            onRequestClose={() => setLevelModalVisible(false)}
-          />
-        )}
+      {cefrLevel && (
+        <UserLevelModal
+          visible={levelModalVisible}
+          level={cefrLevel}
+          onConfirm={() => setLevelModalVisible(false)}
+          onRequestClose={() => setLevelModalVisible(false)}
+        />
+      )}
     </View>
   );
 };
