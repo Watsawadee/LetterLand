@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { getWords, setupProfile } from "../../services/setupUser";
-import { ActivityIndicator, Button, Card, Text } from "react-native-paper";
+import { ActivityIndicator, Button, Card, IconButton, Text } from "react-native-paper";
 import { getLoggedInUserId } from "@/utils/auth";
 import GardenBackground from "@/assets/backgroundTheme/GardenBackground";
 import { Color } from "@/theme/Color";
@@ -21,6 +21,9 @@ const VocabEvalScreen = () => {
   const [cefrLevel, setCefrLevel] = useState<CEFRLevel | null>(null);
   const [levelModalVisible, setLevelModalVisible] = useState(false);
   const [showLoadingMoreWord, setShowLoadingMoreWord] = useState(false);
+  const MIN_WORDS = 3;
+  const MAX_WORDS = 60;
+
   useEffect(() => {
     const init = async () => {
       const id = await getLoggedInUserId();
@@ -52,9 +55,27 @@ const VocabEvalScreen = () => {
   }, []);
 
   const handleWordToggle = (word: string) => {
-    setSelectedHeadwords((prev) =>
-      prev.includes(word) ? prev.filter((w) => w !== word) : [...prev, word]
-    );
+    setSelectedHeadwords((prev) => {
+      if (prev.includes(word)) return prev.filter((w) => w !== word);
+      if (prev.length >= MAX_WORDS) {
+        alert(`You can select up to ${MAX_WORDS} words.`);
+        return prev;
+      }
+      return [...prev, word];
+    });
+  };
+  const toggleSelectAll = () => {
+    const maxAvailable = Math.min(headwords.length, MAX_WORDS);
+    if (maxAvailable === 0) return;
+    const firstChunk = headwords.slice(0, maxAvailable);
+    const allSelected = firstChunk.every((w) => selectedHeadwords.includes(w));
+    if (allSelected) {
+
+      setSelectedHeadwords([]);
+      return;
+    }
+
+    setSelectedHeadwords(firstChunk);
   };
 
   const handleLoadMoreWords = async () => {
@@ -63,21 +84,22 @@ const VocabEvalScreen = () => {
       const data = await getWords();
       if ("error" in data) {
         alert("Failed to load more words.");
-      }
-      else {
-        setHeadwords((prev) => [
-          ...prev,
-          ...data.headwords.filter((w) => !prev.includes(w)),
-        ]);
+        return;
       }
 
-    }
-    catch (error) {
-      alert("Failed to load more words")
+      setHeadwords((prev) => {
+        const unseen = data.headwords.filter((w) => !prev.includes(w));
+        if (unseen.length === 0) {
+          return prev;
+        }
+        const spaceLeft = Math.max(0, MAX_WORDS - prev.length);
+        const toAdd = unseen.slice(0, spaceLeft);
+        return [...prev, ...toAdd];
+      });
+    } catch (error) {
+      alert("Failed to load more words");
+    } finally {
       setShowLoadingMoreWord(false);
-    }
-    finally {
-      setShowLoadingMoreWord(false)
     }
   }
 
@@ -164,12 +186,33 @@ const VocabEvalScreen = () => {
                 textAlign: "center",
                 fontWeight: "800",
                 color: "#5B6073",
-                marginBottom: 16,
               }}
             >
               What words are you familiar with?
             </Text>
+            <View style={{ width: "67%", maxHeight: "15%", flexDirection: "row", alignSelf: "flex-end", alignItems: "center", justifyContent: "space-around", marginBottom: "1%" }}>
+              <Text style={{ color: "#6B7280", fontSize: 13, fontWeight: "600", textAlignVertical: "center" }}>
+                Select at least {MIN_WORDS} to continue
+              </Text>
 
+              <Button
+                icon={selectedHeadwords.length > 0 ? "close-circle-outline" : "check-circle-outline"}
+                mode="outlined"
+                onPress={toggleSelectAll}
+                disabled={headwords.length === 0}
+                style={{ borderRadius: 10 }}
+                labelStyle={{ color: "#58A7F8", fontWeight: "700" }}
+                rippleColor={"transparent"}
+              >
+                {(() => {
+                  const maxAvailable = Math.min(headwords.length, MAX_WORDS);
+                  const firstChunk = headwords.slice(0, maxAvailable);
+                  const allSelected = firstChunk.length > 0 && firstChunk.every((w) => selectedHeadwords.includes(w));
+                  return allSelected ? "Clear" : `Select all (${maxAvailable})`;
+                })()}
+              </Button>
+
+            </View>
             <View style={{
               flexDirection: "row",
               flexWrap: "wrap",
@@ -195,7 +238,8 @@ const VocabEvalScreen = () => {
                 </Button>
               ))}
             </View>
-            {selectedHeadwords.length >= 10 && (
+
+            {selectedHeadwords.length >= 10 && headwords.length < MAX_WORDS && (
               <Button
                 mode="outlined"
                 onPress={handleLoadMoreWords}
@@ -218,8 +262,10 @@ const VocabEvalScreen = () => {
             <Button
               mode="contained"
               onPress={handleSubmit}
+              disabled={selectedHeadwords.length < MIN_WORDS}
               style={{
-                backgroundColor: "#58A7F8",
+                backgroundColor:
+                  selectedHeadwords.length < MIN_WORDS ? "#AEAEAE" : "#58A7F8",
                 borderRadius: 10,
                 marginTop: 20,
                 alignSelf: "center",
@@ -231,7 +277,7 @@ const VocabEvalScreen = () => {
             </Button>
           </View>
         </Card>
-      </View>
+      </View >
       {cefrLevel && (
         <UserLevelModal
           visible={levelModalVisible}
@@ -240,7 +286,7 @@ const VocabEvalScreen = () => {
           onRequestClose={() => setLevelModalVisible(false)}
         />
       )}
-    </View>
+    </View >
   );
 };
 
