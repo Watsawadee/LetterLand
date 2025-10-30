@@ -19,11 +19,22 @@ import WordBankModal from "./WordBank";
 import Book from "@/assets/icon/Book";
 import { ButtonStyles } from "@/theme/ButtonStyles";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import { addDays, endOfMonth, endOfWeek, endOfYear, format, startOfMonth, startOfWeek, startOfYear} from "date-fns";
+import { addDays, endOfMonth, endOfWeek, endOfYear, format, startOfMonth, startOfWeek, startOfYear } from "date-fns";
 import BoxingGlove from "@/assets/icon/BoxingGlove";
 import Fire from "@/assets/icon/Fire";
 import Trophy from "@/assets/icon/Trophy";
 import Carousel from "react-native-reanimated-carousel";
+
+type Period = "week" | "month" | "year";
+
+type PeriodResult = {
+    period: Period;
+    labels: string[];
+    counts: number[];
+    range: { start: string; end: string };
+};
+
+type DataPoint = { x: string; y: number };
 
 
 function getWeekDates(startDateStr: string, labels: string[]) {
@@ -265,6 +276,7 @@ const UserOverviewPerformance = () => {
         : [];
 
 
+
     const streakCards = [
         {
             label: "Longest Streak Ever",
@@ -288,30 +300,34 @@ const UserOverviewPerformance = () => {
         return !!data && Array.isArray((data as any).results);
     }
     const activePeriodData = sortedResults[activeIndex];
-
+    const maxCount = sortedResults.length > 0
+        ? Math.max(...sortedResults.map(r => Math.max(...r.counts)))
+        : 0;
+    const yMax = Math.max(3, maxCount);
 
     const router = useRouter();
     const loading = loadingChart || loadingPeer;
     const renderPeriodChart = (item: any, peerItem?: any) => {
         const periodSeries = item.labels.map((label: string, i: number) => ({
             x: label,
-            y: item.counts[i],
+            y: Number(item.counts[i] ?? 0),
         }));
         const peerSeries = peerItem
             ? peerItem.labels.map((label: string, i: number) => ({
                 x: label,
-                y: peerItem.counts[i],
+                y: Number(peerItem.counts[i] ?? 0),
             }))
             : [];
-        const maxY = Math.max(1, ...item.counts);
 
-        // Generate tick labels for this period
-        const weekTickLabels = item.period === "week"
-            ? getWeekDates(item.range.start, item.labels)
-            : [];
-        const monthTickLabels = item.period === "month"
-            ? getMonthWeekRanges(item.range.start, item.labels)
-            : [];
+        const localMax = Math.max(
+            0,
+            ...periodSeries.map((d: DataPoint) => d.y),
+            ...peerSeries.map((d: DataPoint) => d.y)
+        );
+        const yMaxLocal = Math.max(1, Math.ceil(localMax * 1.2));
+
+        const weekTickLabels = item.period === "week" ? getWeekDates(item.range.start, item.labels) : [];
+        const monthTickLabels = item.period === "month" ? getMonthWeekRanges(item.range.start, item.labels) : [];
 
         return (
             <View style={{ paddingHorizontal: 25 }}>
@@ -320,10 +336,10 @@ const UserOverviewPerformance = () => {
                     width={CHART_W - 20}
                     height={CHART_H}
                     domainPadding={{ x: [30, 50] }}
-                    domain={{ y: [0, maxY + 2] }}
+                    domain={{ y: [0, yMaxLocal] }}
                 >
                     <VictoryAxis
-                        tickValues={currentPeriod?.labels}
+                        tickValues={item.labels}
                         tickLabelComponent={
                             <VictoryLabel
                                 text={({ index }) => {
@@ -419,6 +435,7 @@ const UserOverviewPerformance = () => {
                                     },
                                 },
                             ]}
+
 
                         />,
                         <VictoryScatter
@@ -571,7 +588,7 @@ const UserOverviewPerformance = () => {
                                                     : "Games Played"}
 
                                             </Text>
-    
+
                                             {loadingChart || loadingPeer ? (
                                                 <View style={{ height: CHART_H, justifyContent: "center", alignItems: "center" }}>
                                                     <ActivityIndicator size="large" color={Color.gray} />
@@ -589,12 +606,12 @@ const UserOverviewPerformance = () => {
                                                     renderItem={({ item }) => {
                                                         let peerItem = undefined;
 
-                                                if (isSuccess(peerAvgData)) {
-                                                    peerItem = peerAvgData.results.find((p:any) => {
-                                                        const startA = new Date(p.range.start);
-                                                        const endA = new Date(p.range.end);
-                                                        const startB = new Date(item.range.start);
-                                                        const endB = new Date(item.range.end);
+                                                        if (isSuccess(peerAvgData)) {
+                                                            peerItem = peerAvgData.results.find((p: any) => {
+                                                                const startA = new Date(p.range.start);
+                                                                const endA = new Date(p.range.end);
+                                                                const startB = new Date(item.range.start);
+                                                                const endB = new Date(item.range.end);
 
                                                                 return (
                                                                     p.period === item.period &&
@@ -632,80 +649,80 @@ const UserOverviewPerformance = () => {
                                 </View>
                             </View>
 
-                    <View
-                        style={{
-                            width: "100%",
-                            height: "35%",
-                            flexDirection: "row",
-                            alignSelf: "flex-start",
-                            // backgroundColor: "red",
-                        }}
-                    >
-                        <ScrollView
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            style={{ height: "90%", width: "99%" }}
-                            contentContainerStyle={{
-                                paddingRight: "56%",
-                                paddingLeft: "1%",
-                                alignItems: "center",
-                                gap: 20
-                            }}
-                        >
-                            {/* 🟦 Total Words Learned */}
-                            <Card
+                            <View
                                 style={{
-                                    width: "20%",
-                                    height: "55%",
-                                    backgroundColor: "#F2F8F9",
-                                    padding: 12,
-                                    justifyContent: "center",
-                                    alignItems: "center",
-                                    borderRadius: 20,
+                                    width: "100%",
+                                    height: "35%",
+                                    flexDirection: "row",
+                                    alignSelf: "flex-start",
+                                    // backgroundColor: "red",
                                 }}
                             >
-                                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                                    <Pencil width={50} height={50} />
-                                    <View style={{ marginLeft: 10, gap: 2  }}>
-                                        <Text style={{ fontSize:15, color: Color.gray }}>Words Learned</Text>
-                                        <Text style={{ color: Color.gray, fontSize: 19, fontWeight: "700" }}>
-                                            {wordsLearned && "error" in wordsLearned
-                                                ? "Error"
-                                                : wordsLearned && "wordsLearned" in wordsLearned
-                                                    ? `${wordsLearned.wordsLearned} Word(s)`
-                                                    : "0 Word(s)"}
-                                        </Text>
-                                    </View>
-                                </View>
-                            </Card>
+                                <ScrollView
+                                    horizontal
+                                    showsHorizontalScrollIndicator={false}
+                                    style={{ height: "90%", width: "99%" }}
+                                    contentContainerStyle={{
+                                        paddingRight: "56%",
+                                        paddingLeft: "1%",
+                                        alignItems: "center",
+                                        gap: 20
+                                    }}
+                                >
+                                    {/* 🟦 Total Words Learned */}
+                                    <Card
+                                        style={{
+                                            width: "20%",
+                                            height: "55%",
+                                            backgroundColor: "#F2F8F9",
+                                            padding: 12,
+                                            justifyContent: "center",
+                                            alignItems: "center",
+                                            borderRadius: 20,
+                                        }}
+                                    >
+                                        <View style={{ flexDirection: "row", alignItems: "center" }}>
+                                            <Pencil width={50} height={50} />
+                                            <View style={{ marginLeft: 10, gap: 2 }}>
+                                                <Text style={{ fontSize: 15, color: Color.gray }}>Words Learned</Text>
+                                                <Text style={{ color: Color.gray, fontSize: 19, fontWeight: "700" }}>
+                                                    {wordsLearned && "error" in wordsLearned
+                                                        ? "Error"
+                                                        : wordsLearned && "wordsLearned" in wordsLearned
+                                                            ? `${wordsLearned.wordsLearned} Word(s)`
+                                                            : "0 Word(s)"}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    </Card>
 
-                                  
-                            {/* 🟩 Total Playtime */}
-                            <Card
-                                style={{
-                                    width: "20%",
-                                    height: "55%",
-                                    backgroundColor: "#F2F8F9",
-                                    padding: 12,
-                                    justifyContent: "center",
-                                    alignItems: "center",
-                                    borderRadius: 20,
-                                }}
-                            >
-                                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                                    <Clock width={50} height={50} />
-                                    <View style={{ marginLeft: 10, gap: 2   }}>
-                                    <Text style={{ fontSize:15, color: Color.gray }}>Total Played time</Text>
-                                        <Text style={{ color: Color.gray, fontSize: 19, fontWeight: "700" }}>
-                                            {totalPlaytime && "error" in totalPlaytime
-                                                ? "Error"
-                                                : totalPlaytime && "totalPlaytime" in totalPlaytime
-                                                    ? `${totalPlaytime.totalPlaytime} Hour(s)`
-                                                    : "0 Hour(s)"}
-                                        </Text>
-                                    </View>
-                                </View>
-                            </Card>
+
+                                    {/* 🟩 Total Playtime */}
+                                    <Card
+                                        style={{
+                                            width: "20%",
+                                            height: "55%",
+                                            backgroundColor: "#F2F8F9",
+                                            padding: 12,
+                                            justifyContent: "center",
+                                            alignItems: "center",
+                                            borderRadius: 20,
+                                        }}
+                                    >
+                                        <View style={{ flexDirection: "row", alignItems: "center" }}>
+                                            <Clock width={50} height={50} />
+                                            <View style={{ marginLeft: 10, gap: 2 }}>
+                                                <Text style={{ fontSize: 15, color: Color.gray }}>Total Played time</Text>
+                                                <Text style={{ color: Color.gray, fontSize: 19, fontWeight: "700" }}>
+                                                    {totalPlaytime && "error" in totalPlaytime
+                                                        ? "Error"
+                                                        : totalPlaytime && "totalPlaytime" in totalPlaytime
+                                                            ? `${totalPlaytime.totalPlaytime} Hour(s)`
+                                                            : "0 Hour(s)"}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    </Card>
 
                                     {streakCards.map((card, idx) => (
                                         <Card
@@ -739,12 +756,12 @@ const UserOverviewPerformance = () => {
                             </View>
                         </View >
                         {showPicker && (
-                    <DateTimePickerModal
-                        isVisible={showPicker}
-                        mode="date"
-                        display="inline"
-                        date={selectedDate}
-                        onConfirm={() => {
+                            <DateTimePickerModal
+                                isVisible={showPicker}
+                                mode="date"
+                                display="inline"
+                                date={selectedDate}
+                                onConfirm={() => {
 
                                 }}
                                 maximumDate={new Date}
@@ -824,7 +841,7 @@ const UserOverviewPerformance = () => {
                     </View >
                 </>
             )}
-                    
+
 
         </View>
     );
