@@ -9,6 +9,35 @@ function cleanApiResponse(rawText: string): string {
   return cleaned;
 }
 
+async function callGeminiWithRetry(prompt: string, maxRetries = 3) {
+  let delay = 1000; // Start with a 1-second delay
+
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const response = await axios.post(GEMINI_API_URL, {
+        contents: [{ parts: [{ text: prompt }] }],
+      });
+
+      return response;
+
+    } catch (error: any) {
+      if (error.response && error.response.status >= 500) {
+        console.warn(`Gemini API error ${error.response.status}. Retrying in ${delay}ms... (Attempt ${i + 1}/${maxRetries})`);
+
+        await new Promise(res => setTimeout(res, delay));
+
+        delay *= 2;
+
+      } else {
+        console.error("Non-retryable Gemini API error:", error.message);
+        throw error;
+      }
+    }
+  }
+
+  throw new Error(`Failed to call Gemini API after ${maxRetries} attempts.`);
+}
+
 
 
 // async function isDictionaryWord(word: string): Promise<boolean> {
@@ -150,7 +179,6 @@ export const generateCrosswordHints = async (
 **CRITICAL C2 RULE: STRICTLY AVOID SIMPLE WORDS.**
 - You MUST NOT use words that are common, general, or would be appropriate for B2 or C1 levels.
 - **FOR EXAMPLE:** For a topic on health, 'longevity' is C1. A C2 word would be 'pathogenesis' or 'prophylactic'. Simple words like 'risk' or 'omega' are B2 level and are ABSOLUTELY FORBIDDEN.
-- If you cannot find a genuinely rare and complex C2-level word that fits all constraints, it is better to generate fewer than 6 words than to include a simpler one.
 `
     };
 
@@ -177,10 +205,10 @@ GENERAL RULES FOR ALL LEVELS:
 5.  **Answer Length:**
    -A1: 3–4 letters
    -A2: 4-6 letters
-   -B1:6-8 letters
+   -B1: 6-8 letters
    -B2: 8–10 letters
-   -C1: 10-12 letters
-   -C2: 10–12 letters
+   -C1: 8-12 letters
+   -C2: 8–12 letters
 6.  **Image Prompt:** Include a creative 'imagePrompt' description for generating an image that represents the crossword’s main topic.
 7.  **Topic Length:** The "gameTopic" string MUST be a concise phrase or title, no more than 15 characters. If the topic is longer, shorten it to a clear, short phrase.
 ────────────────────────────
@@ -204,9 +232,7 @@ Return ONLY a valid JSON object. Do not include markdown fences or any other tex
 }
 `;
 
-    const response = await axios.post(GEMINI_API_URL, {
-      contents: [{ parts: [{ text: prompt }] }],
-    });
+    const response = await callGeminiWithRetry(prompt, 4);
 
     if (!response.data?.candidates?.length) {
       throw new Error("No valid response from Gemini API.");
