@@ -21,8 +21,9 @@ const VocabEvalScreen = () => {
   const [cefrLevel, setCefrLevel] = useState<CEFRLevel | null>(null);
   const [levelModalVisible, setLevelModalVisible] = useState(false);
   const [showLoadingMoreWord, setShowLoadingMoreWord] = useState(false);
-  const MIN_WORDS = 3;
-  const MAX_WORDS = 60;
+  const MIN_WORDS = 5;
+  const MAX_WORDS = 50;
+  const LOAD_CHUNK = 20;
 
   useEffect(() => {
     const init = async () => {
@@ -79,6 +80,7 @@ const VocabEvalScreen = () => {
   };
 
   const handleLoadMoreWords = async () => {
+    if (headwords.length >= MAX_WORDS) return;
     setShowLoadingMoreWord(true);
     try {
       const data = await getWords();
@@ -93,7 +95,7 @@ const VocabEvalScreen = () => {
           return prev;
         }
         const spaceLeft = Math.max(0, MAX_WORDS - prev.length);
-        const toAdd = unseen.slice(0, spaceLeft);
+        const toAdd = unseen.slice(0, Math.min(spaceLeft, LOAD_CHUNK));
         return [...prev, ...toAdd];
       });
     } catch (error) {
@@ -141,6 +143,10 @@ const VocabEvalScreen = () => {
       </View>
     );
   }
+
+  const maxAvailable = Math.min(headwords.length, MAX_WORDS);
+  const firstChunk = headwords.slice(0, maxAvailable);
+  const allSelected = firstChunk.length > 0 && firstChunk.every((w) => selectedHeadwords.includes(w));
 
   return (
     <View
@@ -196,11 +202,11 @@ const VocabEvalScreen = () => {
               </Text>
 
               <Button
-                icon={selectedHeadwords.length > 0 ? "close-circle-outline" : "check-circle-outline"}
+                icon={allSelected ? "close-circle-outline" : "check-circle-outline"}
                 mode="outlined"
                 onPress={toggleSelectAll}
                 disabled={headwords.length === 0}
-                style={{ borderRadius: 10 }}
+                style={{ borderRadius: 10, borderColor: Color.blue, width: "20%" }}
                 labelStyle={{ color: "#58A7F8", fontWeight: "700" }}
                 rippleColor={"transparent"}
               >
@@ -256,7 +262,7 @@ const VocabEvalScreen = () => {
                   fontWeight: "700",
                 }}
               >
-                Load More Words
+                See More Words
               </Button>
             )}
             <Button
