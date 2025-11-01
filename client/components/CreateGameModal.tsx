@@ -93,8 +93,10 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
   const [infoDialogVisible, setInfoDialogVisible] = useState(false);
   const [showLevelDialog, setShowLevelDialog] = useState(false);
   const [successModalVisible, setSuccessModalVisible] = useState(false);
+  const [isCreatingGame, setIsCreatingGame] = useState(false);
   // ...existing code...
   const [suspendParent, setSuspendParent] = useState(false);
+  const [createdGameId, setCreatedGameId] = useState<string | null>(null);
 
   useEffect(() => {
     setSuspendParent(infoDialogVisible);
@@ -161,33 +163,30 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
     }
     const apiUploadType = uploadType === "pdf" ? "pdf" : uploadType;
     const apiTimer: number | null = timer === "none" ? null : Number(timer);
-
-    createGameMutation.mutate(
-      {
-        data: {
-          userId: user.id,
-          ownerId: user.id,
-          difficulty: englishLevel,
-          inputData: input,
-          type: apiUploadType,
-          gameType: gameType!,
-          timer: apiTimer,
-          isPublic,
-        },
-        file: pdfFile,
-      },
-      {
-        onSuccess: (game) => {
-          onClose();
-          setSuccessModalVisible(true);
-          setTimeout(() => {
-            setSuccessModalVisible(false);
-            const id = String(game.id);
-            router.replace({ pathname: "/GameScreen", params: { gameId: id } });
-          }, 1500);
-        },
-      },
-    );
+    setIsCreatingGame(true);
+    onClose();
+    try {
+      const game = await createGameMutation.mutateAsync(
+        {
+          data: {
+            userId: user.id,
+            ownerId: user.id,
+            difficulty: englishLevel,
+            inputData: input,
+            type: apiUploadType,
+            gameType: gameType!,
+            timer: apiTimer,
+            isPublic,
+          },
+          file: pdfFile,
+        });
+      setIsCreatingGame(false);
+      setCreatedGameId(String(game.id));
+      setSuccessModalVisible(true);
+    } catch (err: any) {
+      setIsCreatingGame(false);
+      alert("Failed to create game: " + (err?.message || err));
+    }
   };
 
   if (isError) {
@@ -199,6 +198,42 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
   }
   return (
     <>
+      <Portal>
+        <Dialog
+          visible={successModalVisible}
+          onDismiss={() => setSuccessModalVisible(false)}
+          style={{ backgroundColor: Color.white, width: "30%", alignSelf: "center", height: "25%", padding: 5, zIndex: 200 }}
+        >
+          <Dialog.Title style={{ color: Color.blue, textAlign: "center" }}>Game created successfully!</Dialog.Title>
+          <Dialog.Content>
+            <Text style={{ color: Color.blue, textAlign: "center" }}>Your game has been created.</Text>
+          </Dialog.Content>
+          <Button
+            mode="contained"
+            onPress={() => {
+              setSuccessModalVisible(false);
+              if (createdGameId) {
+                router.replace({
+                  pathname: "/GameScreen",
+                  params: { gameId: createdGameId },
+                });
+                setCreatedGameId(null);
+              } else {
+                alert("Game created but id not available.");
+              }
+            }}
+            style={{
+              backgroundColor: Color.blue,
+              borderRadius: 10,
+              marginTop: 8,
+              width: "30%",
+              alignSelf: "center"
+            }}
+          >
+            <Text style={{ color: "white", fontWeight: "bold" }}>OK</Text>
+          </Button>
+        </Dialog >
+      </Portal >
       {infoDialogVisible && (
         <Modal
           visible={infoDialogVisible}
@@ -288,7 +323,8 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
             </Pressable>
           </Pressable>
         </Modal>
-      )}
+      )
+      }
       {
         !suspendParent && (
           <Modal
@@ -677,64 +713,17 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
                         </Text>
                       </Button>
                     </ScrollView>
-                    <LoadingPopupCreateGame
-                      visible={isCreating}
-                    />
+
                   </KeyboardAvoidingView>
                 </View>
               </Pressable>
             </Pressable>
           </Modal>
-        )}
-      <Modal
-        visible={successModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setSuccessModalVisible(false)}
-      >
-        <View style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: "rgba(0,0,0,0.4)",
-          width: "10000%"
-        }}>
-          <View style={{
-            backgroundColor: "#fff",
-            padding: 32,
-            borderRadius: 16,
-            alignItems: "center",
-            elevation: 8,
-            maxWidth: 320,
-          }}>
-            <Text style={{ fontWeight: "bold", fontSize: 18, color: Color.blue, marginBottom: 8 }}>
-              Game created successfully!
-            </Text>
-            <Text style={{ color: Color.gray, textAlign: "center" }}>
-              Your game has been created.
-            </Text>
-            <Button
-              mode="contained"
-              onPress={() => {
-                setSuccessModalVisible(false);
-                if (createGameMutation.data?.id) {
-                  router.replace({
-                    pathname: "/GameScreen",
-                    params: { gameId: String(createGameMutation.data.id) },
-                  });
-                }
-              }}
-              style={{
-                backgroundColor: Color.blue,
-                borderRadius: 10,
-                marginTop: 8,
-              }}
-            >
-              <Text style={{ color: "white", fontWeight: "bold" }}>OK</Text>
-            </Button>
-          </View>
-        </View>
-      </Modal>
+        )
+      }
+      <LoadingPopupCreateGame
+        visible={isCreating}
+      />
     </>
   );
 };

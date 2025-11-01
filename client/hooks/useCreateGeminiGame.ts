@@ -13,9 +13,6 @@ export function useCreateGameFromGemini() {
         }          // variables passed to mutationFn
     >({
         mutationFn: ({ data, file }) => createGameFromGemini(data, file),
-        onSuccess: (game) => {
-            alert(`Game created! Topic: ${game.gameTemplate.gameTopic}`);
-        },
         onError: (error) => {
             alert("Failed to create game: " + (error?.message || error));
         },
