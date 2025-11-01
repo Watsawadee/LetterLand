@@ -279,17 +279,17 @@ const UserOverviewPerformance = () => {
 
     const streakCards = [
         {
-            label: "Longest Streak Ever",
+            label: "Your Longest Streak Ever",
             value: streakData && "allTime" in streakData ? streakData.allTime : "-",
             icon: Trophy,
         },
         {
-            label: "Ongoing Streak in This Level",
+            label: "Your Current streak (this level)",
             value: streakData && "currentLevel" in streakData ? streakData.currentLevel : "-",
             icon: Fire,
         },
         {
-            label: "Top Streak in Your Level",
+            label: "Best streak (this level)",
             value: streakData && "highestStreakInThisLevel" in streakData ? streakData.highestStreakInThisLevel : "-",
             icon: BoxingGlove
         },
@@ -746,7 +746,7 @@ const UserOverviewPerformance = () => {
                                                     <Text style={{
                                                         color: Color.gray, fontSize: Typography.header20.fontSize, textAlign: "center", fontWeight: "bold"
                                                     }}>
-                                                        {card.value as any}
+                                                        {card.value as any} consecutive day(s)
                                                     </Text>
                                                 </View>
                                             </View>
