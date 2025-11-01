@@ -245,12 +245,12 @@ const VocabEvalScreen = () => {
               ))}
             </View>
 
-            {selectedHeadwords.length >= 10 && headwords.length < MAX_WORDS && (
+            {headwords.length < MAX_WORDS && (
               <Button
                 mode="outlined"
                 onPress={handleLoadMoreWords}
                 loading={showLoadingMoreWord}
-                disabled={selectedHeadwords.length < 10}
+                disabled={showLoadingMoreWord}
                 style={{
                   borderRadius: 10,
                   marginTop: 16,
