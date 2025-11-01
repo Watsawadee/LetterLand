@@ -13,7 +13,4 @@ export const useLogin = (
     mutationKey: ["auth", "login"],
     mutationFn: (payload) => loginUser(payload),
     onSuccess,
-    onError: (err) => {
-      console.error("Login failed", err);
-    },
   });

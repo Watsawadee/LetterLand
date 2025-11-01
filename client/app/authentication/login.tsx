@@ -36,24 +36,35 @@ const LoginScreen = () => {
 
   const router = useRouter();
   const { mutate: loginMutate, isPending } = useLogin(async ({ user, token }) => {
-    if (!token) {
-      Alert.alert("Login failed", "Missing token");
-      return;
+    try {
+      if (!token) {
+        setErrorMessage("Login failed: missing token");
+        return;
+      }
+
+      await storeToken(token);
+
+      let decoded: any;
+      try {
+        decoded = jwtDecode(token);
+      } catch (err) {
+        setErrorMessage("Login failed: invalid token");
+        return;
+      }
+
+      console.log("Decoded JWT:", decoded);
+
+      if (!decoded?.userId) {
+        setErrorMessage("Login failed: invalid token payload");
+        return;
+      }
+
+      router.replace({
+        pathname: "/Home",
+      });
+    } catch (err) {
+      setErrorMessage("Login failed");
     }
-
-    await storeToken(token);
-
-    const decoded: any = jwtDecode(token);
-    console.log("Decoded JWT:", decoded);
-
-    if (!decoded?.userId) {
-      Alert.alert("Invalid token payload");
-      return;
-    }
-
-    router.replace({
-      pathname: "/Home",
-    });
   });
 
   const handleLogin = () => {
@@ -64,16 +75,20 @@ const LoginScreen = () => {
 
     setErrorMessage("");
 
-    loginMutate({ email, password }, {
-      onError: (error: any) => {
-        if (error?.response?.status === 401) {
-          setErrorMessage("Email or password is incorrect");
-        } else {
-          setErrorMessage("Email or password is incorrectใ");
-        }
-      },
-      onSettled: () => {},
-    });
+    try {
+      loginMutate({ email, password }, {
+        onError: (error: any) => {
+          if (error?.response?.status === 401) {
+            setErrorMessage("Email or password is incorrect");
+          } else {
+            setErrorMessage("Email or password is incorrect");
+          }
+        },
+        onSettled: () => { },
+      });
+    } catch (error: any) {
+      setErrorMessage("Email or password is incorrect");
+    }
   };
 
   return (
@@ -162,7 +177,7 @@ const LoginScreen = () => {
               secureTextEntry
               textColor="black"
               activeOutlineColor="#5B6073"
-              style={{ backgroundColor: "transparent", color: "black",marginBottom: 8 }}
+              style={{ backgroundColor: "transparent", color: "black", marginBottom: 8 }}
             />
 
             {/* 🔽 Error message moved here (under password field) */}
@@ -211,7 +226,7 @@ const LoginScreen = () => {
                 }}
                 rippleColor={"transparent"}
               >
-                <Text style={{ color: Color.black }}>
+                <Text style={{ color: Color.blue }}>
                   No account yet? Create your account for free
                 </Text>
               </Button>

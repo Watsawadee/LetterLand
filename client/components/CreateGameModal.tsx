@@ -38,8 +38,8 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
   const router = useRouter();
 
   const [englishLevel, setEnglishLevel] = useState<CreateGameFromGeminiRequest["difficulty"]>();
-  type UiTimer = "none" | "60" | "180" | "300";
-  const TIMER_OPTIONS: UiTimer[] = ["none", "60", "180", "300"];
+  type UiTimer = "none" | "300" | "420" | "540";
+  const TIMER_OPTIONS: UiTimer[] = ["none", "300", "420", "540"];
 
   type CEFR = "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
 
@@ -80,8 +80,10 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
 
   const formatTimerLabel = (t: UiTimer) => {
     if (t === "none") return "None";
-    const mins = Number(t) / 60;
-    return `${mins} ${mins === 1 ? "min" : "mins"}`;
+    if (t === "300") return "5 min";
+    if (t === "420") return "7 min";
+    if (t === "540") return "9 min";
+    return `${Number(t) / 60} min`;
   };
   const [timer, setTimer] = useState<UiTimer>("none");
   const [uploadType, setUploadType] = useState<"text" | "link" | "pdf">("text");
@@ -90,8 +92,11 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
   const [pdfFile, setPdfFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
   const [infoDialogVisible, setInfoDialogVisible] = useState(false);
   const [showLevelDialog, setShowLevelDialog] = useState(false);
+  const [successModalVisible, setSuccessModalVisible] = useState(false);
+  const [isCreatingGame, setIsCreatingGame] = useState(false);
   // ...existing code...
   const [suspendParent, setSuspendParent] = useState(false);
+  const [createdGameId, setCreatedGameId] = useState<string | null>(null);
 
   useEffect(() => {
     setSuspendParent(infoDialogVisible);
@@ -158,28 +163,30 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
     }
     const apiUploadType = uploadType === "pdf" ? "pdf" : uploadType;
     const apiTimer: number | null = timer === "none" ? null : Number(timer);
-
-    createGameMutation.mutate(
-      {
-        data: {
-          userId: user.id,
-          ownerId: user.id,
-          difficulty: englishLevel,
-          inputData: input,
-          type: apiUploadType,
-          gameType: gameType!,
-          timer: apiTimer,
-          isPublic,
-        },
-        file: pdfFile,
-      },
-      {
-        onSuccess: (game) => {
-          const id = String(game.id);
-          router.replace({ pathname: "/GameScreen", params: { gameId: id } });
-        },
-      }
-    );
+    setIsCreatingGame(true);
+    onClose();
+    try {
+      const game = await createGameMutation.mutateAsync(
+        {
+          data: {
+            userId: user.id,
+            ownerId: user.id,
+            difficulty: englishLevel,
+            inputData: input,
+            type: apiUploadType,
+            gameType: gameType!,
+            timer: apiTimer,
+            isPublic,
+          },
+          file: pdfFile,
+        });
+      setIsCreatingGame(false);
+      setCreatedGameId(String(game.id));
+      setSuccessModalVisible(true);
+    } catch (err: any) {
+      setIsCreatingGame(false);
+      alert("Failed to create game: " + (err?.message || err));
+    }
   };
 
   if (isError) {
@@ -191,6 +198,42 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
   }
   return (
     <>
+      <Portal>
+        <Dialog
+          visible={successModalVisible}
+          onDismiss={() => setSuccessModalVisible(false)}
+          style={{ backgroundColor: Color.white, width: "30%", alignSelf: "center", height: "25%", padding: 5, zIndex: 200 }}
+        >
+          <Dialog.Title style={{ color: Color.blue, textAlign: "center" }}>Game created successfully!</Dialog.Title>
+          <Dialog.Content>
+            <Text style={{ color: Color.blue, textAlign: "center" }}>Your game has been created.</Text>
+          </Dialog.Content>
+          <Button
+            mode="contained"
+            onPress={() => {
+              setSuccessModalVisible(false);
+              if (createdGameId) {
+                router.replace({
+                  pathname: "/GameScreen",
+                  params: { gameId: createdGameId },
+                });
+                setCreatedGameId(null);
+              } else {
+                alert("Game created but id not available.");
+              }
+            }}
+            style={{
+              backgroundColor: Color.blue,
+              borderRadius: 10,
+              marginTop: 8,
+              width: "30%",
+              alignSelf: "center"
+            }}
+          >
+            <Text style={{ color: "white", fontWeight: "bold" }}>OK</Text>
+          </Button>
+        </Dialog >
+      </Portal >
       {infoDialogVisible && (
         <Modal
           visible={infoDialogVisible}
@@ -280,7 +323,8 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
             </Pressable>
           </Pressable>
         </Modal>
-      )}
+      )
+      }
       {
         !suspendParent && (
           <Modal
@@ -669,15 +713,17 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
                         </Text>
                       </Button>
                     </ScrollView>
-                    <LoadingPopupCreateGame
-                      visible={isCreating}
-                    />
+
                   </KeyboardAvoidingView>
                 </View>
               </Pressable>
             </Pressable>
           </Modal>
-        )}
+        )
+      }
+      <LoadingPopupCreateGame
+        visible={isCreating}
+      />
     </>
   );
 };

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { getWords, setupProfile } from "../../services/setupUser";
-import { ActivityIndicator, Button, Card, Text } from "react-native-paper";
+import { ActivityIndicator, Button, Card, IconButton, Text } from "react-native-paper";
 import { getLoggedInUserId } from "@/utils/auth";
 import GardenBackground from "@/assets/backgroundTheme/GardenBackground";
 import { Color } from "@/theme/Color";
@@ -20,6 +20,10 @@ const VocabEvalScreen = () => {
   const router = useRouter();
   const [cefrLevel, setCefrLevel] = useState<CEFRLevel | null>(null);
   const [levelModalVisible, setLevelModalVisible] = useState(false);
+  const [showLoadingMoreWord, setShowLoadingMoreWord] = useState(false);
+  const MIN_WORDS = 5;
+  const MAX_WORDS = 50;
+  const LOAD_CHUNK = 20;
 
   useEffect(() => {
     const init = async () => {
@@ -52,10 +56,54 @@ const VocabEvalScreen = () => {
   }, []);
 
   const handleWordToggle = (word: string) => {
-    setSelectedHeadwords((prev) =>
-      prev.includes(word) ? prev.filter((w) => w !== word) : [...prev, word]
-    );
+    setSelectedHeadwords((prev) => {
+      if (prev.includes(word)) return prev.filter((w) => w !== word);
+      if (prev.length >= MAX_WORDS) {
+        alert(`You can select up to ${MAX_WORDS} words.`);
+        return prev;
+      }
+      return [...prev, word];
+    });
   };
+  const toggleSelectAll = () => {
+    const maxAvailable = Math.min(headwords.length, MAX_WORDS);
+    if (maxAvailable === 0) return;
+    const firstChunk = headwords.slice(0, maxAvailable);
+    const allSelected = firstChunk.every((w) => selectedHeadwords.includes(w));
+    if (allSelected) {
+
+      setSelectedHeadwords([]);
+      return;
+    }
+
+    setSelectedHeadwords(firstChunk);
+  };
+
+  const handleLoadMoreWords = async () => {
+    if (headwords.length >= MAX_WORDS) return;
+    setShowLoadingMoreWord(true);
+    try {
+      const data = await getWords();
+      if ("error" in data) {
+        alert("Failed to load more words.");
+        return;
+      }
+
+      setHeadwords((prev) => {
+        const unseen = data.headwords.filter((w) => !prev.includes(w));
+        if (unseen.length === 0) {
+          return prev;
+        }
+        const spaceLeft = Math.max(0, MAX_WORDS - prev.length);
+        const toAdd = unseen.slice(0, Math.min(spaceLeft, LOAD_CHUNK));
+        return [...prev, ...toAdd];
+      });
+    } catch (error) {
+      alert("Failed to load more words");
+    } finally {
+      setShowLoadingMoreWord(false);
+    }
+  }
 
   const handleSubmit = async () => {
     if (!userId || !age) {
@@ -95,6 +143,10 @@ const VocabEvalScreen = () => {
       </View>
     );
   }
+
+  const maxAvailable = Math.min(headwords.length, MAX_WORDS);
+  const firstChunk = headwords.slice(0, maxAvailable);
+  const allSelected = firstChunk.length > 0 && firstChunk.every((w) => selectedHeadwords.includes(w));
 
   return (
     <View
@@ -140,12 +192,33 @@ const VocabEvalScreen = () => {
                 textAlign: "center",
                 fontWeight: "800",
                 color: "#5B6073",
-                marginBottom: 16,
               }}
             >
               What words are you familiar with?
             </Text>
+            <View style={{ width: "67%", maxHeight: "15%", flexDirection: "row", alignSelf: "flex-end", alignItems: "center", justifyContent: "space-around", marginBottom: "1%" }}>
+              <Text style={{ color: "#6B7280", fontSize: 13, fontWeight: "600", textAlignVertical: "center" }}>
+                Select at least {MIN_WORDS} to continue
+              </Text>
 
+              <Button
+                icon={allSelected ? "close-circle-outline" : "check-circle-outline"}
+                mode="outlined"
+                onPress={toggleSelectAll}
+                disabled={headwords.length === 0}
+                style={{ borderRadius: 10, borderColor: Color.blue, width: "20%" }}
+                labelStyle={{ color: "#58A7F8", fontWeight: "700" }}
+                rippleColor={"transparent"}
+              >
+                {(() => {
+                  const maxAvailable = Math.min(headwords.length, MAX_WORDS);
+                  const firstChunk = headwords.slice(0, maxAvailable);
+                  const allSelected = firstChunk.length > 0 && firstChunk.every((w) => selectedHeadwords.includes(w));
+                  return allSelected ? "Clear" : `Select all (${maxAvailable})`;
+                })()}
+              </Button>
+
+            </View>
             <View style={{
               flexDirection: "row",
               flexWrap: "wrap",
@@ -172,11 +245,33 @@ const VocabEvalScreen = () => {
               ))}
             </View>
 
+            {headwords.length < MAX_WORDS && (
+              <Button
+                mode="outlined"
+                onPress={handleLoadMoreWords}
+                loading={showLoadingMoreWord}
+                disabled={showLoadingMoreWord}
+                style={{
+                  borderRadius: 10,
+                  marginTop: 16,
+                  alignSelf: "center",
+                  borderColor: "#58A7F8",
+                }}
+                labelStyle={{
+                  color: "#58A7F8",
+                  fontWeight: "700",
+                }}
+              >
+                See More Words
+              </Button>
+            )}
             <Button
               mode="contained"
               onPress={handleSubmit}
+              disabled={selectedHeadwords.length < MIN_WORDS}
               style={{
-                backgroundColor: "#58A7F8",
+                backgroundColor:
+                  selectedHeadwords.length < MIN_WORDS ? "#AEAEAE" : "#58A7F8",
                 borderRadius: 10,
                 marginTop: 20,
                 alignSelf: "center",
@@ -188,16 +283,16 @@ const VocabEvalScreen = () => {
             </Button>
           </View>
         </Card>
-      </View>
-        {cefrLevel && (
-          <UserLevelModal
-            visible={levelModalVisible}
-            level={cefrLevel}
-            onConfirm={() => setLevelModalVisible(false)}
-            onRequestClose={() => setLevelModalVisible(false)}
-          />
-        )}
-    </View>
+      </View >
+      {cefrLevel && (
+        <UserLevelModal
+          visible={levelModalVisible}
+          level={cefrLevel}
+          onConfirm={() => setLevelModalVisible(false)}
+          onRequestClose={() => setLevelModalVisible(false)}
+        />
+      )}
+    </View >
   );
 };
 
