@@ -14,6 +14,7 @@ const RegisterScreen = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
 
 
@@ -42,28 +43,49 @@ const RegisterScreen = () => {
   const router = useRouter();
 
   const { mutate: registerMutate, isPending } = useRegister(async ({ user, token }) => {
-    console.log("User ID:", user.id);
-    console.log("Token:", token);
-    if (!user?.id || !token) {
-      Alert.alert("Registration failed, Missing user or token");
-      return;
+    try {
+      if (!user?.id || !token) {
+        Alert.alert("Registration failed, Missing user or token");
+        return;
+      }
+      // await SecureStore.setItemAsync("user-token", token);
+      await storeToken(token);
+      router.replace({
+        pathname: "/setupProfile/age",
+      })
     }
-    // await SecureStore.setItemAsync("user-token", token);
-    await storeToken(token);
-    router.replace({
-      pathname: "/setupProfile/age",
-    })
+    catch (error: any) {
+      setErrorMessage("Registration failed")
+    }
   })
   const handleRegister = () => {
+    setErrorMessage("");
+
     if (!username || !email || !password || !confirmPassword) {
-      Alert.alert("Please fill in all fields");
+      setErrorMessage("Please fill in all fields");
       return;
     }
     if (password !== confirmPassword) {
-      Alert.alert("Password did not match");
+      setErrorMessage("Password did not match");
       return;
     }
-    registerMutate({ username, email, password })
+
+    try {
+      registerMutate(
+        { username, email, password },
+        {
+          onError: (error: any) => {
+            const msg =
+              error?.response?.data?.message ||
+              error?.message ||
+              "Registration failed";
+            setErrorMessage(msg);
+          },
+        }
+      );
+    } catch (err) {
+      setErrorMessage("Registration failed");
+    }
   }
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: "#F2F8F9" }}
@@ -170,6 +192,24 @@ const RegisterScreen = () => {
                 activeOutlineColor="#5B6073"
                 style={{ backgroundColor: "transparent" }}
               />
+              {errorMessage ? (
+                <View
+                  style={{
+                    backgroundColor: "#FFEBEE",
+                    padding: 12,
+                    borderRadius: 8,
+                    marginTop: 10,
+                    marginBottom: 12,
+                    borderLeftWidth: 4,
+                    borderLeftColor: "#D32F2F",
+                    width: "100%",
+                  }}
+                >
+                  <Text style={{ color: "#D32F2F", fontSize: 14 }}>
+                    {errorMessage}
+                  </Text>
+                </View>
+              ) : null}
               <View style={{ display: "flex", alignItems: "flex-start", marginBottom: 12 }}>
                 <Button onPress={() => {
                   router.push("/authentication/login")

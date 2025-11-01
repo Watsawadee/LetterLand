@@ -24,7 +24,4 @@ export const useRegister = (
     mutationFn: (payload) =>
       registerUser(payload),
     onSuccess,
-    onError: (err) => {
-      console.error("Registration error:", err);
-    },
   });
