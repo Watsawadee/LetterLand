@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Animated,
 } from "react-native";
+import Search from "@/assets/icon/Search"
 
 type Props = {
   value: string;
@@ -109,14 +110,13 @@ export default function FloatingSearch({
             </Animated.View>
           )}
 
-          {/* --- Search circle button --- */}
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={handleCirclePress}
-            style={styles.fab}
-          >
-            <Text style={styles.fabIcon}>🔍</Text>
-          </TouchableOpacity>
+<TouchableOpacity
+  activeOpacity={0.85}
+  onPress={handleCirclePress}
+  style={styles.fab}
+>
+  <Search width={26} height={26} />  {/* adjust size as needed */}
+</TouchableOpacity>
         </View>
 
         {/* --- CEFR filter chips --- */}
@@ -263,26 +263,11 @@ fab: {
     borderWidth: 1.5,
   },
   chipText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "700",
-    color: "#333",
+    color: "#ffff",
   },
   chipTextSelected: {
-    color: "#333",
-    fontWeight: "700",
-  },
-
-  // "Clear" chip
-  clearChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#bbb",
-    backgroundColor: "#fafafa",
-  },
-  clearText: {
-    fontSize: 13,
     color: "#333",
     fontWeight: "700",
   },

@@ -289,7 +289,7 @@ const UserOverviewPerformance = () => {
             icon: Fire,
         },
         {
-            label: "Best streak (this level)",
+            label: "Best player streak (this level)",
             value: streakData && "highestStreakInThisLevel" in streakData ? streakData.highestStreakInThisLevel : "-",
             icon: BoxingGlove
         },
@@ -558,7 +558,7 @@ const UserOverviewPerformance = () => {
                                                             >
                                                                 <Text
                                                                     style={{
-                                                                        color: isSelected ? Color.white : Color.gray,
+                                                                        color: isSelected ? Color.white : Color.blue,
                                                                         fontSize: 14,
                                                                         fontWeight: "bold"
                                                                     }}
