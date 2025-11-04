@@ -12,12 +12,9 @@
       "supportsTablet": true,
       "infoPlist": {
         "UIDeviceFamily": [
-          2,
           2
         ],
         "UISupportedInterfaceOrientations~ipad": [
-          "UIInterfaceOrientationLandscapeLeft",
-          "UIInterfaceOrientationLandscapeRight",
           "UIInterfaceOrientationLandscapeLeft",
           "UIInterfaceOrientationLandscapeRight"
         ],
