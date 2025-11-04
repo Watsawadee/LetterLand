@@ -347,7 +347,7 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
                   width: "50%",
                   height: "90%",
                   borderRadius: 24,
-                  backgroundColor: "#fff",
+                  backgroundColor: "#F2F8F9",
                   overflow: "hidden",
                   elevation: 10,
                   shadowColor: "#000",
@@ -355,20 +355,12 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
                   shadowOffset: { width: 0, height: 2 },
                   shadowRadius: 8,
                   position: "relative",
+                  padding: 24,
+              
+                 
                 }}
                 onPress={(e) => e.stopPropagation()}
               >
-                <GardenBackgroundBlueSky
-                  pointerEvents="none"
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100%",
-                    zIndex: 0,
-                  }}
-                />
                 <View style={{ flex: 1, zIndex: 1 }}>
                   <KeyboardAvoidingView
                     style={{ flex: 1 }}
@@ -396,7 +388,7 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
                           >
                             <ArrowLeft color={Color.gray} />
                           </Pressable> */}
-                          <Text variant="titleLarge" style={{ fontWeight: "800", color: Color.gray }}>
+                          <Text variant="titleLarge" style={{  color: Color.gray, fontWeight: Typography.popupheader.fontWeight }}>
                             Create Puzzle
                           </Text>
                         </View>
@@ -407,8 +399,8 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
                           accessibilityLabel="Close dialog"
                         />
                       </View>
-                      <View style={{ gap: 10 }}>
-                        <View style={{ display: "flex", flexDirection: "row", gap: 2, alignItems: "center" }}>
+                      <View >
+                        <View style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
                           <Text style={{ fontWeight: "700", color: Color.gray }}>English Level</Text>
                           <IconButton
                             icon={(p) => <InfoIcon size={16} color={p.color ?? Color.gray} />}
@@ -421,7 +413,7 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
                           />
 
                         </View>
-                        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, height: "15%" }}>
+                        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, height: "15%" }}>
                           {["A1", "A2", "B1", "B2", "C1", "C2"].map((level) => {
                             const isActive = englishLevel === level;
                             const isUsersLevel = user && !("error" in user) && user.englishLevel === level;
@@ -450,8 +442,13 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
                                     onPress={() => setEnglishLevel(level as typeof englishLevel)}
                                     disabled={isDisabled}
                                     style={{
-                                      marginBottom: 8,
+                                      marginBottom: 12,
                                       borderRadius: 20,
+                                      elevation: 3,
+                                      shadowColor: "#000",
+                                      shadowOpacity: 0.10,
+                                      shadowOffset: { width: 0, height: 2 },
+                                      shadowRadius: 2,
                                       borderColor: isActive ? levelColors[level] : "#ddd",
                                       backgroundColor: isDisabled
                                         ? "#ddd"
@@ -520,7 +517,7 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
                           </Modal>
                         )}
                         <View style={{ flexDirection: "column", gap: 8 }}>
-                          <Text style={{ fontWeight: "700", color: Color.gray }}>Timer</Text>
+                          <Text style={{ fontWeight: "700", color: Color.gray, marginTop: 13 }}>Timer</Text>
                           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                             {TIMER_OPTIONS.map((t) => {
                               const active = timer === t;
@@ -529,8 +526,13 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
                                   key={t}
                                   style={{
                                     marginRight: 8,
-                                    marginBottom: 8,
+                                    marginBottom: 1,
                                     borderRadius: 20,
+                                    elevation: 3,
+                                    shadowColor: "#000",
+                                    shadowOpacity: 0.10,
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowRadius: 2,
                                     backgroundColor: active ? "#58A7F8" : "#fff",
                                     borderColor: "#ddd",
                                   }}
@@ -550,7 +552,7 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
                           </View>
                         </View>
                         <View style={{ flexDirection: "column", gap: 8 }}>
-                          <Text style={{ fontWeight: "700", color: Color.gray }}>Game Privacy</Text>
+                          <Text style={{ fontWeight: "700", color: Color.gray, marginTop: 18  }}>Game Privacy</Text>
                           <View
                             accessible
                             accessibilityRole="radiogroup"
@@ -597,8 +599,8 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
                             })}
                           </View>
                         </View>
-                        <View style={{ flexDirection: "column", gap: 8 }}>
-                          <Text style={{ fontWeight: "700", color: Color.gray }}>
+                        <View style={{ flexDirection: "column", gap: 8}}>
+                          <Text style={{ fontWeight: "700", color: Color.gray, marginTop: 18  }}>
                             Upload type
                           </Text>
                           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
@@ -622,6 +624,11 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
                                     marginRight: 8,
                                     marginBottom: 8,
                                     borderRadius: 20,
+                                    elevation: 3,
+                                    shadowColor: "#000",
+                                    shadowOpacity: 0.10,
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowRadius: 2,
                                     backgroundColor: isActive ? "#58A7F8" : "#fff",
                                     borderColor: "#ddd",
                                   }}
