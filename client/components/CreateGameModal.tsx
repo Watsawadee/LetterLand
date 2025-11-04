@@ -414,7 +414,7 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
                             />
 
                           </View>
-                          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, maxHeight: "50%" }}>
+                          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, maxHeight: "90%" }}>
                             {["A1", "A2", "B1", "B2", "C1", "C2"].map((level) => {
                               const isActive = englishLevel === level;
                               const isUsersLevel = user && !("error" in user) && user.englishLevel === level;
