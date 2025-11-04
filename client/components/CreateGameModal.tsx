@@ -356,8 +356,8 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
                   shadowRadius: 8,
                   position: "relative",
                   padding: 24,
-              
-                 
+
+
                 }}
                 onPress={(e) => e.stopPropagation()}
               >
@@ -388,7 +388,7 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
                           >
                             <ArrowLeft color={Color.gray} />
                           </Pressable> */}
-                          <Text variant="titleLarge" style={{  color: Color.gray, fontWeight: Typography.popupheader.fontWeight }}>
+                          <Text variant="titleLarge" style={{ color: Color.gray, fontWeight: Typography.popupheader.fontWeight }}>
                             Create Puzzle
                           </Text>
                         </View>
@@ -400,71 +400,73 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
                         />
                       </View>
                       <View >
-                        <View style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
-                          <Text style={{ fontWeight: "700", color: Color.gray }}>English Level</Text>
-                          <IconButton
-                            icon={(p) => <InfoIcon size={16} color={p.color ?? Color.gray} />}
-                            size={16}
-                            onPress={() => setInfoDialogVisible(true)}
-                            iconColor={Color.gray}
-                            containerColor="transparent"
-                            style={{ margin: 0 }}
-                            accessibilityLabel="English level info"
-                          />
+                        <View style={{ minHeight: "3%", flexDirection: "column", justifyContent: "flex-start" }}>
+                          <View style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
+                            <Text style={{ fontWeight: "700", color: Color.gray }}>English Level</Text>
+                            <IconButton
+                              icon={(p) => <InfoIcon size={16} color={p.color ?? Color.gray} />}
+                              size={16}
+                              onPress={() => setInfoDialogVisible(true)}
+                              iconColor={Color.gray}
+                              containerColor="transparent"
+                              style={{ margin: 0 }}
+                              accessibilityLabel="English level info"
+                            />
 
-                        </View>
-                        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, height: "15%" }}>
-                          {["A1", "A2", "B1", "B2", "C1", "C2"].map((level) => {
-                            const isActive = englishLevel === level;
-                            const isUsersLevel = user && !("error" in user) && user.englishLevel === level;
-                            const levelOrder = ["A1", "A2", "B1", "B2", "C1", "C2"];
-                            const userLevelIndex = user && !("error" in user) ? levelOrder.indexOf(user.englishLevel) : -1;
-                            const thisLevelIndex = levelOrder.indexOf(level);
-                            const isDisabled = thisLevelIndex > userLevelIndex;
-                            return (
-                              <View key={level} style={{ display: "flex", flexDirection: "column", justifyContent: "flex-end", alignItems: "center", gap: 3 }}>
-                                {isUsersLevel && (
-                                  <View style={{ padding: 4, borderRadius: 12, backgroundColor: isActive ? levelColors[level] : Color.white, display: "flex" }}>
-                                    <Text style={{ color: isActive ? Color.white : Color.gray, fontWeight: "700", fontSize: 10, textAlign: "center" }}>Your Level</Text>
-                                  </View>
-                                )}
-                                <Pressable
-                                  onPress={() => {
-                                    if (isDisabled) {
-                                      setShowLevelDialog(true);
-                                    } else {
-                                      setEnglishLevel(level as typeof englishLevel);
-                                    }
-                                  }}
-                                  style={{ width: "100%" }}
-                                >
-                                  <Button
-                                    onPress={() => setEnglishLevel(level as typeof englishLevel)}
-                                    disabled={isDisabled}
-                                    style={{
-                                      marginBottom: 12,
-                                      borderRadius: 20,
-                                      elevation: 3,
-                                      shadowColor: "#000",
-                                      shadowOpacity: 0.10,
-                                      shadowOffset: { width: 0, height: 2 },
-                                      shadowRadius: 2,
-                                      borderColor: isActive ? levelColors[level] : "#ddd",
-                                      backgroundColor: isDisabled
-                                        ? "#ddd"
-                                        : isActive
-                                          ? levelColors[level]
-                                          : "#fff",
+                          </View>
+                          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, maxHeight: "50%" }}>
+                            {["A1", "A2", "B1", "B2", "C1", "C2"].map((level) => {
+                              const isActive = englishLevel === level;
+                              const isUsersLevel = user && !("error" in user) && user.englishLevel === level;
+                              const levelOrder = ["A1", "A2", "B1", "B2", "C1", "C2"];
+                              const userLevelIndex = user && !("error" in user) ? levelOrder.indexOf(user.englishLevel) : -1;
+                              const thisLevelIndex = levelOrder.indexOf(level);
+                              const isDisabled = thisLevelIndex > userLevelIndex;
+                              return (
+                                <View key={level} style={{ display: "flex", flexDirection: "column", justifyContent: "flex-end", alignItems: "center", gap: 3 }}>
+                                  {isUsersLevel && (
+                                    <View style={{ padding: 4, borderRadius: 12, backgroundColor: isActive ? levelColors[level] : Color.white, display: "flex" }}>
+                                      <Text style={{ color: isActive ? Color.white : Color.gray, fontWeight: "700", fontSize: 10, textAlign: "center" }}>Your Level</Text>
+                                    </View>
+                                  )}
+                                  <Pressable
+                                    onPress={() => {
+                                      if (isDisabled) {
+                                        setShowLevelDialog(true);
+                                      } else {
+                                        setEnglishLevel(level as typeof englishLevel);
+                                      }
                                     }}
+                                    style={{ width: "100%" }}
                                   >
-                                    <Text style={{ color: isDisabled ? Color.white : isActive ? Color.white : Color.gray, fontWeight: "bold" }}>
-                                      {level}
-                                    </Text>
-                                  </Button>
-                                </Pressable>
-                              </View>
-                            );
-                          })}
+                                    <Button
+                                      onPress={() => setEnglishLevel(level as typeof englishLevel)}
+                                      disabled={isDisabled}
+                                      style={{
+                                        marginBottom: 12,
+                                        borderRadius: 20,
+                                        elevation: 3,
+                                        shadowColor: "#000",
+                                        shadowOpacity: 0.10,
+                                        shadowOffset: { width: 0, height: 2 },
+                                        shadowRadius: 2,
+                                        borderColor: isActive ? levelColors[level] : "#ddd",
+                                        backgroundColor: isDisabled
+                                          ? "#ddd"
+                                          : isActive
+                                            ? levelColors[level]
+                                            : "#fff",
+                                      }}
+                                    >
+                                      <Text style={{ color: isDisabled ? Color.white : isActive ? Color.white : Color.gray, fontWeight: "bold" }}>
+                                        {level}
+                                      </Text>
+                                    </Button>
+                                  </Pressable>
+                                </View>
+                              );
+                            })}
+                          </View>
                         </View>
                         {showLevelDialog && (
                           <Modal
@@ -552,7 +554,7 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
                           </View>
                         </View>
                         <View style={{ flexDirection: "column", gap: 8 }}>
-                          <Text style={{ fontWeight: "700", color: Color.gray, marginTop: 18  }}>Game Privacy</Text>
+                          <Text style={{ fontWeight: "700", color: Color.gray, marginTop: 18 }}>Game Privacy</Text>
                           <View
                             accessible
                             accessibilityRole="radiogroup"
@@ -599,8 +601,8 @@ const CreateGameModal = ({ visible, onClose, gameType }: Props) => {
                             })}
                           </View>
                         </View>
-                        <View style={{ flexDirection: "column", gap: 8}}>
-                          <Text style={{ fontWeight: "700", color: Color.gray, marginTop: 18  }}>
+                        <View style={{ flexDirection: "column", gap: 8 }}>
+                          <Text style={{ fontWeight: "700", color: Color.gray, marginTop: 18 }}>
                             Upload type
                           </Text>
                           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
