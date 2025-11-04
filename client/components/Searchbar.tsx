@@ -96,28 +96,28 @@ export default function FloatingSearch({
       <Animated.View style={[styles.container, { width: containerWidth }]}>
         {/* --- Top section --- */}
         <View style={styles.topRow}>
-          {expanded && (
-            <Animated.View style={[styles.inputHolder, { opacity: fadeAnim }]}>
-              <TextInput
-                placeholder="Search by game name or code"
-                value={value}
-                onChangeText={onChangeText}
-                returnKeyType="search"
-                onSubmitEditing={() => onSubmit?.()}
-                style={styles.input}
-                autoFocus={true}
-              />
-            </Animated.View>
-          )}
+  {expanded ? (
+    <Animated.View style={[styles.inputHolder, { opacity: fadeAnim }]}>
+      <TextInput
+        placeholder="Search by game name or code"
+        value={value}
+        onChangeText={onChangeText}
+        returnKeyType="search"
+        onSubmitEditing={() => onSubmit?.()}
+        style={styles.input}
+        autoFocus
+      />
+    </Animated.View>
+  ) : null}
 
-<TouchableOpacity
-  activeOpacity={0.85}
-  onPress={handleCirclePress}
-  style={styles.fab}
->
-  <Search width={26} height={26} />  {/* adjust size as needed */}
-</TouchableOpacity>
-        </View>
+  <TouchableOpacity
+    activeOpacity={0.85}
+    onPress={handleCirclePress}
+    style={styles.fab}
+  >
+    <Search width={26} height={26} />
+  </TouchableOpacity>
+</View>
 
         {/* --- CEFR filter chips --- */}
         {expanded && (
