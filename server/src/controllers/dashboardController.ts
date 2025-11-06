@@ -162,16 +162,22 @@ export const getUserGamesPlayedMultiplePeriod = async (
           });
           counts = labels.map(l => bucket[l] ?? 0);
         } else if (period === "month") {
-          let current = startOfWeek(start, { weekStartsOn: 0 });
-          let weekIdx = 1;
-          const buckets: { start: Date, end: Date }[] = [];
-          while (current <= end) {
-            const weekStart = current < start ? start : current;
-            const weekEnd = endOfWeek(current, { weekStartsOn: 0 }) > end ? end : endOfWeek(current, { weekStartsOn: 0 });
-            buckets.push({ start: weekStart, end: weekEnd });
-            labels.push(`W${weekIdx++}`);
-            current = addWeeks(current, 1);
+          const monthStart = startOfMonth(start);
+          const monthEnd = end;
+          const buckets: { start: Date; end: Date }[] = [];
+          labels = [];
+
+          for (let i = 0; i < 5; i++) {
+            const wkStart = addDays(monthStart, i * 7);
+            const wkEnd = i < 4 ? addDays(wkStart, 6) : monthEnd;
+            const startClamped = wkStart > monthEnd ? monthEnd : wkStart;
+            const endClamped = wkEnd > monthEnd ? monthEnd : wkEnd;
+            // ensure start <= end
+            const finalStart = startClamped > endClamped ? endClamped : startClamped;
+            buckets.push({ start: finalStart, end: endClamped });
+            labels.push(`W${i + 1}`);
           }
+
           counts = buckets.map(({ start: bStart, end: bEnd }) =>
             games.filter(g => g.startedAt >= bStart && g.startedAt <= bEnd).length
           );
