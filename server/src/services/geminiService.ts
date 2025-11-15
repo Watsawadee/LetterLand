@@ -10,7 +10,7 @@ function cleanApiResponse(rawText: string): string {
 }
 
 async function callGeminiWithRetry(prompt: string, maxRetries = 3) {
-  let delay = 1000; // Start with a 1-second delay
+  let delay = 1000;
 
   for (let i = 0; i < maxRetries; i++) {
     try {
@@ -49,7 +49,6 @@ async function callGeminiWithRetry(prompt: string, maxRetries = 3) {
 //   }
 // }
 
-const OXFORD_BASE_URL = "https://od-api-sandbox.oxforddictionaries.com/api/v2";
 
 // export async function isDictionaryWord(word: string): Promise<boolean> {
 //   if (!word) return false;

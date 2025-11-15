@@ -16,12 +16,17 @@
         "jsx": "react-jsx",
         // "rootDir": "./src",
         "outDir": "./dist",
+        "types": [
+            "jest",
+            "node"
+        ]
     },
     "include": [
         "src/**/*.ts",
         "routes/**/*.ts",
         "../../client/types/decodedJwtToken.ts",
         "src/types/progressLevelup.schema.ts",
+        "jest.setup.ts"
     ],
     "exclude": [
         "node_modules",
